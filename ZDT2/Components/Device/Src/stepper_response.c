@@ -131,7 +131,7 @@ void StepperCAN_ReadPosition_Response(uint16_t frame_id, uint8_t sign, int32_t p
     // 处理符号位
     int32_t position = sign ? -position_raw : position_raw;
 
-    // 修复：确保调用更新函数
+    // 更新电机角度信息
     update_motor_angle(frame_id, position);
 
     // 释放信号量，允许继续发送命令

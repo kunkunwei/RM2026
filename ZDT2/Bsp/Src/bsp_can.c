@@ -60,17 +60,22 @@ void BSP_CAN_Init(void)
 {
   CAN_FilterTypeDef CAN_FilterConfig = {0};
 
-  /* Update the CAN1 filter Conifguration */
+  /* Update the CAN1 filter Configuration for Extended ID */
   CAN_FilterConfig.FilterActivation = ENABLE;
   CAN_FilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
   CAN_FilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  CAN_FilterConfig.FilterIdHigh = 0x0000;
-  CAN_FilterConfig.FilterIdLow = 0x0000;
-  CAN_FilterConfig.FilterMaskIdHigh = 0x0000;
-  CAN_FilterConfig.FilterMaskIdLow = 0x0000;
+
+  // 配置扩展帧过滤器 - 接收所有扩展帧
+  // FilterIdHigh 和 FilterIdLow 组合成29位扩展ID
+  // 设置IDE位为1表示扩展帧
+  CAN_FilterConfig.FilterIdHigh = 0x0000;       // 扩展ID高位
+  CAN_FilterConfig.FilterIdLow = 0x0001;        // 扩展ID低位 + IDE位(bit2) = 1
+  CAN_FilterConfig.FilterMaskIdHigh = 0x0000;   // 掩码高位 - 全0表示不过滤
+  CAN_FilterConfig.FilterMaskIdLow = 0x0000;    // 掩码低位 - 只检查IDE位
+
   CAN_FilterConfig.FilterBank = 0;
   CAN_FilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  CAN_FilterConfig.SlaveStartFilterBank = 0;
+  CAN_FilterConfig.SlaveStartFilterBank = 14;
 
   /* configures the CAN1 filter */
   if(HAL_CAN_ConfigFilter(&hcan1, &CAN_FilterConfig) != HAL_OK)
@@ -79,14 +84,24 @@ void BSP_CAN_Init(void)
   }
 
   /* Start the CAN1 module. */
-  HAL_CAN_Start(&hcan1);
+  if(HAL_CAN_Start(&hcan1) != HAL_OK)
+  {
+      Error_Handler();
+  }
 
   /* Enable CAN1 FIFO0 interrupts */
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+  if(HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+  {
+      Error_Handler();
+  }
 
-  /* Update the CAN2 filter Conifguration */
-  CAN_FilterConfig.FilterBank = 14;
-  CAN_FilterConfig.SlaveStartFilterBank = 14;
+  // 添加调试信息输出
+  // printf("CAN1 Init Complete - Filter configured for Extended Frames\r\n");
+  // printf("Listening for Motor IDs: 0x%03X, 0x%03X\r\n", CAN1_YAW_MOTOR_ID, CAN1_PITCH_MOTOR_ID);
+
+  /* Update the CAN2 filter Configuration */
+  // CAN_FilterConfig.FilterBank = 14;
+  // CAN_FilterConfig.SlaveStartFilterBank = 14;
 
   /* configures the CAN2 filter */
   // if(HAL_CAN_ConfigFilter(&hcan2, &CAN_FilterConfig) != HAL_OK)
@@ -123,6 +138,7 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 static void CAN1_RxFifo0RxHandler(uint32_t *ExtId, uint8_t data[8])
 {
     uint16_t frame_id = (*ExtId) & 0xFFFF; // 提取扩展帧ID
+    // uint16_t frame_id = *StdId;
     uint8_t len = USER_CAN_RxInstance.DLC;
 
     // 错误应答检查
@@ -149,7 +165,6 @@ static void CAN1_RxFifo0RxHandler(uint32_t *ExtId, uint8_t data[8])
                 uint8_t sign = data[1];
                 int32_t position = ((int32_t)data[2] << 24) | ((int32_t)data[3] << 16) |
                                   ((int32_t)data[4] << 8) | data[5];
-                // 修复：确保调用位置响应处理函数
                 StepperCAN_ReadPosition_Response(base_motor_id, sign, position);
             }
             break;

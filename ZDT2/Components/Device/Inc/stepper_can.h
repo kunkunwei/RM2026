@@ -55,23 +55,17 @@ extern StepperMotor_Info_t yaw_motor_Info, pitch_motor_Info;
 /* Exported functions --------------------------------------------------------*/
 /* 核心控制函数 */
 bool StepperCAN_SendCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len);
-bool StepperCAN_SendPositionCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len);
+bool StepperCAN_SendPositionCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t total_len);
 
 /* 电机基本控制 */
 void StepperCAN_Enable(StepperMotor_Info_t *motor, bool enable);
-void StepperCAN_SetAbsolutePosition(StepperMotor_Info_t *motor, float target_angle, uint16_t speed, uint8_t accel);
+void StepperCAN_SetAbsolutePosition(StepperMotor_Info_t *motor, float target_angle, uint16_t speed_rpm, uint8_t accel);
 void StepperCAN_EmergencyStop(StepperMotorID_e motor_id);
 void StepperCAN_TriggerHome(StepperMotorID_e motor_id, StepperHomeMode_e mode);
 
 /* 位置读取 */
 bool StepperCAN_ReadPosition(StepperMotorID_e motor_id);
 
-/* 删除的不必要函数：
- * - StepperCAN_SetSpeed (不需要速度控制)
- * - StepperCAN_SetSingleZero (简化零点设置)
- * - StepperCAN_ReadSystemStatus (减少系统负担)
- * - 各种状态读取函数 (只保留位置读取)
- */
 
 #ifdef __cplusplus
 }
