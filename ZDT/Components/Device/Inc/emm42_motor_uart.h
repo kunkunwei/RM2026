@@ -11,19 +11,49 @@
 /**
  * @brief Motor response status for UART communication
  */
-typedef enum {
-    RESPONSE_OK,        // Command executed successfully (response: addr + 02 + 6B)
-    RESPONSE_ERROR,     // Command error (response: addr + EE + 6B)
-    RESPONSE_INVALID    // Invalid response or communication failure
+typedef enum
+{
+  RESPONSE_OK,     // Command executed successfully (response: addr + 02 + 6B)
+  RESPONSE_ERROR,  // Command error (response: addr + EE + 6B)
+  RESPONSE_INVALID // Invalid response or communication failure
 } Motor_ResponseStatus;
 
 /**
  * @brief Motor addresses (1–247, 0 for broadcast)
  */
-typedef enum {
-    EMM42_MOTOR_1_ADDR = 0x01, // Motor 1 address
-    EMM42_MOTOR_2_ADDR = 0x02  // Motor 2 address
+typedef enum
+{
+  EMM42_MOTOR_1_ADDR = 0x01, // Motor 1 address
+  EMM42_MOTOR_2_ADDR = 0x02  // Motor 2 address
 } EMM42_MOTOR_ADDR;
+
+
+// 回传数据类型枚举
+typedef enum {
+  MOTOR_FEEDBACK_NONE = 0,
+  MOTOR_FEEDBACK_POSITION,
+  MOTOR_FEEDBACK_ERROR,
+  MOTOR_FEEDBACK_ENABLE,
+  MOTOR_FEEDBACK_STALL,
+  MOTOR_FEEDBACK_CMD_ACK,    // 命令应答
+  MOTOR_FEEDBACK_POS_DONE    // 位置命令完成
+} Motor_FeedbackType;
+
+// 回传数据结构体
+typedef struct {
+  Motor_FeedbackType type;
+  uint8_t addr;
+  int32_t position;
+  int16_t error;
+  uint8_t enable;
+  uint8_t stall;
+  bool ready;
+} Motor_FeedbackData;
+
+
+extern Motor_FeedbackData yaw_motor_feedback,pitch_motor_feedback;
+// 解析函数
+bool Motor_ParseFeedback(const uint8_t *rx, uint8_t len, Motor_FeedbackData *data);
 
 // === Control Commands ===
 
@@ -170,4 +200,4 @@ float Motor_PositionToAngle(int32_t pos);
  */
 float Motor_ErrorToAngle(int16_t error);
 
-#endif //EMM42_MOTOR_UART_H
+#endif // EMM42_MOTOR_UART_H

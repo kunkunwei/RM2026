@@ -17,6 +17,8 @@
 #include "can.h"
 #include "remote_control.h"
 #include "main.h"
+#include "stepper_can.h"
+#include "stepper_motor.h"
 // extern lk9025_motor_measure_t motor_right, motor_left;
 // extern dm8009_motor_measure_t motor_joint[4];
 extern dji_motor_measure_t shoot_motor_left,shoot_motor_right,pull_motor;
@@ -168,10 +170,15 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 	* @param  data: array that contains the received massage.
   * @retval None
   */
-
+//
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
     //printf("CAN1 STDID: %d\r\n",*StdId);
+	for (int i = 0; i < 2; i++) {
+		if (*StdId == StepperMotor[i].frame_id && data[0] == StepperMotor[i].frame_id) {
+			StepperMotor_UpdatePosition(&StepperMotor[i], data);
+		}
+	}
   	switch(*StdId)
     {
       // case CAN1_SHOOT_MOTOR_LEFT_ID:

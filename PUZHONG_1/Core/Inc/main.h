@@ -43,7 +43,7 @@ extern "C" {
   //bsp
 // #include "bsp_can.h"
 #include "bsp_mcu.h"
-#include "emm42_motor_uart.h"
+// #include "emm42_motor_uart.h"
   //tasks
   // #include "INS_Task.h"
   // #include "Ros_task.h"
@@ -70,7 +70,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+ // extern osSemaphoreId can_cmd_semHandle;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

@@ -2,7 +2,8 @@
 #include "can_task.h"
 #include "Chassis_Task.h"
 #include "old_pid.h"
-
+#include "stepper_can.h"
+#include "stepper_motor.h"
 //#define DEBUG
 static void Damiao_Motor_Enable();
 static void Damiao_Motor_CAN_Send(float Postion, float Velocity, float KP, float KD, float Torque);
@@ -26,11 +27,26 @@ void Can_Task(void const * argument)
   osDelay(10);
   // Damiao_Motor_Enable();
   osDelay(10);
-
+	StepperMotor_Init(&StepperMotor[0],0x01);
+	StepperMotor_Init(&StepperMotor[1],0x02);
+	StepperCAN_Enable(StepperMotor[0].frame_id,ENABLE);
+	StepperCAN_Enable(StepperMotor[1].frame_id,ENABLE);
+	// StepperCAN_SetSpeed(0x01,200,1,10);
+	// StepperCAN_RelativeMoveAngle( &StepperMotor[0], 200, 0, 10, 90.0f);
   for(;;)
   {
+  	StepperCAN_ReadPosition( StepperMotor[0].frame_id);
+  	// StepperCAN_RelativeMoveAngle( &StepperMotor[0], 200,  10, remote_ctrl.rc.ch[0]);
+  	// if (switch_is_up(remote_ctrl.rc.s[0]))
+  	StepperCAN_RelativeMoveAngle( &StepperMotor[0], 200,  10, 90.0f);
+  	// StepperCAN_SetSpeed(0x01,200,1,10);
   	// 仅作LED显示
-  	 // HAL_GPIO_TogglePin(LED_R_GPIO_Port, LED_R_Pin);
+  	// StepperCAN_SetSpeed(0,200,0,0);
+  	// StepperCAN_SetSpeed(1,200,0,10);
+  	// StepperCAN_RelativeMove(0x01, 200, 0, 10, 1000);
+  	// StepperCAN_RelativeMoveAngle( &StepperMotor[0], 200, 0, 10, 90.0f);
+  	// tset_can();
+  	// StepperMotor_Update(1, USER_CAN_RxFrameData, &RMD_Motor[0]);
   	 // if (remote_ctrl.rc.s[0]== 0)
   	 // {
   	 // 	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
@@ -48,10 +64,10 @@ void Can_Task(void const * argument)
     // 摩擦轮加拨蛋加pitch
      // Dji_Motor_Shoot_Can_Send(0,0,0,0);
     // 四个轮子
-     Dji_Motor_Chassis_Can_Send(chassis_move.chassis_motor[0]->target_current,\
-                                 chassis_move.chassis_motor[1]->target_current,\
-                                 chassis_move.chassis_motor[2]->target_current,\
-                                 chassis_move.chassis_motor[3]->target_current);
+     // Dji_Motor_Chassis_Can_Send(chassis_move.chassis_motor[0]->target_current,\
+     //                             chassis_move.chassis_motor[1]->target_current,\
+     //                             chassis_move.chassis_motor[2]->target_current,\
+     //                             chassis_move.chassis_motor[3]->target_current);
     // Dji_Motor_Pitch_Can_Send(gimbal.gimbal_pos.pitch_motor->target_current);
     // Dji_Motor_Pitch_Can_Send(0);//
     //// 单独的达妙YAW
@@ -61,7 +77,8 @@ void Can_Task(void const * argument)
     // Damiao_Motor_CAN_Send(0,0,0,0,0);
     // Dji_Motor_Shoot_Can_Send(500,500,500);
 
-    osDelay(2);
+
+    osDelay(1000);
   }
   /* USER CODE END Can_Task */
 }

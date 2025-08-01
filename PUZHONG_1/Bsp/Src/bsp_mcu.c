@@ -16,8 +16,9 @@
 #include "bsp_mcu.h"
 // #include "bsp_can.h"
 // #include "bsp_tim.h"
+#include "bsp_can.h"
 #include "bsp_uart.h"
-#include "stepper_pwm_control.h"
+// #include "stepper_pwm_control.h"
 // #include "bsp_dwt.h"
 // #include "bmi088.h"
 // #include "usb_device.h"
@@ -29,9 +30,9 @@ void MCU_Init(void)
 {
   /* ----------------------- BSP Init ----------------------- */
   // Bsp_Tim_Init();
-  // BSP_CAN_Init();
+  BSP_CAN_Init();
   // BSP_USART_Init();
-  Stepper_Init();
+  // Stepper_Init();
 	// MX_USB_DEVICE_Init();
 
   /* ----------------------- Device Init ----------------------- */

@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
+// #include "freertos_config.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -52,6 +53,7 @@ osThreadId StartUserTaskHandle;
 osThreadId StartCanTaskHandle;
 osThreadId StartRosTaskHandle;
 osThreadId StartGimbalTaskHandle;
+osSemaphoreId can_cmd_semHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -95,6 +97,11 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of can_cmd_sem */
+  osSemaphoreDef(can_cmd_sem);
+  can_cmd_semHandle = osSemaphoreCreate(osSemaphore(can_cmd_sem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */

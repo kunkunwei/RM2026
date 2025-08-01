@@ -149,7 +149,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    // Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
