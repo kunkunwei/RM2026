@@ -29,8 +29,7 @@ extern "C" {
     void StepperCAN_ReadSystemStatus_Response(uint16_t frame_id, uint8_t *data, uint16_t len);
     void StepperCAN_ReadEncoder_Response(uint16_t frame_id, uint16_t encoder);
     void StepperCAN_ReadPulseCount_Response(uint16_t frame_id, int32_t pulse);
-    void StepperCAN_ReadPosition_Response(uint16_t frame_id, int32_t position);
-    void StepperCAN_ReadError_Response(uint16_t frame_id, int16_t error);
+    void StepperCAN_ReadPosition_Response(uint16_t frame_id, uint8_t sign, int32_t position_raw);    void StepperCAN_ReadError_Response(uint16_t frame_id, int16_t error);
     void StepperCAN_ReadEnableStatus_Response(uint16_t frame_id, uint8_t enable);
     void StepperCAN_ReadStallFlag_Response(uint16_t frame_id, uint8_t stall);
     void StepperCAN_ReadAutoHomeStatus_Response(uint16_t frame_id, uint8_t home_status);

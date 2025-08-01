@@ -15,11 +15,24 @@
 #define RC_DEADZONE      10
 #define ANGLE_SEND_THRESHOLD 0.2f  // 角度变化阈值，单位：度
 #define CONTROL_PERIOD_MS 5        // 控制周期，单位：ms
+#define PC_SEND_PERIOD_MS 100      // 上位机发送周期，单位：ms
+
+// 全局目标角度，供User_Task等模块引用
+float target_yaw_angle = 0;
+float target_pitch_angle = 0;
 
 // 引用 stepper_response.c 的全局变量
 extern int32_t g_position_yaw, g_position_pitch;
 extern osSemaphoreId can_cmd_sem_yawHandle;
 extern osSemaphoreId can_cmd_sem_pitchHandle;
+
+// 引用上位机数据
+extern PC_Data_Typedef pc_data;
+
+// 角度转换函数
+static float position_to_angle(int32_t position) {
+    return (float)position * 360.0f / 65536.0f;
+}
 
 void Gimbal_Task(void const * argument)
 {
@@ -28,129 +41,53 @@ void Gimbal_Task(void const * argument)
     StepperCAN_Enable(&pitch_motor_Info, true);
 
     TickType_t systick = 0;
-    float target_yaw_angle = 0;
-    float target_pitch_angle = 0;
-
-    uint16_t yaw_ready_cnt = 0, pitch_ready_cnt = 0;
-    uint8_t yaw_dead_cnt = 0, pitch_dead_cnt = 0;
-    const uint16_t READY_TIMEOUT_CNT = 200 / CONTROL_PERIOD_MS; // 200ms超时
-    const uint8_t DEAD_RETRY_MAX = 2; // 超时2次后判定死机
-    const uint16_t DEAD_RETRY_DELAY = 300; // 死机恢复后延时(ms)
-
-    // 新增：信号量超时计数器
-    uint16_t yaw_sem_timeout_cnt = 0, pitch_sem_timeout_cnt = 0;
-    const uint16_t SEM_TIMEOUT_CNT = 500 / CONTROL_PERIOD_MS; // 500ms超时
-
-    #define CMD_INTERVAL_MS 30
-    TickType_t last_yaw_cmd_tick = 0;
-    TickType_t last_pitch_cmd_tick = 0;
-
-    // 新增：轮询优先标志，0=YAW优先，1=PITCH优先
-    uint8_t motor_priority = 0;
+    TickType_t last_pc_send_tick = 0;
 
     for(;;)
     {
         systick = osKernelSysTick();
 
-        float yaw_actual_angle = (float)(g_position_yaw) * 360.0f / 65536.0f;
-        float pitch_actual_angle = (float)(g_position_pitch) * 360.0f / 65536.0f;
+        // 使用统一的角度转换公式
+        float yaw_actual_angle = position_to_angle(g_position_yaw);
+        float pitch_actual_angle = position_to_angle(g_position_pitch);
 
-        int16_t rc_yaw_raw = remote_ctrl.rc.ch[0];
-        int16_t rc_pitch_raw = remote_ctrl.rc.ch[1];
+        // 检查是否有有效的上位机数据
+        uint32_t current_time = HAL_GetTick();
+        bool pc_data_timeout = (current_time - pc_data.last_update) > 500;
 
-        // 直接映射遥控器通道值到角度范围
-        target_yaw_angle = ((float)rc_yaw_raw) * (YAW_ANGLE_MAX - YAW_ANGLE_MIN) / (RC_CH_MAX - RC_CH_MIN);
-        target_pitch_angle = ((float)rc_pitch_raw) * (PITCH_ANGLE_MAX - PITCH_ANGLE_MIN) / (RC_CH_MAX - RC_CH_MIN);
+        if(pc_data.data_valid && !pc_data_timeout) {
+            // 使用上位机数据作为目标角度
+            target_yaw_angle = pc_data.yaw_angle;
+            target_pitch_angle = pc_data.pitch_angle;
+        } else {
+            // 使用遥控器数据
+            int16_t rc_yaw_raw = remote_ctrl.rc.ch[0];
+            int16_t rc_pitch_raw = remote_ctrl.rc.ch[1];
+
+            // 添加死区处理
+            if (abs(rc_yaw_raw) < RC_DEADZONE) rc_yaw_raw = 0;
+            if (abs(rc_pitch_raw) < RC_DEADZONE) rc_pitch_raw = 0;
+
+            // 映射到角度范围并限制
+            target_yaw_angle = ((float)rc_yaw_raw) * (YAW_ANGLE_MAX - YAW_ANGLE_MIN) / (RC_CH_MAX - RC_CH_MIN);
+            target_pitch_angle = ((float)rc_pitch_raw) * (PITCH_ANGLE_MAX - PITCH_ANGLE_MIN) / (RC_CH_MAX - RC_CH_MIN);
+
+            // 限制角度范围
+            if (target_yaw_angle > YAW_ANGLE_MAX) target_yaw_angle = YAW_ANGLE_MAX;
+            if (target_yaw_angle < YAW_ANGLE_MIN) target_yaw_angle = YAW_ANGLE_MIN;
+            if (target_pitch_angle > PITCH_ANGLE_MAX) target_pitch_angle = PITCH_ANGLE_MAX;
+            if (target_pitch_angle < PITCH_ANGLE_MIN) target_pitch_angle = PITCH_ANGLE_MIN;
+        }
 
         TickType_t now = osKernelSysTick();
 
-        // 优先轮流下发控制指令，避免一个电机连续多次下发
-        if (motor_priority == 0) {
-            if (yaw_motor_Info.ready && (now - last_yaw_cmd_tick >= CMD_INTERVAL_MS)) {
-                float yaw_delta = target_yaw_angle - yaw_actual_angle;
-                StepperCAN_SetPositionAngle(&yaw_motor_Info, yaw_delta, 0x40, 0x20, 0);
-                yaw_motor_Info.ready = false;
-                yaw_ready_cnt = 0;
-                last_yaw_cmd_tick = now;
-                yaw_sem_timeout_cnt = 0;
-                motor_priority = 1; // 下次优先pitch
-            } else if (pitch_motor_Info.ready && (now - last_pitch_cmd_tick >= CMD_INTERVAL_MS)) {
-                float pitch_delta = target_pitch_angle - pitch_actual_angle;
-                StepperCAN_SetPositionAngle(&pitch_motor_Info, pitch_delta, 0x40, 0x20, 0);
-                pitch_motor_Info.ready = false;
-                pitch_ready_cnt = 0;
-                last_pitch_cmd_tick = now;
-                pitch_sem_timeout_cnt = 0;
-                motor_priority = 0; // 下次优先yaw
-            }
-        } else {
-            if (pitch_motor_Info.ready && (now - last_pitch_cmd_tick >= CMD_INTERVAL_MS)) {
-                float pitch_delta = target_pitch_angle - pitch_actual_angle;
-                StepperCAN_SetPositionAngle(&pitch_motor_Info, pitch_delta, 0x40, 0x20, 0);
-                pitch_motor_Info.ready = false;
-                pitch_ready_cnt = 0;
-                last_pitch_cmd_tick = now;
-                pitch_sem_timeout_cnt = 0;
-                motor_priority = 0; // 下次优先yaw
-            } else if (yaw_motor_Info.ready && (now - last_yaw_cmd_tick >= CMD_INTERVAL_MS)) {
-                float yaw_delta = target_yaw_angle - yaw_actual_angle;
-                StepperCAN_SetPositionAngle(&yaw_motor_Info, yaw_delta, 0x40, 0x20, 0);
-                yaw_motor_Info.ready = false;
-                yaw_ready_cnt = 0;
-                last_yaw_cmd_tick = now;
-                yaw_sem_timeout_cnt = 0;
-                motor_priority = 1; // 下次优先pitch
-            }
+        // 定期发送电机实时角度值给上位机
+        if (now - last_pc_send_tick >= PC_SEND_PERIOD_MS) {
+            PC_Send_Motor_Angles(yaw_actual_angle, pitch_actual_angle, 0x01);
+            last_pc_send_tick = now;
         }
 
-        // YAW轴死机自恢复（去掉失能/使能，仅恢复信号量和ready）
-        if (!yaw_motor_Info.ready)
-        {
-            yaw_ready_cnt++;
-            yaw_sem_timeout_cnt++;
-            if (yaw_ready_cnt > READY_TIMEOUT_CNT) {
-                yaw_ready_cnt = 0;
-                yaw_dead_cnt++;
-                if (yaw_dead_cnt >= DEAD_RETRY_MAX) {
-                    // 暂不做失能/使能，仅恢复ready
-                    yaw_motor_Info.ready = true;
-                    yaw_dead_cnt = 0;
-                }
-            }
-            // 信号量超时自恢复（不再失能/使能，只释放信号量和重置ready）
-            if (yaw_sem_timeout_cnt > SEM_TIMEOUT_CNT) {
-                osSemaphoreRelease(can_cmd_sem_yawHandle);
-                yaw_motor_Info.ready = true;
-                yaw_sem_timeout_cnt = 0;
-            }
-        } else {
-            yaw_dead_cnt = 0;
-            yaw_sem_timeout_cnt = 0;
-        }
-
-        // PITCH轴死机自恢复（去掉失能/使能，仅恢复信号量和ready）
-        if (!pitch_motor_Info.ready)
-        {
-            pitch_ready_cnt++;
-            pitch_sem_timeout_cnt++;
-            if (pitch_ready_cnt > READY_TIMEOUT_CNT) {
-                pitch_ready_cnt = 0;
-                pitch_dead_cnt++;
-                if (pitch_dead_cnt >= DEAD_RETRY_MAX) {
-                    pitch_motor_Info.ready = true;
-                    pitch_dead_cnt = 0;
-                }
-            }
-            // 信号量超时自恢复（不再失能/使能，只释放信号量和重置ready）
-            if (pitch_sem_timeout_cnt > SEM_TIMEOUT_CNT) {
-                osSemaphoreRelease(can_cmd_sem_pitchHandle);
-                pitch_motor_Info.ready = true;
-                pitch_sem_timeout_cnt = 0;
-            }
-        } else {
-            pitch_dead_cnt = 0;
-            pitch_sem_timeout_cnt = 0;
-        }
+        // 移除所有电机控制和死机检测逻辑，由User_Task专门负责
 
         osDelayUntil(&systick, CONTROL_PERIOD_MS);
     }

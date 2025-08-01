@@ -121,27 +121,27 @@ static osSemaphoreId get_motor_sem_handle(StepperMotorID_e motor_id) {
 bool StepperCAN_SendCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len)
 {
     osSemaphoreId sem = get_motor_sem_handle(motor_id);
-    if (!sem) return false;
-
-    if (cmd == NULL || len == 0 || len > 8) {
+    if (!sem || cmd == NULL || len == 0 || len > 8) {
         return false;
     }
 
-    // 发送前先获取信号量，只有获取到才允许发送
-    if (osSemaphoreWait(sem, 0) != osOK) {
+    // 尝试获取信号量，如果获取不到说明电机忙碌
+    if (osSemaphoreWait(sem, 10) != osOK) {
         return false;
     }
 
     bool response_received = false;
     int retry_count = 0;
-    int max_retry = 2; // 默认最多重发1次
+    int max_retry = 2;
 
-    // 判断是否为读取位置指令（0x36），如果是则不重发
+    // 对于读取位置指令，减少重试次数
     if (cmd[0] == 0x36 && len == 2) {
-        max_retry = 1; // 只发一次，不重发
+        max_retry = 1;
     }
 
-    while (!response_received && retry_count++ < max_retry) {
+    while (!response_received && retry_count < max_retry) {
+        retry_count++;
+
         CAN_TxFrameTypeDef tx_frame = {
             .hcan = &hcan1,
             .header = {
@@ -154,14 +154,16 @@ bool StepperCAN_SendCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len
         memcpy(tx_frame.Data, cmd, len);
         USER_CAN_TxMessage(&tx_frame);
 
-        if (osSemaphoreWait(sem, CAN_SEM_WAIT_TIMEOUT) == osOK) {
+        // 等待应答，设置合理的超时时间
+        uint32_t timeout = (cmd[0] == 0xFD) ? 100 : 50;
+        if (osSemaphoreWait(sem, timeout) == osOK) {
             response_received = true;
-        } else if (max_retry > 1) {
-            osDelay(CAN_RETRY_DELAY_MS);
+        } else if (retry_count < max_retry) {
+            osDelay(5);
         }
     }
 
-    // 如果没有收到应答，主动释放信号量，防止死锁
+    // 如果所有重试都失败，确保释放信号量防止死锁
     if (!response_received) {
         osSemaphoreRelease(sem);
     }

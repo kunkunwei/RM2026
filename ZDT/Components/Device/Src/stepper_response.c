@@ -72,28 +72,31 @@ extern uint8_t pitch_wait_angle_done;
 
 void StepperCAN_SetPositionAngle_Response(uint8_t *data, uint8_t len, uint16_t frame_id)
 {
+    osSemaphoreId sem = get_motor_sem_handle(frame_id);
+
     // 运动命令完成反馈：XX 9F 6B
     if (len == 3 && data[1] == 0x9F && data[2] == CAN_CHECK_CODE) {
-        osSemaphoreId sem = get_motor_sem_handle(frame_id);
         if (frame_id == CAN1_YAW_MOTOR_ID) {
             yaw_motor_Info.ready = true;
-            yaw_wait_angle_done = 0; // 允许读取位置
+            yaw_wait_angle_done = 0; // 运动完成，允许继续控制
         }
         else if (frame_id == CAN1_PITCH_MOTOR_ID) {
             pitch_motor_Info.ready = true;
-            pitch_wait_angle_done = 0; // 允许读取位置
+            pitch_wait_angle_done = 0; // 运动完成，允许继续控制
         }
         if (sem) osSemaphoreRelease(sem);
     }
-    // 命令接收应答：XX 02 6B，收到后标记等待角度完成，不允许读取位置
+    // 命令接收应答：XX 02 6B
     else if (len == 3 && data[1] == 0x02 && data[2] == CAN_CHECK_CODE) {
+        // 对于0角度命令，只有这一个应答，直接清除等待标志
         if (frame_id == CAN1_YAW_MOTOR_ID) {
-            yaw_wait_angle_done = 1;
+            // 检查是否为0角度命令（可以通过其他方式判断）
+            yaw_wait_angle_done = 0;
         }
         else if (frame_id == CAN1_PITCH_MOTOR_ID) {
-            pitch_wait_angle_done = 1;
+            pitch_wait_angle_done = 0;
         }
-        // 不释放信号量，不设置ready
+        if (sem) osSemaphoreRelease(sem);
     }
 }
 
@@ -181,6 +184,7 @@ void StepperCAN_ReadPosition_Response(uint16_t frame_id, int32_t position)
         g_position_yaw = position;
     else if (frame_id == CAN1_PITCH_MOTOR_ID)
         g_position_pitch = position;
+
     osSemaphoreId sem = get_motor_sem_handle(frame_id);
     if (sem) osSemaphoreRelease(sem);
 }
