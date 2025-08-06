@@ -17,10 +17,15 @@ typedef struct {
     uint8_t tail[4];           // JustFloat协议固定尾部
 } Vofa_Frame_t;
 
+#define Vofa_Send(huart, arg) _Generic((arg), \
+BMI088_Info_Typedef*: Vofa_SendBMI088, \
+INS_Info_Typedef*: Vofa_SendINS \
+)(huart, arg)
 
 /* JustFloat协议发送遥控器通道值 */
-HAL_StatusTypeDef Vofa_SendRCChannels(UART_HandleTypeDef *huart, BMI088_Info_Typedef* BMI088_Info);
-// HAL_StatusTypeDef Vofa_Send(UART_HandleTypeDef *huart,float* mag);
-// HAL_StatusTypeDef Vofa_Send(UART_HandleTypeDef *huart,INS_Info_Typedef* INS);
-extern Vofa_Frame_t vofa_tx;
+
+HAL_StatusTypeDef Vofa_SendBMI088(UART_HandleTypeDef *huart, BMI088_Info_Typedef* BMI088_Info);
+HAL_StatusTypeDef Vofa_SendINS(UART_HandleTypeDef *huart, INS_Info_Typedef* INS_Info);
+
+// extern Vofa_Frame_t vofa_tx;
 #endif //VOFA_H

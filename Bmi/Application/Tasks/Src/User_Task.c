@@ -33,7 +33,9 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
-        Vofa_SendRCChannels(&huart6,&BMI088_Info);
+        // Vofa_SendRCChannels(&huart1,&BMI088_Info);
+        // Vofa_SendRCChannels(&huart1,&INS_Info);
+        Vofa_Send(&huart1,&BMI088_Info);
 
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {

@@ -17,74 +17,42 @@
  * @return HAL_StatusTypeDef: HAL_OK表示成功，其他表示失败
  */
 Vofa_Frame_t vofa_tx;
-HAL_StatusTypeDef Vofa_SendRCChannels(UART_HandleTypeDef *huart, BMI088_Info_Typedef* BMI088_Info)
-{
+HAL_StatusTypeDef Vofa_SendBMI088(UART_HandleTypeDef *huart, BMI088_Info_Typedef* BMI088_Info) {
+    if (huart->gState != HAL_UART_STATE_READY) return HAL_BUSY;
 
-    // 检查串口状态
-    if (huart->gState != HAL_UART_STATE_READY) {
-        return HAL_BUSY;
-    }
-
-    Vofa_Frame_t frame={
-    .data = {
-        BMI088_Info->accel[0],
-        BMI088_Info->accel[1],
-        BMI088_Info->accel[2],
-        BMI088_Info->gyro[0],
-        BMI088_Info->gyro[1],
-        BMI088_Info->gyro[2],
-        BMI088_Info->temperature,
-       0
-    }, // 初始化数据数组
-        .tail = VOFA_TAIL // 设置JustFloat协议尾部
+    Vofa_Frame_t frame = {
+        .data = {
+            BMI088_Info->accel[0],
+            BMI088_Info->accel[1],
+            BMI088_Info->accel[2],
+            BMI088_Info->gyro[0],
+            BMI088_Info->gyro[1],
+            BMI088_Info->gyro[2],
+            BMI088_Info->temperature,
+            0
+        },
+        .tail = VOFA_TAIL
     };
-    HAL_StatusTypeDef status;
-    // 发送整个帧（避免逐字节发送，提高效率）
-    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
-    return status;
+
+    return HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
 }
-// HAL_StatusTypeDef Vofa_Send(UART_HandleTypeDef *huart,float* mag)
-// {
-//
-//     // 检查串口状态
-//     if (huart->gState != HAL_UART_STATE_READY) {
-//         return HAL_BUSY;
-//     }
-//
-//     Vofa_Frame_t frame={
-//         .data = {
-//             mag[0],
-//             mag[1],
-//             mag[2],
-//         }, // 初始化数据数组
-//             .tail = VOFA_TAIL // 设置JustFloat协议尾部
-//         };
-//     HAL_StatusTypeDef status;
-//     // 发送整个帧（避免逐字节发送，提高效率）
-//     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
-//     return status;
-// }
-// HAL_StatusTypeDef Vofa_Send(UART_HandleTypeDef *huart,INS_Info_Typedef* INS)
-// {
-//
-//     // 检查串口状态
-//     if (huart->gState != HAL_UART_STATE_READY) {
-//         return HAL_BUSY;
-//     }
-//
-//     Vofa_Frame_t frame={
-//         .data = {
-//            INS->accel[0],
-//             INS->accel[1],
-//             INS->accel[2],
-//             INS->gyro[0],
-//             INS->gyro[1],
-//             INS->gyro[2],
-//         }, // 初始化数据数组
-//             .tail = VOFA_TAIL // 设置JustFloat协议尾部
-//         };
-//     HAL_StatusTypeDef status;
-//     // 发送整个帧（避免逐字节发送，提高效率）
-//     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
-//     return status;
-// }
+
+HAL_StatusTypeDef Vofa_SendINS(UART_HandleTypeDef *huart, INS_Info_Typedef* INS_Info) {
+    if (huart->gState != HAL_UART_STATE_READY) return HAL_BUSY;
+
+    Vofa_Frame_t frame = {
+        .data = {
+            INS_Info->accel[0],
+            INS_Info->accel[1],
+            INS_Info->accel[2],
+            INS_Info->gyro[0],
+            INS_Info->gyro[1],
+            INS_Info->gyro[2],
+            0,
+            0
+        },
+        .tail = VOFA_TAIL
+    };
+
+    return HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+}
