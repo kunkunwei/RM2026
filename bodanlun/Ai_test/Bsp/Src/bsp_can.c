@@ -24,8 +24,6 @@ extern dji_motor_measure_t pitch_motor;
 extern dji_motor_measure_t chassis_motor[4];//四个轮子
 extern dm_motor_measure_t yaw_motor;
 
-//feibiao
-extern dji_motor_measure_t feiniao_yaw,feibiao_roll,feibiao_pull;
 /* Private variables ---------------------------------------------------------*/
 /**
  * @brief the structure that contains the Information of CAN Receive.
@@ -158,7 +156,6 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 //   while( HAL_CAN_GetTxMailboxesFreeLevel( &hcan1 ) == 0 );
 	//???????CAN??
-  //printf("SEND\r\n");
 	HAL_CAN_AddTxMessage(TxHeader->hcan, &TxHeader->header, TxHeader->Data, &TxMailbox);
 }
 /**
@@ -186,16 +183,6 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
       case CAN1_PITCH_MOTOR_ID:
           get_pitch_motor_measure(&pitch_motor,data);
           break;
-      //
-      // case 0x205:
-      //     get_dji_motor_measure(&feiniao_yaw,data);
-      //     break;
-      // case 0x206:
-      //     get_dji_motor_measure(&feibiao_roll,data);
-      //     break;
-      // case 0x207:
-      //     get_dji_motor_measure(&feibiao_pull,data);
-      //     break;
   	case CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID:
   		get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID - 0x201],data);
   		break;
@@ -208,6 +195,17 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
   	case CAN2_WHEEL_MOTRO_RIGHT_BACK_ID:
   		get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_BACK_ID - 0x201],data);
   		break;
+      //
+      // case 0x205:
+      //     get_dji_motor_measure(&feiniao_yaw,data);
+      //     break;
+      // case 0x206:
+      //     get_dji_motor_measure(&feibiao_roll,data);
+      //     break;
+      // case 0x207:
+      //     get_dji_motor_measure(&feibiao_pull,data);
+      //     break;
+
 
     }
  }

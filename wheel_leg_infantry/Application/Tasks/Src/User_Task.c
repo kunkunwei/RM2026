@@ -4,7 +4,8 @@
 #include "observe_task.h"
 #include "arm_math.h"
 #include "bsp_tim.h"
-
+#include "usart.h"
+#include "vofa.h"
 void User_Task(void const * argument)
 {
   /* Infinite loop */
@@ -32,34 +33,9 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
-        //printf("%.2f,%.2f\r\n",usb_fliter_data.vx_after_fliter,usb_fliter_data.wz_after_fliter);
-        //原始ins数据
-        //printf("%.2f,%.2f%.2f\r\n",local_chassis->chassis_imu_gyro[INS_GYRO_X_ADDRESS_OFFSET],local_chassis->chassis_imu_gyro[INS_GYRO_Y_ADDRESS_OFFSET],local_chassis->chassis_imu_gyro[INS_GYRO_Z_ADDRESS_OFFSET]);
-        //腿长debug
-        //printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_length,local_chassis->left_leg.leg_length);
-        //姿态debug
-        //printf("pitch:%.2f,yaw:%.2f,roll%.2f\r\n",local_chassis->chassis_pitch,local_chassis->chassis_yaw,local_chassis->chassis_roll);
-        //printf("%.2f,%.2f\r\n",local_chassis->state_ref.phi,local_chassis->state_ref.phi_dot);
-        //printf("%.2f,%.2f\r\n",local_chassis->state_ref.phi,local_chassis->state_ref.phi_dot);
-        //速度debug
-        //printf("%.2f,%.2f\r\n",local_chassis->state_ref.x_dot,get_body_Spd());
-        //输出debug
-        // printf("%.2f,%.2f,%.2f,%.2f\r\n",local_chassis->right_leg.front_joint.tor_set,\
-        //                                  local_chassis->right_leg.back_joint.tor_set,\
-        //                                  local_chassis->left_leg.front_joint.tor_set,\
-        //                                  local_chassis->left_leg.back_joint.tor_set);
-        //printf("%d,%d\r\n",local_chassis->right_leg.wheel_motor.give_current,local_chassis->left_leg.wheel_motor.give_current);                              
-        //
-        //
-        //printf("%.2f\r\n",local_chassis->tmp);
-        //printf("%.2f,%.2f,%.2f,%.2f\r\n",STOP_X_OFFSET,local_chassis->state_ref.x,local_chassis->state_set.x_dot,local_chassis->state_ref.x_dot);
-        //printf("%.2f,%.2f\r\n",local_chassis->wz_from_ros,local_chassis->vx_from_ros);
-        //printf("%.2f\r\n",local_chassis->state_set.x_dot);
-        //printf("%.2f\r\n",Usb_receive_data->wz_set);
-        //printf("%.2f,%.2f\r\n",Usb_receive_data->vx_set,Usb_receive_data->wz_set);
-        //printf("%.2f,%.2f\r\n",local_chassis->wz_from_ros,*(local_chassis->chassis_imu_gyro+INS_GYRO_Z_ADDRESS_OFFSET));
-        //printf("%.2f,%.2f\r\n",local_chassis->chassis_roll,local_chassis->chassis_roll_set);
 
+        //printf("%.2f,%.2f\r\n",local_chassis->chassis_roll,local_chassis->chassis_roll_set);
+        Vofa_Send_Chassis(&huart1,INS_Info,motor_joint,local_chassis);
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();
@@ -94,6 +70,6 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
         printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        osDelay(50);
+        osDelay(10);
     }
 }

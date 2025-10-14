@@ -17,6 +17,12 @@ extern "C" {
 #endif
 
 /* Function Declarations */
+/**
+ * @brief 根据期望腿长L0计算LQR增益矩阵K（增益调度）
+ *
+ * @param L0 期望的腿长
+ * @param K 输出的LQR增益矩阵（1x12或2x6）
+ */
 extern void lqr_k(float L0, float K[12]);
 
 #ifdef __cplusplus

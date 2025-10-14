@@ -51,7 +51,24 @@ extern "C" {
 // #include "usb.h"
 #include "mymotor.h"
 /* USER CODE END Includes */
+  //others
+#include <stdio.h>
+#include "cmsis_os.h"
+#include "remote_control.h"
+  //matlab
 
+#include "lqr_k.h"
+
+  //bsp
+#include "bsp_can.h"
+  //tasks
+#include "INS_Task.h"
+#include "Ros_task.h"
+
+  // #include "Chassis_Task.h"
+  //device
+#include "usb.h"
+#include "mymotor.h"
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
   typedef unsigned char bool_t;
@@ -76,12 +93,25 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Heat_Power_Pin GPIO_PIN_6
+#define Heat_Power_GPIO_Port GPIOF
 #define LED_R_Pin GPIO_PIN_12
 #define LED_R_GPIO_Port GPIOH
 #define LED_G_Pin GPIO_PIN_11
 #define LED_G_GPIO_Port GPIOH
 #define LED_B_Pin GPIO_PIN_10
 #define LED_B_GPIO_Port GPIOH
+#define BUZZER_Pin GPIO_PIN_14
+#define BUZZER_GPIO_Port GPIOD
+#define CS1_ACCEL_Pin GPIO_PIN_4
+#define CS1_ACCEL_GPIO_Port GPIOA
+#define INT1_ACCEL_Pin GPIO_PIN_4
+#define INT1_ACCEL_GPIO_Port GPIOC
+#define INT1_GYRO_Pin GPIO_PIN_5
+#define INT1_GYRO_GPIO_Port GPIOC
+#define INT1_GYRO_EXTI_IRQn EXTI9_5_IRQn
+#define CS1_GYRO_Pin GPIO_PIN_0
+#define CS1_GYRO_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

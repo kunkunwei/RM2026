@@ -73,6 +73,7 @@ typedef struct
   gimbal_mode_e last_gimbal_mode;
   
   int8_t last_rc_func_state;
+    int8_t last_rc_mode_state;
   //mode end
 
   //flag s

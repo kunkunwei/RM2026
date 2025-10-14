@@ -76,10 +76,7 @@ void cal_gimbal_shoot_control(gimbal_shoot_t* shoot_control,float shoot_spd,bool
 
     fp32 i=1;
     i=(gimbal.gimbal_RC->rc.ch[0]+1)/100.0f; //拨蛋速度，RC0通道控制拨蛋速度，范围
-    // if (switch_is_up(gimbal.gimbal_RC->rc.s[0]))
-    // {
-    //     k=-k;
-    // }
+
     if(shoot_flag)
     {
         old_PID_Calc(&shoot_control->Shoot_left_PID,shoot_control->shoot_motor_left->real_w,-SHOOT_SPD);

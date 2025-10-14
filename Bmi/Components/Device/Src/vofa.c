@@ -8,7 +8,10 @@
 #include "stm32f4xx_hal.h" // 根据具体STM32型号调整
 #include <string.h>
 
+#include "bmi088.h"
+#include "INS_Task.h"
 
+extern  chassis_move_t chassis_move;
 
 /* JustFloat协议发送遥控器通道值
  * @param huart: 串口句柄
@@ -49,6 +52,47 @@ HAL_StatusTypeDef Vofa_SendINS(UART_HandleTypeDef *huart, INS_Info_Typedef* INS_
             INS_Info->gyro[1],
             INS_Info->gyro[2],
             0,
+            0
+        },
+        .tail = VOFA_TAIL
+    };
+
+    return HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+}
+HAL_StatusTypeDef Vofa_SendIMU(UART_HandleTypeDef *huart,  BMI088_Info_Typedef* BMI088_Info,float *mag)
+{
+    if (huart->gState != HAL_UART_STATE_READY) return HAL_BUSY;
+
+    Vofa_Frame_t frame = {
+        .data = {
+            BMI088_Info->accel[0],
+            BMI088_Info->accel[1],
+            BMI088_Info->accel[2],
+            BMI088_Info->gyro[0],
+            BMI088_Info->gyro[1],
+            BMI088_Info->gyro[2],
+            mag[0],
+            mag[1],
+            mag[2],
+            BMI088_Info->temperature
+        },
+        .tail = VOFA_TAIL
+    };
+
+    return HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+}
+HAL_StatusTypeDef Vofa_SendChassis(UART_HandleTypeDef *huart, chassis_move_t* chassis_move) {
+    if (huart->gState != HAL_UART_STATE_READY) return HAL_BUSY;
+
+    Vofa_Frame_t frame = {
+        .data = {
+           chassis_move->vel_set.vx,
+           chassis_move->vel_set.vy,
+           chassis_move->vel_set.wz,
+           chassis_move->chassis_motor[0]->current,
+           chassis_move->chassis_motor[1]->current,
+           chassis_move->chassis_motor[2]->current,
+           chassis_move->chassis_motor[3]->current,
             0
         },
         .tail = VOFA_TAIL

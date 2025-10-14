@@ -180,10 +180,7 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
-	//if(*StdId != 0) return;
-//  RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Left_Wheel]);
-//	RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);
-  //printf("id:%d\r\n",*StdId);
+	
 	if(*StdId == 0x141){
 	  //RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);
     get_lk9025_motor_measure(&motor_right, data);
@@ -209,22 +206,25 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
           //detect_hook(CHASSIS_MOTOR1_TOE + i);
           //输出位置修正
           if( *StdId == CAN_dm8009_M1_ID ){
-              motor_joint[0].pos -= 0.689898f;
-              motor_joint[0].pos = 3.141593/2 - motor_joint[0].pos;
-          } 
+              motor_joint[0].pos += 2.000267f; // 正确的零点补偿值
+          	// motor_joint[0].pos += 3.141593f;
+              // motor_joint[0].pos = 3.141593/2 - motor_joint[0].pos;
+          }
           else if( *StdId== CAN_dm8009_M2_ID){
-              motor_joint[1].pos += 0.504883f;
-              motor_joint[1].pos = 3.141593/2 - motor_joint[1].pos;
-              //printf("%.2f\r\n",motor_joint[1].pos);
+              motor_joint[1].pos += 1.396533f; // 正确的零点补偿值
+          	// motor_joint[1].pos += 3.141593f/2;
+              // motor_joint[1].pos = 3.141593/2 - motor_joint[1].pos;
+
           }
           else if(*StdId == CAN_dm8009_M3_ID){
-              motor_joint[2].pos += 1.144236f;
-              motor_joint[2].pos += 3.141593/2;
+              motor_joint[2].pos += 2.044518f; // 正确的零点补偿值
+          	 // motor_joint[3].pos += 3.141593/2;
+          	motor_joint[2].pos = 3.141593f - motor_joint[2].pos;
           }
           else if(*StdId == CAN_dm8009_M4_ID)
           {
-              motor_joint[3].pos += 0.473602f;
-              motor_joint[3].pos += 3.141593/2;
+              motor_joint[3].pos += 2.11726f; // 正确的零点补偿值
+          	motor_joint[3].pos = 3.141593/2 - motor_joint[3].pos;
           }
           break;
         }

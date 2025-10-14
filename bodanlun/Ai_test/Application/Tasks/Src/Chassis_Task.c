@@ -3,6 +3,7 @@
 #include "remote_control.h"
 
 #include "chassis_behaviour.h"
+#include "usb.h"
 #define rc_deadline_limit(input, output, dealine)        \
     {                                                    \
         if ((input) > (dealine) || (input) < -(dealine)) \
@@ -45,24 +46,7 @@ void Chassis_Task(void const * argument)
   {
 
       // HAL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
-      if (remote_ctrl.rc.s[1]== 1)
-      {
-          HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
-          HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-          HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-      }
-      else if (remote_ctrl.rc.s[1] == 2)
-      {
-          HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-          HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
-          HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-      }
-      else if (remote_ctrl.rc.s[1] == 3)
-      {
-          HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-          HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-          HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-      }
+
     systick = osKernelSysTick();
 
     chassis_behaviour_mode_set(chassis_move.chassis_RC);
@@ -106,7 +90,11 @@ void chassis_init(chassis_move_t *chassis_move_init)
 
     const static fp32 chassis_x_order_filter[1] = {CHASSIS_ACCEL_X_NUM};
     const static fp32 chassis_y_order_filter[1] = {CHASSIS_ACCEL_Y_NUM};
+    const static fp32 state_xdot_constant[1] = {0};
+    //ROS_PID
+    const static fp32 chassis_ros_pid[3]={ROS_WZ_PID_KP,ROS_WZ_PID_KI,ROS_WZ_PID_KD};
 
+    chassis_move_init->kilometer = 0.0f;
     //底盘速度环pid值
     const static fp32 motor_speed_pid[3] = {M3505_MOTOR_SPEED_PID_KP, M3505_MOTOR_SPEED_PID_KI, M3505_MOTOR_SPEED_PID_KD};
     //初始化PID 运动
@@ -114,10 +102,14 @@ void chassis_init(chassis_move_t *chassis_move_init)
     {
         old_PID_Init(&chassis_move_init->motor_speed_pid[i], PID_POSITION, motor_speed_pid, M3505_MOTOR_SPEED_PID_MAX_OUT, M3505_MOTOR_SPEED_PID_MAX_IOUT);
     }
+    //ros
+    old_PID_Init(&chassis_move_init->chassis_ros_wz_pid,PID_POSITION,chassis_ros_pid,ROS_WZ_PID_MAX_OUT,ROS_WZ_PID_MAX_IOUT);
 
     //用一阶滤波代替斜波函数生成
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_x_order_filter);
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vy, CHASSIS_CONTROL_TIME, chassis_y_order_filter);
+    first_order_filter_init(&chassis_move_init->state_xdot_filter, CHASSIS_CONTROL_TIME, state_xdot_constant);
+
     //小陀螺旋转 斜波函数缓启
     ramp_init(&chassis_move_init->rotation_ramp_wz, CHASSIS_CONTROL_TIME, ROTATION_SPEED_MAX, 0);
 
@@ -136,7 +128,7 @@ static void chassis_feedback_update(chassis_move_t *chassis_move_update){
     {
         return;
     }
-
+    extern Usb_dpkg_data_t* Usb_receive_data;
     for (uint8_t i = 0; i < 4; i++)
     {
         //更新电机速度，加速度是速度的PID微分
@@ -144,10 +136,16 @@ static void chassis_feedback_update(chassis_move_t *chassis_move_update){
         chassis_move_update->chassis_motor[i]->speed = chassis_move_update->chassis_motor[i]->real_w * WHEELR;
     }
 
+    chassis_move_update->vx_from_ros = Usb_receive_data->vx_set;
+    chassis_move_update->wz_from_ros = Usb_receive_data->wz_set;
         //更新底盘前进速度 x， 平移速度y，旋转速度wz，坐标系为右手系
     chassis_move_update->vel_ref.vx = (-chassis_move_update->chassis_motor[0]->speed + chassis_move_update->chassis_motor[1]->speed + chassis_move_update->chassis_motor[2]->speed - chassis_move_update->chassis_motor[3]->speed) * MOTOR_SPEED_TO_CHASSIS_SPEED_VX;
     chassis_move_update->vel_ref.vy = (-chassis_move_update->chassis_motor[0]->speed - chassis_move_update->chassis_motor[1]->speed + chassis_move_update->chassis_motor[2]->speed + chassis_move_update->chassis_motor[3]->speed) * MOTOR_SPEED_TO_CHASSIS_SPEED_VY;
     chassis_move_update->vel_ref.wz= (-chassis_move_update->chassis_motor[0]->speed - chassis_move_update->chassis_motor[1]->speed - chassis_move_update->chassis_motor[2]->speed - chassis_move_update->chassis_motor[3]->speed) * MOTOR_SPEED_TO_CHASSIS_SPEED_WZ / MOTOR_DISTANCE_TO_CENTER;
+
+    first_order_filter_cali(&chassis_move_update->state_xdot_filter, chassis_move_update->vel_ref.vx);
+
+    chassis_move_update->kilometer +=  sqrt((pow(chassis_move_update->vel_ref.vx,2)+pow(chassis_move_update->vel_ref.vy,2))* CHASSIS_CONTROL_TIME);
 
     //chassis_move.chassis_yaw = 
 
@@ -183,28 +181,38 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set,fp32 *angle_set ,ch
     rc_deadline_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
     rc_deadline_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz_channel, CHASSIS_RC_DEADLINE);
 
-    vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
+    // vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
     vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
-    wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
+    // wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
 
-    if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
-    {
-        vx_set_channel = chassis_move_rc_to_vector->vx_max_speed;
-    }
-    else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
-    {
-        vx_set_channel = chassis_move_rc_to_vector->vx_min_speed;
-    }
+    // if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
+    // {
+    //     vx_set_channel = chassis_move_rc_to_vector->vx_max_speed;
+    // }
+    // else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
+    // {
+    //     vx_set_channel = chassis_move_rc_to_vector->vx_min_speed;
+    // }
+    //
+    // if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
+    // {
+    //     vy_set_channel = chassis_move_rc_to_vector->vy_max_speed;
+    // }
+    // else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
+    // {
+    //     vy_set_channel = chassis_move_rc_to_vector->vy_min_speed;
+    // }
+    ///////////////////////ROS////////////////////////////////////////////
+    if(wz_channel != 0)
+        wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
+    else
+        wz_set_channel = chassis_move_rc_to_vector->wz_from_ros * CHASSIS_ROS_TO_WZ;
 
-    if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
-    {
-        vy_set_channel = chassis_move_rc_to_vector->vy_max_speed;
-    }
-    else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
-    {
-        vy_set_channel = chassis_move_rc_to_vector->vy_min_speed;
-    }
-
+    if(vx_channel != 0)
+        vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
+    else
+        vx_set_channel = chassis_move_rc_to_vector->vx_from_ros;
+    ///////////////////////////////////////ROS/////////////////////
     //一阶低通滤波代替斜波作为底盘速度输入
     first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_set_channel);
     first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vy, vy_set_channel);
@@ -355,7 +363,7 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop){
     // chassis_move_control_loop->chassis_motor[3]->target_current = 1400;
 }
 
-chassis_move_t* get_chassis_point(){
+const chassis_move_t* get_chassis_point(){
   //底盘运动数据
   return &chassis_move;
 }

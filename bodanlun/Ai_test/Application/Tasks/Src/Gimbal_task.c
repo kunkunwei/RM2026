@@ -155,54 +155,54 @@ void cal_gimbal_shoot_control(gimbal_shoot_t* shoot_control,float shoot_spd,bool
         shoot_control->shoot_ready_flag == false;
     else shoot_control->shoot_ready_flag == true;
 
-    if(shoot_control->shoot_ready_flag == true && fire_flag ==true)
-    {if (switch_is_up(gimbal.gimbal_RC->rc.s[1]))
-    {
-        // old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,25.0f);
-        // shoot_control->pull_motor->target_current = shoot_control->Pull_D_PID.out;
-        old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_w,35);
-        pull_block( shoot_control);
-    }
-        // else
-        shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;}
-    else
-        shoot_control->pull_motor->target_current = 0;
-    Vofa_SendRCChannels(&huart6,shoot_control,6);
-    //摩擦轮速度到达最大时，READY，此时可以拨蛋
-    if(shoot_control->shoot_motor_left->real_w < -SHOOT_SPD && shoot_control->shoot_motor_right->real_w > SHOOT_SPD)
-    {
-        shoot_control->shoot_ready_flag = true;
-    }
-    else
-        shoot_control->shoot_ready_flag = false;
-    /*----------------测试用的遥控拨弹轮------------------------------------------------------------------------*/
-    // shoot_control->shoot_ready_flag = true;
-    // Vofa_SendRCChannels(&huart6,shoot_control,6);
-    // if (switch_is_up(gimbal.gimbal_RC->rc.s[1]))
+    // if(shoot_control->shoot_ready_flag == true && fire_flag ==true)
+    // {if (switch_is_up(gimbal.gimbal_RC->rc.s[1]))
     // {
-    //     if (gimbal.gimbal_RC->rc.ch[3]<10&&gimbal.gimbal_RC->rc.ch[3]>-10)
-    //     {
-    //         old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,0.0f);
-    //         shoot_control->pull_motor->target_current = shoot_control->Pull_D_PID.out;
-    //     }
-    //     else if (gimbal.gimbal_RC->rc.ch[3]>=10||gimbal.gimbal_RC->rc.ch[3]<=-10)
-    //     {
-    //         old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,gimbal.gimbal_RC->rc.ch[3]/18.0f);
-    //         // shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
-    //         pull_block( shoot_control);
-    //     }
-    //     // shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+    //     // old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,25.0f);
+    //     // shoot_control->pull_motor->target_current = shoot_control->Pull_D_PID.out;
+    //     old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_w,35);
+    //     pull_block( shoot_control);
     // }
-    // else if (switch_is_down(gimbal.gimbal_RC->rc.s[1])&&(gimbal.gimbal_RC->rc.ch[4]>400))
+    //     // else
+    //     shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;}
+    // else
+    //     shoot_control->pull_motor->target_current = 0;
+    // Vofa_SendRCChannels(&huart6,shoot_control,6);
+    // //摩擦轮速度到达最大时，READY，此时可以拨蛋
+    // if(shoot_control->shoot_motor_left->real_w < -SHOOT_SPD && shoot_control->shoot_motor_right->real_w > SHOOT_SPD)
     // {
-    //     old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_pos,3.1415f*1.5f);
-    //     shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+    //     shoot_control->shoot_ready_flag = true;
     // }
     // else
-    // {
-    //     old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_pos,0);
-    //     shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
-    // }
+    //     shoot_control->shoot_ready_flag = false;
+    /*----------------测试用的遥控拨弹轮------------------------------------------------------------------------*/
+    shoot_control->shoot_ready_flag = true;
+    // Vofa_SendRCChannels(&huart6,shoot_control,6);
+    if (switch_is_up(gimbal.gimbal_RC->rc.s[1]))
+    {
+        if (gimbal.gimbal_RC->rc.ch[3]<10&&gimbal.gimbal_RC->rc.ch[3]>-10)
+        {
+            old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,0.0f);
+            shoot_control->pull_motor->target_current = shoot_control->Pull_D_PID.out;
+        }
+        else if (gimbal.gimbal_RC->rc.ch[3]>=10||gimbal.gimbal_RC->rc.ch[3]<=-10)
+        {
+            old_PID_Calc(&shoot_control->Pull_D_PID   ,   shoot_control->pull_motor->real_w,gimbal.gimbal_RC->rc.ch[3]/18.0f);
+            // shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+            pull_block( shoot_control);
+        }
+        // shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+    }
+    else if (switch_is_down(gimbal.gimbal_RC->rc.s[1])&&(gimbal.gimbal_RC->rc.ch[4]>400))
+    {
+        old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_pos,3.1415f*1.5f);
+        shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+    }
+    else
+    {
+        old_PID_Calc(&shoot_control->Pull_PID   ,   shoot_control->pull_motor->real_pos,0);
+        shoot_control->pull_motor->target_current = shoot_control->Pull_PID.out;
+    }
     /*----------------测试用的遥控拨弹轮-------------------------------------------------------*/
 }
 

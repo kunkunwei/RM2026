@@ -50,6 +50,10 @@
 osThreadId StartCanTaskHandle;
 osThreadId StartChassisTasHandle;
 osThreadId StartGimbalTaskHandle;
+osThreadId StartRosTaskHandle;
+osThreadId StartINSTaskHandle;
+osThreadId StartUserTaskHandle;
+osThreadId StartObserveTasHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -59,7 +63,12 @@ osThreadId StartGimbalTaskHandle;
 void Can_Task(void const * argument);
 void Chassis_Task(void const * argument);
 void Gimbal_Task(void const * argument);
+void Ros_Task(void const * argument);
+void INS_Task(void const * argument);
+void User_Task(void const * argument);
+void ObserveTask(void const * argument);
 
+extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* GetIdleTaskMemory prototype (linked to static allocation support) */
@@ -117,6 +126,22 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(StartGimbalTask, Gimbal_Task, osPriorityIdle, 0, 256);
   StartGimbalTaskHandle = osThreadCreate(osThread(StartGimbalTask), NULL);
 
+  /* definition and creation of StartRosTask */
+  osThreadDef(StartRosTask, Ros_Task, osPriorityIdle, 0, 256);
+  StartRosTaskHandle = osThreadCreate(osThread(StartRosTask), NULL);
+
+  /* definition and creation of StartINSTask */
+  osThreadDef(StartINSTask, INS_Task, osPriorityRealtime, 0, 256);
+  StartINSTaskHandle = osThreadCreate(osThread(StartINSTask), NULL);
+
+  /* definition and creation of StartUserTask */
+  osThreadDef(StartUserTask, User_Task, osPriorityRealtime, 0, 256);
+  StartUserTaskHandle = osThreadCreate(osThread(StartUserTask), NULL);
+
+  /* definition and creation of StartObserveTas */
+  osThreadDef(StartObserveTas, ObserveTask, osPriorityIdle, 0, 256);
+  StartObserveTasHandle = osThreadCreate(osThread(StartObserveTas), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -132,6 +157,8 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_Can_Task */
 __weak void Can_Task(void const * argument)
 {
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN Can_Task */
   /* Infinite loop */
   for(;;)
@@ -175,6 +202,78 @@ __weak void Gimbal_Task(void const * argument)
     osDelay(1);
   }
   /* USER CODE END Gimbal_Task */
+}
+
+/* USER CODE BEGIN Header_Ros_Task */
+/**
+* @brief Function implementing the StartRosTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Ros_Task */
+__weak void Ros_Task(void const * argument)
+{
+  /* USER CODE BEGIN Ros_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END Ros_Task */
+}
+
+/* USER CODE BEGIN Header_INS_Task */
+/**
+* @brief Function implementing the StartINSTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_INS_Task */
+__weak void INS_Task(void const * argument)
+{
+  /* USER CODE BEGIN INS_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END INS_Task */
+}
+
+/* USER CODE BEGIN Header_User_Task */
+/**
+* @brief Function implementing the StartUserTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_User_Task */
+__weak void User_Task(void const * argument)
+{
+  /* USER CODE BEGIN User_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END User_Task */
+}
+
+/* USER CODE BEGIN Header_ObserveTask */
+/**
+* @brief Function implementing the StartObserveTas thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ObserveTask */
+__weak void ObserveTask(void const * argument)
+{
+  /* USER CODE BEGIN ObserveTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ObserveTask */
 }
 
 /* Private application code --------------------------------------------------*/

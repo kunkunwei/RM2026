@@ -123,6 +123,7 @@ void gimbal_behaviour_mode_set(Remote_Info_Typedef const* remote_ctrl)
         control_mode.fire_flag=false;
 
     control_mode.last_rc_func_state = remote_ctrl->rc.s[FUNCTIONAL_CHANNEL];
+    control_mode.last_rc_mode_state = remote_ctrl->rc.s[0];
     control_mode.last_shoot_channel = remote_ctrl->rc.ch[RC_ROLL_CH];
 }
 

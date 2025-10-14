@@ -7,7 +7,7 @@
 static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity, float KP, float KD, float Torque);
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left);
 static void Damiao_Motor_Enable(uint8_t Motor_ID);
-
+// #define LEG_DEBUG
 void Can_Task(void const * argument)
 {
   /* USER CODE BEGIN Can_Task */
@@ -23,20 +23,20 @@ void Can_Task(void const * argument)
   osDelay(10);
   Damiao_Motor_Enable(3);
   osDelay(10);
-
+	// float angle_set[4] = 0.0f;
   for(;;)
   {
     #ifndef LEG_DEBUG
-      Damiao_Motor_CAN_Send(0,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.front_joint.tor_set);
-      Damiao_Motor_CAN_Send(1,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.back_joint.tor_set);
+      Damiao_Motor_CAN_Send(3,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.front_joint.tor_set);
+      Damiao_Motor_CAN_Send(2,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.back_joint.tor_set);
 
       osDelay(1);
 
-      Damiao_Motor_CAN_Send(2,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.front_joint.tor_set);
-      Damiao_Motor_CAN_Send(3,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.back_joint.tor_set);
+      Damiao_Motor_CAN_Send(0,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.front_joint.tor_set);
+      Damiao_Motor_CAN_Send(1,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.back_joint.tor_set);
       osDelay(1);
 
-      LK9025_Motor_CAN_Send(local_chassis->right_leg.wheel_motor.give_current,local_chassis->left_leg.wheel_motor.give_current);
+      LK9025_Motor_CAN_Send(local_chassis-> right_leg.wheel_motor.give_current,local_chassis->left_leg.wheel_motor.give_current);
       osDelay(1);
     #endif
 
@@ -53,6 +53,11 @@ void Can_Task(void const * argument)
       LK9025_Motor_CAN_Send(0,0);
       osDelay(1);
     #endif
+  	// angle_set[0]=local_chassis->right_leg.front_joint.tor_set;
+  	// angle_set[1]=local_chassis->right_leg.back_joint.tor_set;
+  	// angle_set[2]=local_chassis->left_leg.front_joint.tor_set;
+  	// angle_set[3]=local_chassis->left_leg.back_joint.tor_set;
+
   }
   /* USER CODE END Can_Task */
 }

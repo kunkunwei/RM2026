@@ -14,10 +14,10 @@ typedef enum
     CAN1_CMD_ALL_ID = 0x1FF,
     CAN1_PITCH_MOTOR_ID = 0x208,
     
-    CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID = 0x201,
-    CAN2_WHEEL_MOTRO_LEFT_FRONT_ID = 0x202,
-    CAN2_WHEEL_MOTRO_LEFT_BACK_ID = 0x203,
-    CAN2_WHEEL_MOTRO_RIGHT_BACK_ID = 0x204,
+    CAN2_MOTRO_RIGHT_FRONT_ID = 0x201,
+    CAN2_MOTRO_LEFT_FRONT_ID = 0x202,
+    CAN2_MOTRO_LEFT_BACK_ID = 0x203,
+    CAN2_MOTRO_RIGHT_BACK_ID = 0x204,
     CAN2_CMD_ALL_ID = 0x200,
 
     CAN2_YAW_MOTOR_ID = 0x01
@@ -77,24 +77,13 @@ typedef struct
     int8_t  tmper;                //电机温度
 } lk9025_motor_measure_t;
 
-// void get_dm8009_motor_measure(dm8009_motor_measure_t* ptr, uint8_t *rx_message);
-// void get_lk9025_motor_measure(lk9025_motor_measure_t* ptr, uint8_t *rx_message);
+
 void get_dm_motor_measure(dm_motor_measure_t* ptr, uint8_t *rx_message);
 
 extern dm_motor_measure_t yaw_motor;
 
 dm_motor_measure_t* get_yaw_motor();
-// // lk9025_motor_measure_t motor_right, motor_left;
-// // static dm8009_motor_measure_t motor_joint[4];
-// //返回右驱动轮电机变量地址，通过指针方式获取原始数据
-// extern const lk9025_motor_measure_t *get_Right_Wheel_Motor_Measure_Point(void);
-// //返回左驱动轮电机变量地址，通过指针方式获取原始数据
-// extern const lk9025_motor_measure_t *get_Left_Wheel_Motor_Measure_Point(void);
-// //返回关节电机变量地址，通过指针方式获取原始数据,i的范围是0-3，对应0x201-0x204,
-// extern const dm8009_motor_measure_t *get_Joint_Motor_Measure_Point(uint8_t i);
-extern dji_motor_measure_t feiniao_yaw,feibiao_roll,feibiao_pull;
 
-dji_motor_measure_t* get_feibiao_yaw_motor();
-dji_motor_measure_t* get_feibiao_rollmotor();
-dji_motor_measure_t* get_feibiao_pull_motor();
+
+
 #endif // !__MYMOTOR_H__

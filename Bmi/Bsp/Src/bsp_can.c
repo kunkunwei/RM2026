@@ -175,15 +175,15 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
     //printf("CAN1 STDID: %d\r\n",*StdId);
   	switch(*StdId)
     {
-      // case CAN1_SHOOT_MOTOR_LEFT_ID:
-      //     get_dji_motor_measure(&shoot_motor_left,data);
-      //     break;
-      // case CAN1_SHOOT_MOTOR_RIGHT_ID:
-      //     get_dji_motor_measure(&shoot_motor_right,data);
-      //     break;
-      // case CAN1_SHOOT_PULL_MOTOR_ID:
-      //     get_dji_motor_measure(&pull_motor,data);
-      //     break;
+      case CAN1_SHOOT_MOTOR_LEFT_ID:
+          get_dji_motor_measure(&shoot_motor_left,data);
+          break;
+      case CAN1_SHOOT_MOTOR_RIGHT_ID:
+          get_dji_motor_measure(&shoot_motor_right,data);
+          break;
+      case CAN1_SHOOT_PULL_MOTOR_ID:
+          get_dji_motor_measure(&pull_motor,data);
+          break;
       // case CAN1_PITCH_MOTOR_ID:
       //     get_pitch_motor_measure(&pitch_motor,data);
       //     break;
@@ -197,9 +197,9 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
       // case 0x207:
       //     get_dji_motor_measure(&feibiao_pull,data);
       //     break;
-  	case CAN1_POWER_ID:
-  		get_power_measure(&chassis_power_measure,data);
-  		break;
+  	// case CAN1_POWER_ID:
+  	// 	get_power_measure(&chassis_power_measure,data);
+  	// 	break;
   	case CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID:
   		get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID - 0x201],data);
   		break;
@@ -230,18 +230,18 @@ static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
     //printf("CAN2 STDID: %d\r\n",*StdId);
   	switch(*StdId)
     {
-      // case CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID:
-      //     get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID - 0x201],data);
-      //     break;
-      // case CAN2_WHEEL_MOTRO_LEFT_FRONT_ID:
-      //     get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_LEFT_FRONT_ID - 0x201],data);
-      //     break;
-      // case CAN2_WHEEL_MOTRO_LEFT_BACK_ID:
-      //     get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_LEFT_BACK_ID - 0x201],data);
-      //     break;
-      // case CAN2_WHEEL_MOTRO_RIGHT_BACK_ID:
-      //     get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_BACK_ID - 0x201],data);
-      //     break;
+      case CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID:
+          get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_FRONT_ID - 0x201],data);
+          break;
+      case CAN2_WHEEL_MOTRO_LEFT_FRONT_ID:
+          get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_LEFT_FRONT_ID - 0x201],data);
+          break;
+      case CAN2_WHEEL_MOTRO_LEFT_BACK_ID:
+          get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_LEFT_BACK_ID - 0x201],data);
+          break;
+      case CAN2_WHEEL_MOTRO_RIGHT_BACK_ID:
+          get_chassis_motor_measure(&chassis_motor[CAN2_WHEEL_MOTRO_RIGHT_BACK_ID - 0x201],data);
+          break;
       // case 0X02:
       //     //HAL_GPIO_TogglePin(LED_R_GPIO_Port,LED_R_Pin);
       //     get_dm_motor_measure(&yaw_motor,data);

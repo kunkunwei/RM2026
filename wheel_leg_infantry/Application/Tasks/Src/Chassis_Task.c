@@ -31,7 +31,7 @@ static void chassis_feedback_update(chassis_move_t *chassis_move_update);
 void chassis_set_contorl(chassis_move_t *chassis_move_control);
 //loop
 void chassis_control_loop(chassis_move_t *chassis_move_control_loop);
-
+static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect);
 void Chassis_Task(void const * argument)
 {
   /* USER CODE BEGIN Chassis_Task */
@@ -121,10 +121,10 @@ void chassis_init(chassis_move_t *chassis_move_init)
     chassis_move_init->chassis_imu_gyro =  get_gyro_data_point();
     chassis_move_init->chassis_imu_accel = get_accel_data_point();
     //获取关节电机指针
-    chassis_move_init->right_leg.front_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(0);
-    chassis_move_init->right_leg.back_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(1);
-    chassis_move_init->left_leg.back_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(3);
-    chassis_move_init->left_leg.front_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(2);
+    chassis_move_init->right_leg.front_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(3);
+    chassis_move_init->right_leg.back_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(2);
+    chassis_move_init->left_leg.back_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(1);
+    chassis_move_init->left_leg.front_joint.joint_motor_measure = get_Joint_Motor_Measure_Point(0);
     //获取驱动轮电机指针
     chassis_move_init->right_leg.wheel_motor.wheel_motor_measure = get_Right_Wheel_Motor_Measure_Point();
     chassis_move_init->left_leg.wheel_motor.wheel_motor_measure = get_Left_Wheel_Motor_Measure_Point();
@@ -184,8 +184,8 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
     //计算底盘姿态角度，陀螺仪需要在底盘上
     //陀螺仪数据映射
     chassis_move_update->chassis_yaw = rad_format(*(chassis_move_update->chassis_INS_angle + INS_YAW_ADDRESS_OFFSET));
-    chassis_move_update->chassis_pitch = -rad_format(*(chassis_move_update->chassis_INS_angle + INS_PITCH_ADDRESS_OFFSET ) + 0.1f);
-    chassis_move_update->chassis_roll = *(chassis_move_update->chassis_INS_angle + INS_ROLL_ADDRESS_OFFSET) +0.05f;
+    chassis_move_update->chassis_pitch = -rad_format(*(chassis_move_update->chassis_INS_angle + INS_PITCH_ADDRESS_OFFSET ) +0.05f);
+    chassis_move_update->chassis_roll = *(chassis_move_update->chassis_INS_angle + INS_ROLL_ADDRESS_OFFSET) +0.001f;
     //ros数据
     //chassis_move_update->vx_from_ros = usb_fliter_data.vx_after_fliter;
     chassis_move_update->vx_from_ros = Usb_receive_data->vx_set;
@@ -262,10 +262,10 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 
     chassis_move_update->kilometer +=  0.5f*(chassis_move_update->right_leg.wheel_motor.speed+chassis_move_update->left_leg.wheel_motor.speed)* CHASSIS_CONTROL_TIME;
     //机器人离地判断
-    //Robot_Offground_detect(chassis_move_update);
-    //chassis_move_update->tmp = chassis_move_update->touchingGroung;
+    Robot_Offground_detect(chassis_move_update);
+    chassis_move_update->tmp = chassis_move_update->touchingGroung;
 
-    chassis_move_update->touchingGroung = true;
+    // chassis_move_update->touchingGroung = true;
     //chassis_move_update->touchingGroung = false;
 }
 /**
@@ -342,7 +342,7 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
         chassis_move_transit->right_support_force = 0.0f;
         chassis_move_transit->leg_length_set = LEG_LENGTH_INIT;
     }
-    
+
 
     chassis_move_transit->last_chassis_mode = chassis_move_transit->chassis_mode;
 }
@@ -811,7 +811,7 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
     // 通过ROLL轴补偿腿长以及推力F，离地则不补偿,给出leg_force和补偿过的leg_set
     roll_compensate(chassis_move_control_loop);
     //跳跃,起跳直接给出F,leg_set
-    //Jump_control(chassis_move_control_loop);
+    Jump_control(chassis_move_control_loop);
     //LQR平衡,轮子力矩和推力Tp
     LQR_Balance_Turn(chassis_move_control_loop);
 

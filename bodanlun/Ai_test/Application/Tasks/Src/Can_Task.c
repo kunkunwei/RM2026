@@ -5,7 +5,7 @@
 #include "old_pid.h"
 
 //#define DEBUG
-static void Damiao_Motor_Enable();
+
 static void Damiao_Motor_CAN_Send(float Postion, float Velocity, float KP, float KD, float Torque);
 static void Dji_Motor_Shoot_Can_Send(int16_t current_Shoot_Left,int16_t current_Shoot_Right,int16_t current_Shoot_Pull);
 static void Dji_Motor_Chassis_Can_Send(int16_t current_id_1,int16_t current_id_2,int16_t current_id_3,int16_t current_id_4);
@@ -23,46 +23,26 @@ void Can_Task(void const * argument)
   extern gimbal_t gimbal;
   chassis_move_t* can_chassis_move = get_chassis_point();
   osDelay(800);
-  // Damiao_Motor_Enable();
-  osDelay(10);
-  // Damiao_Motor_Enable();
-  osDelay(10);
+
 
   for(;;)
   {
   	// 仅作LED显示
   	 // HAL_GPIO_TogglePin(LED_R_GPIO_Port, LED_R_Pin);
-  	if (remote_ctrl.rc.s[1]== 1)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-  	}
-  	else if (remote_ctrl.rc.s[1] == 2)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-  	}
-  	else if (remote_ctrl.rc.s[1] == 3)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-  	}
-     //摩擦轮加拨蛋
-     Dji_Motor_Shoot_Can_Send(gimbal.gimbal_shoot.shoot_motor_left->target_current,\
-                               gimbal.gimbal_shoot.shoot_motor_right->target_current,\
-                               gimbal.gimbal_shoot.pull_motor->target_current);
+
+     // //摩擦轮加拨蛋
+     // Dji_Motor_Shoot_Can_Send(gimbal.gimbal_shoot.shoot_motor_left->target_current,\
+     //                           gimbal.gimbal_shoot.shoot_motor_right->target_current,\
+     //                           gimbal.gimbal_shoot.pull_motor->target_current);
 
     // 摩擦轮加拨蛋加pitch
      // Dji_Motor_Shoot_Can_Send(0,0,0,0);
 
   	// // 四个轮子
-  	// Dji_Motor_Chassis_Can_Send(chassis_move.chassis_motor[0]->target_current,\
-			// 					  chassis_move.chassis_motor[1]->target_current,\
-			// 					  chassis_move.chassis_motor[2]->target_current,\
-			// 					  chassis_move.chassis_motor[3]->target_current);
+  	Dji_Motor_Chassis_Can_Send(chassis_move.chassis_motor[0]->target_current,\
+								  chassis_move.chassis_motor[1]->target_current,\
+								  chassis_move.chassis_motor[2]->target_current,\
+								  chassis_move.chassis_motor[3]->target_current);
 
 
     osDelay(2);

@@ -38,25 +38,18 @@ extern "C" {
 #include "remote_control.h"
 
   /*------------------------matlab-------------------------------*/
-  // #include "leg_pos.h"
-  // #include "leg_spd.h"
-#include "lqr_k.h"
-  // #include "leg_conv.h"
+
   /*------------------------bsp-------------------------------*/
 
 #include "bsp_can.h"
 
   /*------------------------tasks-------------------------------*/
-  // #include "INS_Task.h"
-  // #include "Ros_task.h"
 
-  // #include "Chassis_Task.h"
 
   /*------------------------device-------------------------------*/
-  // #include "usb.h"
-// #include "ist8310.h"
-#include "mymotor.h"
-#include "vofa.h"
+
+
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

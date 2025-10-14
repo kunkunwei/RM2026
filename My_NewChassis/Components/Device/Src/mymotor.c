@@ -127,3 +127,14 @@ dji_motor_measure_t* get_feibiao_pull_motor(){
 // {
 //     return &motor_joint[(i & 0x03)];
 // }
+////////////////////////////////////////////////////////////////////////////
+//获取YAW电机数据
+void get_yaw_motor_measure(dm_motor_measure_t* ptr, uint8_t *rx_message)
+{
+    (ptr)->err = rx_message[0]>>4;
+    uint16_t tmp_pos = (int16_t) (((uint16_t)(rx_message[1]) <<8) | ((uint16_t)(rx_message[2])));
+    ptr->pos = uint_to_float(tmp_pos,-12.5,12.5,16);
+
+    uint16_t tmp_spd = (rx_message[3]<<4 | (rx_message[4]>>4) );
+    ptr->speed = uint_to_float(tmp_spd,-30,30,12);
+}

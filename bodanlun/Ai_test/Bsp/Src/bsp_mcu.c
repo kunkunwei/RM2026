@@ -15,25 +15,27 @@
 /* Includes ------------------------------------------------------------------*/
 #include "bsp_mcu.h"
 #include "bsp_can.h"
-// #include "bsp_tim.h"
+#include "bsp_tim.h"
 #include "bsp_uart.h"
 #include "bsp_dwt.h"
-// #include "bmi088.h"
-// #include "usb_device.h"
-
+#include "bmi088.h"
+#include "usb_device.h"
+#include "buzzer_music.h"
 /**
   * @brief Initializes the MCU.
   */
 void MCU_Init(void)
 {
   /* ----------------------- BSP Init ----------------------- */
-  // Bsp_Tim_Init();
+  Bsp_Tim_Init();
   BSP_CAN_Init();
   BSP_USART_Init();
-	// MX_USB_DEVICE_Init();
+	MX_USB_DEVICE_Init();
 
   /* ----------------------- Device Init ----------------------- */
-  // BMI088_Init();
+  BMI088_Init();
+  buzzer_off();
+
 }
 //------------------------------------------------------------------------------
 

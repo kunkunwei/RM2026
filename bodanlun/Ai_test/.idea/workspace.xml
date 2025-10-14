@@ -29,11 +29,422 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7c3c33c-1fdf-40ac-a97d-3f025fe2c746" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/../../Bmi/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Bmi/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Bmi/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Bmi/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/.idea/Hero_Chassis.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/API/Inc/api_quaternion.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/API/Inc/api_trajectory.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/API/Src/api_quaternion.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/API/Src/api_trajectory.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/Can_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/Chassis_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/Gimbal_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/INS_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/RM_Cilent_UI.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/Ros_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/UI_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/User_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/chassis_behaviour.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/config.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/observe_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/robot_config.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Inc/robot_state.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/Can_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/Chassis_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/Gimbal_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/INS_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/RM_Cilent_UI.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/Ros_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/UI_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/User_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/chassis_behaviour.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/Tasks/Src/observe_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/power_control/power_control.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/power_control/power_control.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/shoot/shoot.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Application/shoot/shoot.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_can.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_dwt.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_gpio.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_mcu.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_spi.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_tick.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_tim.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Inc/bsp_uart.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_can.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_dwt.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_gpio.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_mcu.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_spi.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_tick.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_tim.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Bsp/Src/bsp_uart.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Inc/crc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Inc/kalman.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Inc/lpf.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Inc/ramp.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Src/crc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Src/kalman.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Src/lpf.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/Src/ramp.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Algorithm/libAHRS.a" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Controller/Inc/old_pid.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Controller/Inc/pid.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Controller/Src/old_pid.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Controller/Src/pid.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/bmi088.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/bmi088_reg.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/buzzer.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/led.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/minipc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/motor.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/mymotor.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/referee_info.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/remote_control.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Inc/usb.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/bmi088.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/buzzer.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/led.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/minipc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/motor.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/mymotor.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/referee_info.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/remote_control.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Components/Device/Src/usb.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Matlab_lib/inc/lqr_k.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Matlab_lib/inc/user_lib.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Matlab_lib/src/lqr_k.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Hero_Chassis/Matlab_lib/src/user_lib.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/API/Inc/api_quaternion.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/API/Inc/api_trajectory.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/API/Src/api_quaternion.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/API/Src/api_trajectory.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Inc/Gimbal_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Inc/INS_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Inc/Ros_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Inc/User_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Inc/observe_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/Gimbal_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/INS_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/Ros_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/User_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/observe_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Inc/bsp_gpio.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Inc/bsp_spi.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Inc/bsp_tim.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_gpio.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_spi.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_tim.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/AHRS.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/AHRS.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/AHRS_middleware.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/AHRS_middleware.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/CMakeLists.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/AHRS/MahonyAHRS.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Algorithm/Inc/crc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Algorithm/Src/crc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/bmi088.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/bmi088_reg.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/minipc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/usb.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/bmi088.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/minipc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/usb.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Matlab_lib/inc/kalman.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../My_NewChassis/Matlab_lib/src/kalman.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/.idea/New_Chassis.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Application/example/gimbal_behaviour.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Application/example/gimbal_behaviour.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Application/example/gimbal_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Application/example/gimbal_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/inc/leg_conv.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/inc/leg_pos.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/inc/leg_spd.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/inc/lqr_k.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/inc/user_lib.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/src/leg_conv.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/src/leg_pos.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/src/leg_spd.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/src/lqr_k.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/Matlab_lib/src/user_lib.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/hardware/Inc/buzzer.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/hardware/Inc/led.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/hardware/Src/buzzer.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../New_Chassis/hardware/Src/led.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../PUZHONG_1/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../PUZHONG_1/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../PUZHONG_1/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../PUZHONG_1/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilotDiffState.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/API/Inc/api_quaternion.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/API/Inc/api_trajectory.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/API/Src/api_quaternion.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/API/Src/api_trajectory.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Inc/INS_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Inc/Ros_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Inc/User_Task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Inc/observe_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Src/INS_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Src/Ros_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Src/User_Task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Application/Tasks/Src/observe_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Inc/bsp_gpio.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Inc/bsp_spi.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Inc/bsp_tim.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Inc/buzzer_music.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Inc/vofa.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Src/bsp_gpio.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Src/bsp_spi.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Src/bsp_tim.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Src/buzzer_music.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Bsp/Src/vofa.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Algorithm/Inc/crc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Algorithm/Src/crc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Inc/bmi088.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Inc/bmi088_reg.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Inc/minipc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Inc/referee_info.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Inc/usb.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Src/bmi088.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Src/minipc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Src/referee_info.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Device/Src/usb.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/editor.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/hero.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/CAN_receive/CAN_receive.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/CAN_receive/CAN_receive.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/CAN_receive/DM4310/DM4310.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/CAN_receive/DM4310/DM4310.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/Client_ui/RM_Cilent_UI.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/Client_ui/RM_Cilent_UI.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/FreeRTOS/FreeRTOS_middleware.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/FreeRTOS/FreeRTOS_middleware.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/FreeRTOS/start_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/FreeRTOS/start_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/INS_task/INS_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/INS_task/INS_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/ROS_Receive/ROS_Receive.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/ROS_Receive/ROS_Receive.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/calibrate_task/calibrate_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/calibrate_task/calibrate_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_behaviour.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_behaviour.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_power_control.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_power_control.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_remote_control.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/chassis_remote_control/chassis_remote_control.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/detect_task/detect_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/detect_task/detect_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/gimbal_task/gimbal_behaviour.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/gimbal_task/gimbal_behaviour.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/gimbal_task/gimbal_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/gimbal_task/gimbal_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/referee_task/protocol.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/referee_task/referee.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/referee_task/referee.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/referee_task/referee_usart_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/referee_task/referee_usart_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/remote_control/rc_handoff.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/remote_control/rc_handoff.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/remote_control/remote_control.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/remote_control/remote_control.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/shoot/shoot.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/shoot/shoot.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/user_task/user_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/user_task/user_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/voltage_task/voltage_task.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/APP/voltage_task/voltage_task.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/CMakeLists.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/CMakeLists_template.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/AHRS.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/AHRS_middleware.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/AHRS_middleware.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/Include/arm_common_tables.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/Include/arm_const_structs.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/Include/arm_math.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/Include/core_sc000.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/Include/core_sc300.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/libAHRS.a" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/controller/pid.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/controller/pid.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/BMI088Middleware.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/BMI088Middleware.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/BMI088driver.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/BMI088driver.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/BMI088reg.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/ist8310driver.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/ist8310driver.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/ist8310driver_middleware.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/devices/ist8310driver_middleware.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/CRC8_CRC16.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/CRC8_CRC16.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/fifo.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/fifo.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/linux_list.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/macro_mutex.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/mem_mang.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/Components/support/mem_mang4.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/daplink-f4.cfg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/adc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/adc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/bluetooth.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/bluetooth.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/buzzer.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/buzzer.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/camera_trigger.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/camera_trigger.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/can.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/can.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/delay.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/delay.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/exit.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/exit.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/flash.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/flash.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/i2c.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/i2c.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/key.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/key.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/led.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/led.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/rc.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/rc.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/referee_usart.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/referee_usart.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/relays.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/relays.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/spi.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/spi.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/sys.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/sys.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/temperature.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/temperature.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/trigger.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/trigger.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/uart1.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/hardware/uart1.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/user_lib/Kalman_Filter.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/user_lib/Kalman_Filter.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/user_lib/user_lib.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../hero/user_lib/user_lib.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/vofa.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/vofa.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../1.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../2.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Bmi.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Bmi/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Bmi/Application/Tasks/Src/Gimbal_task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Application/Tasks/Src/Gimbal_task.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../Bmi/Application/Tasks/Src/User_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Application/Tasks/Src/User_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_can.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../Bmi/Components/Device/Inc/vofa.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Components/Device/Inc/vofa.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../Bmi/Components/Device/Src/vofa.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Components/Device/Src/vofa.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../ZDT2/.idea/copilotDiffState.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Components/Controller/Inc/old_pid.h" beforeDir="false" afterPath="$PROJECT_DIR$/Components/Controller/Inc/old_pid.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Bmi/Core/Inc/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Core/Inc/main.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/.cproject" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/.cproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/.mxproject" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/.mxproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/Can_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Application/Tasks/Src/Can_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_can.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_mcu.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_mcu.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_uart.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Bsp/Src/bsp_uart.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Algorithm/AHRS.lib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Algorithm/arm_cortexM4lf_math.lib" beforeDir="false" afterPath="$PROJECT_DIR$/../../hero/Components/algorithm/arm_cortexM4lf_math.lib" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/mymotor.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/mymotor.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/stepper_can.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Inc/stepper_motor.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/mymotor.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/mymotor.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/stepper_can.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Components/Device/Src/stepper_motor.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/main.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/stm32f4xx_hal_conf.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/stm32f4xx_hal_conf.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/stm32f4xx_it.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/stm32f4xx_it.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/usart.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Inc/usart.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/dma.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/dma.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/freertos.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/freertos.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/gpio.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/gpio.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/stm32f4xx_it.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/stm32f4xx_it.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/usart.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Core/Src/usart.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/Middlewares/ST/ARM/DSP/Inc/arm_math.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/Middlewares/ST/ARM/DSP/Inc/arm_math.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../My_NewChassis/My_NewChassis.ioc" beforeDir="false" afterPath="$PROJECT_DIR$/../../My_NewChassis/My_NewChassis.ioc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../PUZHONG_1.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../PUZHONG_1/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../PUZHONG_1/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../PUZHONG_1/Components/Device/Inc/vofa.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../New_Chassis/Bsp/Inc/vofa.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../PUZHONG_1/Components/Device/Src/vofa.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../New_Chassis/Bsp/Src/vofa.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.cproject" beforeDir="false" afterPath="$PROJECT_DIR$/.cproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.mxproject" beforeDir="false" afterPath="$PROJECT_DIR$/.mxproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ai_test.ioc" beforeDir="false" afterPath="$PROJECT_DIR$/Ai_test.ioc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Inc/Chassis_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Inc/Chassis_Task.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Inc/chassis_behaviour.h" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Inc/chassis_behaviour.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/Can_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/Can_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/Chassis_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/Chassis_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/Gimbal_task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/Gimbal_task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/chassis_behaviour.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/chassis_behaviour.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bsp/Inc/bsp_can.h" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Inc/bsp_can.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bsp/Src/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Src/bsp_can.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bsp/Src/bsp_mcu.c" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Src/bsp_mcu.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bsp/Src/bsp_uart.c" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Src/bsp_uart.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Components/Algorithm/AHRS.lib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Components/Algorithm/arm_cortexM4lf_math.lib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Components/Device/Inc/vofa.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Components/Device/Src/vofa.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/main.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/stm32f4xx_hal_conf.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/stm32f4xx_hal_conf.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/stm32f4xx_it.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/stm32f4xx_it.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/usart.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/usart.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/dma.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/dma.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/freertos.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/freertos.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/gpio.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/gpio.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/stm32f4xx_it.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/stm32f4xx_it.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/usart.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/usart.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Middlewares/ST/ARM/DSP/Inc/arm_math.h" beforeDir="false" afterPath="$PROJECT_DIR$/Middlewares/ST/ARM/DSP/Inc/arm_math.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/st_nucleo_f4.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/st_nucleo_f4.cfg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../feibiao_test/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../feibiao_test/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_quaternion.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_quaternion.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_trajectory.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_trajectory.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_quaternion.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_quaternion.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_trajectory.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_trajectory.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Can_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Can_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Chassis_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Chassis_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/User_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/User_Task.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/chassis_behaviour.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/chassis_behaviour.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_can.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_conv.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_conv.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_pos.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_pos.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_spd.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/leg_spd.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/lqr_k.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/inc/lqr_k.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_conv.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_conv.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_pos.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_pos.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_spd.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/leg_spd.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/lqr_k.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/lqr_k.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,6 +470,10 @@
     &quot;accountId&quot;: &quot;da048eb8-eb8b-4a6c-9941-f457b89f8516&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+  </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
     <option name="majorVersion" value="2025" />
@@ -70,6 +485,9 @@
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="30XuVaoQCKoj4u0lklpJkbV7NBN" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -77,16 +495,20 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;OpenOCD 下载并运行.Ai_test.elf.executor&quot;: &quot;Run&quot;,
+    &quot;OpenOCD 下载并运行.Ai_test.elf.executor&quot;: &quot;Debug&quot;,
+    &quot;OpenOCD 下载并运行.DAP.executor&quot;: &quot;Run&quot;,
+    &quot;OpenOCD 下载并运行.STlink.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.west.config.association.type.startup.service&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/C_EX/RM_wck/bodanlun/Ai_test/Components/Algorithm/Inc&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -96,13 +518,42 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="OpenOCD 下载并运行.Ai_test.elf">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Algorithm\Inc" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Device\Src" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Device\Inc" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Application\API\Src" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Algorithm\Src" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Device\Inc" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Device\Src" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Application\Tasks\Inc" />
+      <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Application\Tasks\Src" />
+    </key>
+  </component>
+  <component name="RunManager" selected="OpenOCD 下载并运行.DAP">
     <configuration name="Ai_test.elf" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Ai_test" TARGET_NAME="Ai_test.elf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Ai_test" RUN_TARGET_NAME="Ai_test.elf">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Ai_test.elf" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Ai_test" TARGET_NAME="Ai_test.elf" CONFIG_NAME="Debug" version="1" RUN_TARGET_PROJECT_NAME="Ai_test" RUN_TARGET_NAME="Ai_test.elf">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DAP" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Ai_test" TARGET_NAME="Ai_test.elf" CONFIG_NAME="Debug" version="1" RUN_TARGET_PROJECT_NAME="Ai_test" RUN_TARGET_NAME="Ai_test.elf">
+      <openocd version="1" gdb-port="3333" telnet-port="4444" board-config="D:\C_EX\RM_wck\bodanlun\Ai_test\daplink-f4.cfg" reset-type="INIT" download-type="UPDATED_ONLY">
+        <debugger kind="GDB" isBundled="true" />
+      </openocd>
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="STlink" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Ai_test" TARGET_NAME="Ai_test.elf" CONFIG_NAME="Debug" version="1" RUN_TARGET_PROJECT_NAME="Ai_test" RUN_TARGET_NAME="Ai_test.elf">
       <openocd version="1" gdb-port="3333" telnet-port="4444" board-config="D:\C_EX\RM_wck\bodanlun\Ai_test\st_nucleo_f4.cfg" reset-type="INIT" download-type="UPDATED_ONLY">
         <debugger kind="GDB" isBundled="true" />
       </openocd>
@@ -112,7 +563,8 @@
     </configuration>
     <list>
       <item itemvalue="CMake 应用程序.Ai_test.elf" />
-      <item itemvalue="OpenOCD 下载并运行.Ai_test.elf" />
+      <item itemvalue="OpenOCD 下载并运行.DAP" />
+      <item itemvalue="OpenOCD 下载并运行.STlink" />
     </list>
   </component>
   <component name="TaskManager">
@@ -126,6 +578,17 @@
       <workItem from="1754082191843" duration="207000" />
       <workItem from="1754082547344" duration="637000" />
       <workItem from="1754379403615" duration="2175000" />
+      <workItem from="1757036560661" duration="208000" />
+      <workItem from="1757744447498" duration="965000" />
+      <workItem from="1758021693259" duration="1847000" />
+      <workItem from="1758102728371" duration="20000" />
+      <workItem from="1759821025485" duration="1426000" />
+      <workItem from="1759984853789" duration="2766000" />
+      <workItem from="1759987646560" duration="6456000" />
+      <workItem from="1760007405267" duration="3187000" />
+      <workItem from="1760010661443" duration="16000" />
+      <workItem from="1760086105086" duration="888000" />
+      <workItem from="1760100168123" duration="5110000" />
     </task>
     <servers />
   </component>

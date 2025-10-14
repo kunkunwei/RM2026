@@ -86,7 +86,7 @@
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 
 //小陀螺旋转速度
-#define ROTATION_SPEED_MAX 6.0f
+#define ROTATION_SPEED_MAX 3.0f
 #define ROTATION_SPEED_ADD_VALUE ROTATION_SPEED_MAX/3
 
 //底盘3508最大can发送电流值
@@ -98,7 +98,12 @@
 #define M3505_MOTOR_SPEED_PID_KD 0.0f
 #define M3505_MOTOR_SPEED_PID_MAX_OUT MAX_MOTOR_CAN_CURRENT
 #define M3505_MOTOR_SPEED_PID_MAX_IOUT 2000.0f
-
+//单独的角速度环
+#define ROS_WZ_PID_KP 2.0f
+#define ROS_WZ_PID_KI 0.004f
+#define ROS_WZ_PID_KD 0.1f
+#define ROS_WZ_PID_MAX_OUT 10.0f
+#define ROS_WZ_PID_MAX_IOUT 0.5f
 typedef struct 
 {
 	float vx;
@@ -119,12 +124,17 @@ typedef struct
 	//
 
 	float chassis_yaw;
+	PidTypeDef chassis_ros_wz_pid;  //底盘ROS_角速度_PID
 
 	first_order_filter_type_t chassis_cmd_slow_set_vx;
   	first_order_filter_type_t chassis_cmd_slow_set_vy;
-
+	first_order_filter_type_t state_xdot_filter;
 	ramp_function_source_t rotation_ramp_wz;   //小陀螺斜坡函数缓启动 停止
  	bool_t rotation_diraction;                 //小陀螺旋转的方向
+
+	float vx_from_ros;
+	float wz_from_ros;
+	float kilometer;
 
   	fp32 vx_max_speed;  //前进方向最大速度 单位m/s
   	fp32 vx_min_speed;  //前进方向最小速度 单位m/s
@@ -137,5 +147,5 @@ typedef struct
 extern void Chassis_Task(void const *pvParameters);
 
 extern chassis_move_t chassis_move;
-chassis_move_t* get_chassis_point();
+const chassis_move_t* get_chassis_point();
 #endif

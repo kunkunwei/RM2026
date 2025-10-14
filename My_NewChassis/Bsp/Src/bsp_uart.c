@@ -16,8 +16,8 @@
 #include "bsp_uart.h"
 #include "usart.h"
 #include "remote_control.h"
-// #include "referee_info.h"
-
+#include "referee_info.h"
+// #include "stm32f407xx.h"
 /* Private variables ---------------------------------------------------------*/
 
 
@@ -28,6 +28,8 @@
 static void USART_RxDMA_MultiBufferStart(UART_HandleTypeDef *, uint32_t *, uint32_t *, uint32_t *, uint32_t);
 
 
+__attribute__ ((section (".AXI_SRAM"))) uint8_t Mode_Buf[2][1];
+uint8_t Usart_Mode=0;
 /**
   * @brief  Configures the USART.
   * @param  None
@@ -39,19 +41,20 @@ void BSP_USART_Init(void)
 	USART_RxDMA_MultiBufferStart(&huart3,(uint32_t *)&(huart3.Instance->DR),(uint32_t *)SBUS_MultiRx_Buf[0],(uint32_t *)SBUS_MultiRx_Buf[1],SBUS_RX_BUF_NUM);
 
 	  /* Starts the Referee multi_buffer DMA Transfer with interrupt enabled. */
-	// USART_RxDMA_MultiBufferStart(&huart6,(uint32_t *)&(huart6.Instance->DR),(uint32_t *)REFEREE_MultiRx_Buf[0],(uint32_t *)REFEREE_MultiRx_Buf[1],REFEREE_RXFRAME_LENGTH);
+	USART_RxDMA_MultiBufferStart(&huart1,(uint32_t *)&(huart1.Instance->DR),(uint32_t *)Mode_Buf[0],(uint32_t *)Mode_Buf[1],1);
 }
 //------------------------------------------------------------------------------
 
 /**
-* @brief 启动具有中断使能的多缓冲 DMA 传输。
-* @param  huart 指向包含指定 USART 流配置信息的 UART_HandleTypeDef 结构体的指针。
-* @param  SrcAddress 源内存缓冲区地址的指针。
-* @param  DstAddress 目标内存缓冲区地址的指针。
-* @param  SecondMemAddress 在多缓冲区传输的情况下，指向第二个内存缓冲区地址的指针。
-* @param  DataLength 从源传输到目标的数据长度。
-* @retval 无。
- */
+  * @brief  Starts the multi_buffer DMA Transfer with interrupt enabled.
+  * @param  huart       pointer to a UART_HandleTypeDef structure that contains
+  *                     the configuration information for the specified USART Stream.  
+  * @param  SrcAddress pointer to The source memory Buffer address
+  * @param  DstAddress pointer to The destination memory Buffer address
+  * @param  SecondMemAddress pointer to The second memory Buffer address in case of multi buffer Transfer  
+  * @param  DataLength The length of data to be transferred from source to destination
+  * @retval none
+  */
 static void USART_RxDMA_MultiBufferStart(UART_HandleTypeDef *huart, uint32_t *SrcAddress, uint32_t *DstAddress, uint32_t *SecondMemAddress, uint32_t DataLength)
 {	
   /* configuare the huart Reception Type TOIDLE */
@@ -92,63 +95,114 @@ static void USART_RxDMA_MultiBufferStart(UART_HandleTypeDef *huart, uint32_t *Sr
 //------------------------------------------------------------------------------
 
 /**
-* @简要说明  用户 USART3 接收事件回调函数。
-* @参数  huart UART 句柄
-* @参数  Size 应用程序接收缓冲区中可用的数据数量（表示接收缓冲区中数据可用的位置）
-* @返回值  无
- */
+  * @brief  USER USART3 Reception Event Callback.
+  * @param  huart UART handle
+  * @param  Size  Number of data available in application reception buffer (indicates a position in
+  *               reception buffer until which, data are available)
+  * @retval None
+  */
 static void USER_USART3_RxHandler(UART_HandleTypeDef *huart,uint16_t Size)
 {
-  // 先关闭DMA，防止数据竞争
-  __HAL_DMA_DISABLE(huart->hdmarx);
-  while(huart->hdmarx->Instance->CR & DMA_SxCR_EN) {
-    // 等待DMA完全关闭
-  }
-
-  // 判断当前使用的缓冲区
+  /* Current memory buffer used is Memory 0 */
   if(((((DMA_Stream_TypeDef  *)huart->hdmarx->Instance)->CR) & DMA_SxCR_CT ) == RESET)
   {
-    // 切换到Memory 1
-    huart->hdmarx->Instance->CR |= DMA_SxCR_CT;
-    // 重装计数器
-    __HAL_DMA_SET_COUNTER(huart->hdmarx,SBUS_RX_BUF_NUM);
-    // 数据长度正确才解析
-    if(Size == RC_FRAME_LENGTH)
-    {
-      SBUS_TO_RC(SBUS_MultiRx_Buf[0],&remote_ctrl);
-    }
+			//Disable DMA 
+			__HAL_DMA_DISABLE(huart->hdmarx);
+
+			huart->hdmarx->Instance->CR |= DMA_SxCR_CT;
+      /* reset the receive count */
+      __HAL_DMA_SET_COUNTER(huart->hdmarx,SBUS_RX_BUF_NUM);
+
+      if(Size == RC_FRAME_LENGTH)
+      {
+        SBUS_TO_RC(SBUS_MultiRx_Buf[0],&remote_ctrl);
+      }
   }
+  /* Current memory buffer used is Memory 1 */
   else
   {
-    // 切换到Memory 0
-    huart->hdmarx->Instance->CR &= ~(DMA_SxCR_CT);
-    // 重装计数器
-    __HAL_DMA_SET_COUNTER(huart->hdmarx,SBUS_RX_BUF_NUM);
-    if(Size == RC_FRAME_LENGTH)
-    {
-      SBUS_TO_RC(SBUS_MultiRx_Buf[1],&remote_ctrl);
-    }
+			//Disable DMA 
+			__HAL_DMA_DISABLE(huart->hdmarx);
+
+			huart->hdmarx->Instance->CR &= ~(DMA_SxCR_CT);
+		
+      /* reset the receive count */
+      __HAL_DMA_SET_COUNTER(huart->hdmarx,SBUS_RX_BUF_NUM);
+
+      if(Size == RC_FRAME_LENGTH)
+      {
+        SBUS_TO_RC(SBUS_MultiRx_Buf[1],&remote_ctrl);
+      }
   }
-
-  // 重新使能DMA，准备接收下一帧
-  __HAL_DMA_ENABLE(huart->hdmarx);
 }
-
+////------------------------------------------------------------------------------
 
 /**
-  * @brief  接收传输完成回调函数。
-  * @param  huart  指向包含指定UART模块配置信息的UART_HandleTypeDef结构体指针。
-  * @retval 无
+  * @brief  USER USART1 Reception Event Callback.
+  * @param  huart UART handle
+  * @param  Size  Number of data available in application reception buffer (indicates a position in
+  *               reception buffer until which, data are available)
+  * @retval None
+  */
+static void USER_USART1_RxHandler(UART_HandleTypeDef *huart,uint16_t Size)
+{
+  //printf("%d,%d\r\n",Mode_Buf[0][0],Mode_Buf[1][0]);
+  //Usart_Mode = Mode_Buf[0][0];
+  
+  /* Current memory buffer used is Memory 0 */
+  if(((((DMA_Stream_TypeDef  *)huart->hdmarx->Instance)->CR) & DMA_SxCR_CT ) == RESET)
+  {
+			//Disable DMA 
+			__HAL_DMA_DISABLE(huart->hdmarx);
+
+			huart->hdmarx->Instance->CR |= DMA_SxCR_CT;
+
+      if(Size == 1)
+      {
+        //Referee_System_Frame_Update(Referee_System_Info_MultiRx_Buf[0]);
+				// memset(Referee_System_Info_MultiRx_Buf[0],0,REFEREE_RXFRAME_LENGTH);
+        printf("Mode:%d\r\n",Mode_Buf[0][0]);
+        Usart_Mode = Mode_Buf[0][0];
+      /* reset the receive count */
+      __HAL_DMA_SET_COUNTER(huart->hdmarx,REFEREE_RXFRAME_LENGTH);
+      }
+  }
+  /* Current memory buffer used is Memory 1 */
+  else
+  {
+			//Disable DMA 
+			__HAL_DMA_DISABLE(huart->hdmarx);
+
+			huart->hdmarx->Instance->CR &= ~(DMA_SxCR_CT);
+		
+      if(Size == 1)
+      {
+        // Referee_System_Frame_Update(Referee_System_Info_MultiRx_Buf[1]);
+        printf("Mode:%d\r\n",Mode_Buf[1][0]);
+        Usart_Mode = Mode_Buf[1][0];
+				// memset(Referee_System_Info_MultiRx_Buf[1],0,REFEREE_RXFRAME_LENGTH);
+      /* reset the receive count */
+      __HAL_DMA_SET_COUNTER(huart->hdmarx,REFEREE_RXFRAME_LENGTH);
+      }
+  }
+}
+
+/**
+  * @brief  Rx Transfer completed callbacks.
+  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
   */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
 {
-
+  //printf("USART1,%d\r\n",Size);
 	if(huart->Instance == USART3)
 	{
 		USER_USART3_RxHandler(huart,Size);
-	}else if(huart->Instance == USART6)
+	}else if(huart->Instance == USART1)
 	{
-		// USER_USART1_RxHandler(huart,Size);
+		USER_USART1_RxHandler(huart,Size);
+    
 	}
 
   /* reset the Reception Type */
@@ -164,3 +218,4 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
   __HAL_DMA_ENABLE(huart->hdmarx);
 }
 //------------------------------------------------------------------------------
+

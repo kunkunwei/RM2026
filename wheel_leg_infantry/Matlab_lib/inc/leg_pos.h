@@ -16,6 +16,13 @@ extern "C" {
 #endif
 
 /* Function Declarations */
+/**
+ * @brief 根据电机角度计算足端位置（正运动学）
+ *
+ * @param phi1 电机1（髋关节）的角度
+ * @param phi4 电机2（膝关节）的角度
+ * @param pos 输出的足端位置（极坐标），pos[0]为腿长，pos[1]为腿部角度
+ */
 extern void leg_pos(float phi1, float phi4, float pos[2]);
 
 #ifdef __cplusplus

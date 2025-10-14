@@ -75,6 +75,9 @@ static void chassis_no_move_control(float *vx_set, float *l_set, float *angle_se
   */
 static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *wz_set, chassis_move_t *chassis_move_rc_to_vector);
 
+// 新增：分步站立控制函数
+static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis_move_rc_to_vector);
+
 
 //底盘行为状态机
 static chassis_behaviour_e chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
@@ -206,9 +209,21 @@ static void chassis_no_move_control(float *vx_set, float *l_set, float *angle_se
     {
         return;
     }
-    *vx_set = 0.0f;
-    *l_set = LEG_LENGTH_INIT;
-    *angle_set = 0.0f;
+    // *vx_set = 0.0f;
+    // *l_set = LEG_LENGTH_INIT;
+    // *angle_set = 0.0f;
+    // 如果机器人还处于倾斜状态，则执行自动站立程序
+    if (fabs(chassis_move_rc_to_vector->chassis_pitch) > 0.1f) // 0.1 rad ≈ 5.7 degrees
+    {
+        chassis_get_up_auto(l_set, angle_set, chassis_move_rc_to_vector);
+        *vx_set = 0.0f; // 站立过程中不允许移动
+    }
+    else // 已经站稳，保持不动
+    {
+        *vx_set = 0.0f;
+        *l_set = LEG_LENGTH_INIT;
+        *angle_set = 0.0f;
+    }
 }
 
 /**
@@ -230,4 +245,40 @@ static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *w
 
     chassis_rc_to_control_vector(vx_set, vy_set, chassis_move_rc_to_vector);
     *wz_set = CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
+}
+
+/**
+  * @brief          根据当前俯仰角自动分步站立
+  * @author         GitHub Copilot
+  * @param[in]      l_set 腿长设定值指针
+  * @param[in]      angle_set 姿态角设定值指针
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
+  * @retval         返回空
+  */
+static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis_move_rc_to_vector)
+{
+    fp32 current_pitch = chassis_move_rc_to_vector->chassis_pitch;
+
+    // 阶段1：机体严重倾斜 (例如 |pitch| > 0.5 rad)
+    // 目标：先收腿，降低重心，避免连杆碰撞和电机堵转
+    if (fabs(current_pitch) > 0.5f)
+    {
+        *l_set = LEG_LENGTH_MIN; // 将腿长收缩到最短
+        *angle_set = current_pitch * 0.8f; // 设定一个跟随当前姿态的目标，减小误差
+    }
+    // 阶段2：机体中等倾斜 (例如 0.1 < |pitch| <= 0.5 rad)
+    // 目标：缓慢伸腿，同时逐渐将姿态目标调整至水平
+    else
+    {
+        // 使用线性插值，从当前倾斜角度平滑过渡到水平
+        // 从 pitch=0.5rad 时的 LEG_LENGTH_MIN 线性增加到 pitch=0.1rad 时的 LEG_LENGTH_INIT
+        *l_set = LEG_LENGTH_INIT - (LEG_LENGTH_INIT - LEG_LENGTH_MIN) * (fabs(current_pitch) - 0.1f) / (0.5f - 0.1f);
+
+        // 姿态目标也从当前角度向0平滑过渡
+        *angle_set = current_pitch * 0.5f;
+    }
+
+    // 限制最终的设定值范围
+    if (*l_set < LEG_LENGTH_MIN) *l_set = LEG_LENGTH_MIN;
+    if (*l_set > LEG_LENGTH_INIT) *l_set = LEG_LENGTH_INIT;
 }
