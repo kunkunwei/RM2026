@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : kalman.c
-  * @brief          : Kalman filter 
+  * @brief          : 卡尔曼滤波器
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be perfected
+  * @attention      : 待完善
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -27,7 +27,7 @@ extern "C" {
 
 /* Exported defines -----------------------------------------------------------*/
 /**
- * @brief macro definition of the user_malloc that returns a pointer to the memory of the allocated size.
+ * @brief 宏定义 user_malloc，用于返回分配大小的内存指针。
  */
 #ifndef user_malloc
 #ifdef _CMSIS_OS_H
@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 /**
- * @brief macro definition of the matrix calculation.
+ * @brief 矩阵运算相关宏定义。
  */
 #define matrix             arm_matrix_instance_f32
 #define matrix_64          arm_matrix_instance_f64
@@ -52,89 +52,89 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /**
- * @brief typedef structure that contains the information  for the Chi Square Test.
+ * @brief 包含卡方检验信息的结构体类型。
  */
 typedef struct
 {
-  bool TestFlag;    /*!< Enable/Disable Flag */
-  matrix ChiSquare_Matrix;   /*!< chi square test matrix */
-  float ChiSquare_Data[1];    /*!< chi square test matrix data */
-  float ChiSquareTestThresholds;    /*!< chi square test matrix Thresholds */
-  uint8_t ChiSquareCnt;   /*!< chi square test count */
-  bool result;   /*!< chi square test result */
+  bool TestFlag;    /*!< 启用/禁用 标志 */
+  matrix ChiSquare_Matrix;   /*!< 卡方检验矩阵 */
+  float ChiSquare_Data[1];    /*!< 卡方检验矩阵数据 */
+  float ChiSquareTestThresholds;    /*!< 卡方检验阈值 */
+  uint8_t ChiSquareCnt;   /*!< 卡方检验计数 */
+  bool result;   /*!< 卡方检验结果 */
 }ChiSquareTest_Typedef;
 
 /**
- * @brief typedef structure that contains the information for the kalman filter.
+ * @brief 包含卡尔曼滤波器信息的结构体类型。
  */
 typedef struct KF_Info_TypeDef
 {
-  uint16_t sizeof_float, sizeof_double; /*!< size of float/double */
+  uint16_t sizeof_float, sizeof_double; /*!< float/double 的字节大小 */
 
-  uint8_t xhatSize;   /*!< state vector dimension */
-  uint8_t uSize;      /*!< control vector dimension */
-  uint8_t zSize;      /*!< measurement vector dimension */
+  uint8_t xhatSize;   /*!< 状态向量维度 */
+  uint8_t uSize;      /*!< 控制向量维度 */
+  uint8_t zSize;      /*!< 测量向量维度 */
 
-  float dt;   /*!< update cycle */
-  float *MeasuredVector; /*!< external measure vector pointer */
-  float *ControlVector;  /*!< external control vector pointer */
+  float dt;   /*!< 更新周期 */
+  float *MeasuredVector; /*!< 外部测量向量指针 */
+  float *ControlVector;  /*!< 外部控制向量指针 */
 
-  ChiSquareTest_Typedef ChiSquareTest;  /*!< Chi Square Test */
+  ChiSquareTest_Typedef ChiSquareTest;  /*!< 卡方检验 */
 
   /**
-   * @brief Instance structure for the floating-point matrix structure.
+   * @brief 浮点矩阵实例的结构体。
    */
   struct 
   {
-    matrix xhat;              /*!< posteriori estimate matrix */
-    matrix xhatminus;         /*!< priori estimate matrix */
-    matrix u;                 /*!< control vector */
-    matrix z;                 /*!< measurement vector */
-    matrix B;                 /*!< control matrix */ 
-    matrix A,AT;              /*!< state transition matrix */
-    matrix H,HT;              /*!< measurement matrix */
-    matrix P;                 /*!< posteriori covariance matrix */
-    matrix Pminus;            /*!< priori covariance matrix */
-    matrix Q;                 /*!< process noise covariance matrix */ 
-    matrix R;                 /*!< measurement noise covariance matrix */ 
-    matrix K;                 /*!< kalman gain matrix */
-    matrix K_denominator;     /*!< K_denominator matrix (K_denominator = H Pminus HT + R) */
-    matrix cache_matrix[2];   /*!< calculate cache matrix */
-    matrix cache_vector[2];   /*!< calculate cache vector */
+    matrix xhat;              /*!< 后验估计矩阵 */
+    matrix xhatminus;         /*!< 先验估计矩阵 */
+    matrix u;                 /*!< 控制向量 */
+    matrix z;                 /*!< 测量向量 */
+    matrix B;                 /*!< 控制矩阵 */
+    matrix A,AT;              /*!< 状态转移矩阵 */
+    matrix H,HT;              /*!< 测量矩阵 */
+    matrix P;                 /*!< 后验协方差矩阵 */
+    matrix Pminus;            /*!< 先验协方差矩阵 */
+    matrix Q;                 /*!< 过程噪声协方差矩阵 */
+    matrix R;                 /*!< 测量噪声协方差矩阵 */
+    matrix K;                 /*!< 卡尔曼增益矩阵 */
+    matrix K_denominator;     /*!< K_denominator 矩阵 (K_denominator = H Pminus HT + R) */
+    matrix cache_matrix[2];   /*!< 计算缓存矩阵 */
+    matrix cache_vector[2];   /*!< 计算缓存向量 */
   }Mat;
 
-  arm_status MatStatus;   /*!< Error status. */
+  arm_status MatStatus;   /*!< 错误状态。 */
 
   /**
-   * @brief Instance structure for the floating-point matrix data pointer.
+   * @brief 浮点矩阵数据指针实例的结构体。
    */
   struct 
   {
-    float *xhat,*xhatminus;   /*!< posteriori/priori estimate matrix memory pointer */
-    float *u;                 /*!< control vector memory pointer */
-    float *z;                 /*!< measurement vector memory pointer */
-    float *B;                 /*!< control matrix memory pointer */ 
-    float *A,*AT;             /*!< state transition matrix memory pointer */
-    float *H,*HT;             /*!< measurement matrix memory pointer */
-    float *P;                 /*!< posteriori covariance matrix memory pointer */
-    float *Pminus;            /*!< priori covariance matrix memory pointer */
-    float *Q;                 /*!< process noise covariance matrix memory pointer */ 
-    float *R;                 /*!< measurement noise covariance matrix memory pointer */ 
-    float *K;                 /*!< kalman gain matrix memory pointer */
-    float *K_denominator;     /*!< K_denominator matrix memory pointer */
-    float *cache_matrix[2];   /*!< calculate cache matrix memory pointer */
-    float *cache_vector[2];   /*!< calculate cache vector memory pointer */
+    float *xhat,*xhatminus;   /*!< 后验/先验估计矩阵内存指针 */
+    float *u;                 /*!< 控制向量内存指针 */
+    float *z;                 /*!< 测量向量内存指针 */
+    float *B;                 /*!< 控制矩阵内存指针 */
+    float *A,*AT;             /*!< 状态转移矩阵内存指针 */
+    float *H,*HT;             /*!< 测量矩阵内存指针 */
+    float *P;                 /*!< 后验协方差矩阵内存指针 */
+    float *Pminus;            /*!< 先验协方差矩阵内存指针 */
+    float *Q;                 /*!< 过程噪声协方差矩阵内存指针 */
+    float *R;                 /*!< 测量噪声协方差矩阵内存指针 */
+    float *K;                 /*!< 卡尔曼增益矩阵内存指针 */
+    float *K_denominator;     /*!< K_denominator 矩阵内存指针 */
+    float *cache_matrix[2];   /*!< 计算缓存矩阵内存指针 */
+    float *cache_vector[2];   /*!< 计算缓存向量内存指针 */
   }Data;
 
-  uint8_t SkipStep1 : 1;  /*!< flag to skip the first step of kalman filter updating */
-  uint8_t SkipStep2 : 1;  /*!< flag to skip the second step of kalman filter updating */
-  uint8_t SkipStep3 : 1;  /*!< flag to skip the third step of kalman filter updating */
-  uint8_t SkipStep4 : 1;  /*!< flag to skip the fourth step of kalman filter updating */
-  uint8_t SkipStep5 : 1;  /*!< flag to skip the fifth step of kalman filter updating */
+  uint8_t SkipStep1 : 1;  /*!< 跳过卡尔曼滤波更新的第一步标志 */
+  uint8_t SkipStep2 : 1;  /*!< 跳过卡尔曼滤波更新的第二步标志 */
+  uint8_t SkipStep3 : 1;  /*!< 跳过卡尔曼滤波更新的第三步标志 */
+  uint8_t SkipStep4 : 1;  /*!< 跳过卡尔曼滤波更新的第四步标志 */
+  uint8_t SkipStep5 : 1;  /*!< 跳过卡尔曼滤波更新的第五步标志 */
   uint8_t reserve   : 3;
 
   /**
-   * @brief user functions that can replace any step of kalman filter updating.
+   * @brief 可由用户替换卡尔曼滤波任意步骤的用户函数。
    */
   void (*User_Function0)(struct KF_Info_TypeDef *kf);
   void (*User_Function1)(struct KF_Info_TypeDef *kf);
@@ -144,22 +144,19 @@ typedef struct KF_Info_TypeDef
   void (*User_Function5)(struct KF_Info_TypeDef *kf);
   void (*User_Function6)(struct KF_Info_TypeDef *kf);
 
-  float *Output;  /*!< kalman filter output */
+  float *Output;  /*!< 卡尔曼滤波器输出 */
 
 }KalmanFilter_Info_TypeDef;
 
 /* Exported functions prototypes ---------------------------------------------*/
 /**
-  * @brief Initializes the kalman filter according to the specified parameters in the KalmanFilter_Info_TypeDef.
+  * @brief 根据 KalmanFilter_Info_TypeDef 中的参数初始化卡尔曼滤波器。
   */
 extern void Kalman_Filter_Init(KalmanFilter_Info_TypeDef *kf,uint8_t xhatSize,uint8_t uSize,uint8_t zSize);
 /**
-  * @brief Update the Kalman Filter according to the specified parameters in the KalmanFilter_Info_TypeDef.
+  * @brief 根据 KalmanFilter_Info_TypeDef 中的参数更新卡尔曼滤波器。
   */
 extern float *Kalman_Filter_Update(KalmanFilter_Info_TypeDef *kf);
 
 #endif //KALMAN_FILTER_H
-
-
-
 

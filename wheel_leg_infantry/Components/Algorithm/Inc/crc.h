@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : crc.h
-  * @brief          : crc check 
+  * @brief          : CRC 校验
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be tested
+  * @attention      : 待测试
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -25,27 +25,27 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 /**
-  * @brief          calculate the crc8  
+  * @brief          计算 CRC8 校验值
   */
 extern uint8_t get_CRC8_check_sum(unsigned char *pchMessage,unsigned int dwLength,unsigned char ucCRC8);
 /**
-  * @brief          CRC8 verify function  
+  * @brief          CRC8 校验验证函数
   */
 extern uint32_t verify_CRC8_check_sum(unsigned char *pchMessage, unsigned int dwLength);
 /**
-  * @brief          append CRC8 to the end of data
+  * @brief          在数据末尾附加 CRC8 校验字节
   */
 extern void append_CRC8_check_sum(unsigned char *pchMessage, unsigned int dwLength);
 /**
-  * @brief          calculate the crc16  
+  * @brief          计算 CRC16 校验值
   */
 extern uint16_t get_CRC16_check_sum(uint8_t *pchMessage,uint32_t dwLength,uint16_t wCRC);
 /**
-  * @brief          CRC16 verify function  
+  * @brief          CRC16 校验验证函数
   */
 extern uint32_t verify_CRC16_check_sum(uint8_t *pchMessage, uint32_t dwLength);
 /**
-  * @brief          append CRC16 to the end of data
+  * @brief          在数据末尾附加 CRC16 校验字节
   */
 extern void append_CRC16_check_sum(uint8_t * pchMessage,uint32_t dwLength);
 

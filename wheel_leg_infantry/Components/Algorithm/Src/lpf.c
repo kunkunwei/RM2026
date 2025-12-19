@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : lowpass_filter.c
-  * @brief          : lowpass filter 
+  * @brief          : 低通滤波器
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be perfected
+  * @attention      : 待完善
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -16,12 +16,10 @@
 #include "lpf.h"
 
 /**
-  * @brief Initializes the first order lowpass filter according to the specified parameters in the
-  *         LowPassFilter1p_Info_TypeDef.
-  * @param lpf: pointer to an LowPassFilter1p_Info_TypeDef structure that
-  *         contains the information  for the first order lowpass filter.
-  * @param alpha: filter coefficient
-  * @param frame_period: frame perood
+  * @brief 根据 LowPassFilter1p_Info_TypeDef 中的参数初始化一阶低通滤波器。
+  * @param lpf: 指向 LowPassFilter1p_Info_TypeDef 结构体的指针，包含一阶低通滤波器的信息。
+  * @param alpha: 滤波系数
+  * @param frame_period: 帧周期
   * @retval none
   */
 void LowPassFilter1p_Init(LowPassFilter1p_Info_TypeDef *lpf,float alpha,float frame_period)
@@ -35,12 +33,10 @@ void LowPassFilter1p_Init(LowPassFilter1p_Info_TypeDef *lpf,float alpha,float fr
 
 
 /**
-  * @brief Update the first order lowpass filter according to the specified parameters in the
-  *         LowPassFilter1p_Info_TypeDef.
-  * @param kf: pointer to an LowPassFilter1p_Info_TypeDef structure that
-  *         contains the information  for the first order lowpass filter.
-  * @param input: the filter input
-  * @retval lowpass filter output
+  * @brief 根据 LowPassFilter1p_Info_TypeDef 更新一阶低通滤波器。
+  * @param kf: 指向 LowPassFilter1p_Info_TypeDef 结构体的指针，包含一阶低通滤波器的信息。
+  * @param input: 滤波器输入
+  * @retval 低通滤波器输出
   */
 float LowPassFilter1p_Update(LowPassFilter1p_Info_TypeDef *lpf,float input)
 {
@@ -61,12 +57,10 @@ float LowPassFilter1p_Update(LowPassFilter1p_Info_TypeDef *lpf,float input)
 
 
 /**
-  * @brief Initializes the Second order lowpass filter according to the specified parameters in the
-  *         LowPassFilter2p_Info_TypeDef.
-  * @param lpf: pointer to an LowPassFilter2p_Info_TypeDef structure that
-  *         contains the information  for the Second order lowpass filter.
-  * @param alpha: the floating-point array of filter coefficient
-  * @param frame_period: frame perood
+  * @brief 根据 LowPassFilter2p_Info_TypeDef 中的参数初始化二阶低通滤波器。
+  * @param lpf: 指向 LowPassFilter2p_Info_TypeDef 结构体的指针，包含二阶低通滤波器的信息。
+  * @param alpha: 滤波系数数组
+  * @param frame_period: 帧周期（未使用）
   * @retval none
   */
 void LowPassFilter2p_Init(LowPassFilter2p_Info_TypeDef *lpf,float alpha[3])
@@ -79,12 +73,10 @@ void LowPassFilter2p_Init(LowPassFilter2p_Info_TypeDef *lpf,float alpha[3])
 
 
 /**
-  * @brief Update the Second order lowpass filter according to the specified parameters in the
-  *         LowPassFilter2p_Info_TypeDef.
-  * @param kf: pointer to an LowPassFilter2p_Info_TypeDef structure that
-  *         contains the information  for the Second order lowpass filter.
-  * @param input: the filter input
-  * @retval lowpass filter output
+  * @brief 根据 LowPassFilter2p_Info_TypeDef 更新二阶低通滤波器。
+  * @param kf: 指向 LowPassFilter2p_Info_TypeDef 结构体的指针，包含二阶低通滤波器的信息。
+  * @param input: 滤波器输入
+  * @retval 低通滤波器输出（输出数组的第三个元素）
   */
 float LowPassFilter2p_Update(LowPassFilter2p_Info_TypeDef *lpf,float input)
 {
@@ -105,4 +97,3 @@ float LowPassFilter2p_Update(LowPassFilter2p_Info_TypeDef *lpf,float input)
 	return lpf->output[2];
 }
 //------------------------------------------------------------------------------
-

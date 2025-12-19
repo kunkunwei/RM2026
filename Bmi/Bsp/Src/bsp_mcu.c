@@ -16,6 +16,7 @@
 #include "bsp_mcu.h"
 #include "bsp_can.h"
 // #include "bsp_tim.h"
+#include "bmi088.h"
 #include "bsp_uart.h"
 #include "bsp_dwt.h"
 #include "ist8310.h"

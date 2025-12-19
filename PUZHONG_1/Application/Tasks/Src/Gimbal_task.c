@@ -42,6 +42,7 @@ void Gimbal_Task(void const * argument)
         // Stepper_Update();
         systick = osKernelSysTick();
         StepperCAN_SetPositionAngle(&yaw_motor_Info,50, 20, 10, 1);
+        osDelay(2);
         StepperCAN_SetPositionAngle(&pitch_motor_Info,50, 20, 10, 1);
         // StepperCAN_ReadSystemStatus(CAN1_YAW_MOTOR_ID);
         osDelayUntil(&systick,2);

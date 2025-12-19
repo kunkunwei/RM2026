@@ -57,5 +57,5 @@ extern void QuaternionEKF_Init(Quaternion_Info_Typedef *quat,float process_noise
   */
 // 更新扩展卡尔曼滤波器，融合新测量
 extern void QuaternionEKF_Update(Quaternion_Info_Typedef *quat,float gyro[3],float accel[3],float dt);
-
+// extern void Quaternion_To_Euler(const float q[4], float euler[3]);
 #endif //API_QUATERNION_H

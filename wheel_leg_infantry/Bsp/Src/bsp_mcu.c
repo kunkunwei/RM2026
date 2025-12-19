@@ -19,6 +19,7 @@
 #include "bsp_uart.h"
 #include "bsp_dwt.h"
 #include "bmi088.h"
+#include "ist8310.h"
 #include "usb_device.h"
 
 /**
@@ -31,9 +32,10 @@ void MCU_Init(void)
   BSP_CAN_Init();
   BSP_USART_Init();
 	MX_USB_DEVICE_Init();
-
+  BSP_DWT_Init(168);
   /* ----------------------- Device Init ----------------------- */
   BMI088_Init();
+  ist8310_init();
   buzzer_off();
 }
 //------------------------------------------------------------------------------

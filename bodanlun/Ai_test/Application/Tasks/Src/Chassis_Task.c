@@ -90,6 +90,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
 
     const static fp32 chassis_x_order_filter[1] = {CHASSIS_ACCEL_X_NUM};
     const static fp32 chassis_y_order_filter[1] = {CHASSIS_ACCEL_Y_NUM};
+    const static fp32 chassis_z_order_filter[1] = {CHASSIS_ACCEL_Y_NUM};
     const static fp32 state_xdot_constant[1] = {0};
     //ROS_PID
     const static fp32 chassis_ros_pid[3]={ROS_WZ_PID_KP,ROS_WZ_PID_KI,ROS_WZ_PID_KD};
@@ -108,6 +109,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
     //用一阶滤波代替斜波函数生成
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_x_order_filter);
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vy, CHASSIS_CONTROL_TIME, chassis_y_order_filter);
+    first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_wz, CHASSIS_CONTROL_TIME, chassis_z_order_filter);
     first_order_filter_init(&chassis_move_init->state_xdot_filter, CHASSIS_CONTROL_TIME, state_xdot_constant);
 
     //小陀螺旋转 斜波函数缓启
@@ -137,6 +139,7 @@ static void chassis_feedback_update(chassis_move_t *chassis_move_update){
     }
 
     chassis_move_update->vx_from_ros = Usb_receive_data->vx_set;
+    chassis_move_update->vy_from_ros = Usb_receive_data->vy_set;
     chassis_move_update->wz_from_ros = Usb_receive_data->wz_set;
         //更新底盘前进速度 x， 平移速度y，旋转速度wz，坐标系为右手系
     chassis_move_update->vel_ref.vx = (-chassis_move_update->chassis_motor[0]->speed + chassis_move_update->chassis_motor[1]->speed + chassis_move_update->chassis_motor[2]->speed - chassis_move_update->chassis_motor[3]->speed) * MOTOR_SPEED_TO_CHASSIS_SPEED_VX;
@@ -181,41 +184,25 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set,fp32 *angle_set ,ch
     rc_deadline_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
     rc_deadline_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz_channel, CHASSIS_RC_DEADLINE);
 
-    // vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
-    vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
-    // wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
-
-    // if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
-    // {
-    //     vx_set_channel = chassis_move_rc_to_vector->vx_max_speed;
-    // }
-    // else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
-    // {
-    //     vx_set_channel = chassis_move_rc_to_vector->vx_min_speed;
-    // }
-    //
-    // if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
-    // {
-    //     vy_set_channel = chassis_move_rc_to_vector->vy_max_speed;
-    // }
-    // else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
-    // {
-    //     vy_set_channel = chassis_move_rc_to_vector->vy_min_speed;
-    // }
     ///////////////////////ROS////////////////////////////////////////////
     if(wz_channel != 0)
-        wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
+        wz_set_channel = -wz_channel * CHASSIS_WZ_RC_SEN;
     else
-        wz_set_channel = chassis_move_rc_to_vector->wz_from_ros * CHASSIS_ROS_TO_WZ;
+        wz_set_channel = -chassis_move_rc_to_vector->wz_from_ros ;
 
     if(vx_channel != 0)
         vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
     else
         vx_set_channel = chassis_move_rc_to_vector->vx_from_ros;
+    if(vy_channel != 0)
+        vy_set_channel = -vy_channel * CHASSIS_VX_RC_SEN;
+    else
+        vy_set_channel = -chassis_move_rc_to_vector->vy_from_ros;
     ///////////////////////////////////////ROS/////////////////////
     //一阶低通滤波代替斜波作为底盘速度输入
     first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_set_channel);
     first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vy, vy_set_channel);
+    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_wz, wz_set_channel);
 
     //停止信号，不需要缓慢加速，直接减速到零
     if (vx_set_channel < CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN && vx_set_channel > -CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN)
@@ -227,14 +214,20 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set,fp32 *angle_set ,ch
     {
         chassis_move_rc_to_vector->chassis_cmd_slow_set_vy.out = 0.0f;
     }
-    
+    if (wz_set_channel <   CHASSIS_WZ_RC_SEN && wz_set_channel > -  CHASSIS_WZ_RC_SEN)
+    {
+        chassis_move_rc_to_vector->chassis_cmd_slow_set_wz.out = 0.0f;
+    }
+
     *vx_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out;
     *vy_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vy.out;
 
     fp_limit_value(vx_set,NORMAL_MAX_CHASSIS_SPEED_X,-NORMAL_MAX_CHASSIS_SPEED_X);
     fp_limit_value(vy_set,NORMAL_MAX_CHASSIS_SPEED_Y,-NORMAL_MAX_CHASSIS_SPEED_Y);
 
-    *angle_set = wz_set_channel;
+    // *angle_set = wz_set_channel;
+    *angle_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_wz.out;
+    fp_limit_value(angle_set,NORMAL_MAX_CHASSIS_SPEED_Z,-NORMAL_MAX_CHASSIS_SPEED_Z);
 }
 
 /**

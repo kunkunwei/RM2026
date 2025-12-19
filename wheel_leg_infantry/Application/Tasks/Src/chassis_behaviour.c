@@ -103,7 +103,7 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     {
         chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
     }
-
+    chassis_move_mode->last_chassis_funtion_mode=chassis_move_mode->chassis_RC->rc.s[FUNTION_CHANNEL];
     //根据行为状态机选择底盘状态机
     if (chassis_behaviour_mode == CHASSIS_ZERO_FORCE)
     {
@@ -255,30 +255,107 @@ static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *w
   * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis_move_rc_to_vector)
+// static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis_move_rc_to_vector)
+// {
+//     fp32 pitch = chassis_move_rc_to_vector->chassis_pitch;
+//
+//     // 阶段1：严重倾斜（前倾或后仰超过 0.5rad）
+//     if (fabsf(pitch) > 0.5f)
+//     {
+//         *l_set = LEG_LENGTH_MIN;  // 收腿降低重心
+//
+//         // **关键：根据倾斜方向给出反向角度补偿**
+//         if (pitch < 0)
+//             *angle_set = -pitch * 0.8f;   // 前倾 -> 反向抬头
+//         else
+//             *angle_set = -pitch * 0.8f;   // 后仰 -> 反向低头
+//     }
+//     // 阶段2：中度倾斜
+//     else
+//     {
+//         // 平滑恢复
+//         fp32 ratio = (fabsf(pitch) - 0.1f) / (0.5f - 0.1f);
+//         ratio = fp32_constrain(ratio, 0.0f, 1.0f);
+//
+//         *l_set = LEG_LENGTH_INIT - (LEG_LENGTH_INIT - LEG_LENGTH_MIN) * ratio;
+//
+//         // 角度向水平平滑过渡（同样取反）
+//         *angle_set = -pitch * 0.5f;
+//     }
+//
+//     // 限制范围
+//     *l_set = fp32_constrain(*l_set, LEG_LENGTH_MIN, LEG_LENGTH_INIT);
+// }
+/**
+  * @brief          并联腿机器人惯性起立函数（弧度制，自动区分前倾/后仰）
+  * @author         ChatGPT
+  * @param[in,out]  l_set 腿长设定值指针
+  * @param[in,out]  angle_set 姿态角设定值指针
+  * @param[in]      chassis_move_rc_to_vector 底盘状态数据
+  * @retval         无
+  */
+/**
+  * @brief   强力惯性起立函数（弧度制、自动区分前倾/后仰）
+  * @author  ChatGPT
+  */
+static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis)
 {
-    fp32 current_pitch = chassis_move_rc_to_vector->chassis_pitch;
+    fp32 pitch = chassis->chassis_pitch; // 弧度制
+    static uint32_t last_tick = 0;
+    uint32_t now_tick = xTaskGetTickCount();
+    uint32_t t = now_tick - last_tick;
+    last_tick = now_tick;
 
-    // 阶段1：机体严重倾斜 (例如 |pitch| > 0.5 rad)
-    // 目标：先收腿，降低重心，避免连杆碰撞和电机堵转
-    if (fabs(current_pitch) > 0.5f)
+    // 默认设为安全值
+    *l_set = LEG_LENGTH_INIT;
+    *angle_set = 0.0f;
+
+    // --------------------
+    // 1. 倒地蓄力阶段
+    // --------------------
+    if (fabsf(pitch) > 0.9f)
     {
-        *l_set = LEG_LENGTH_MIN; // 将腿长收缩到最短
-        *angle_set = current_pitch * 0.8f; // 设定一个跟随当前姿态的目标，减小误差
+        *l_set = LEG_LENGTH_MIN; // 收腿
+        // 前倾收腿抬头、后仰收腿低头
+        *angle_set = (pitch < 0) ? +1.0f : -1.0f;
+        return;
     }
-    // 阶段2：机体中等倾斜 (例如 0.1 < |pitch| <= 0.5 rad)
-    // 目标：缓慢伸腿，同时逐渐将姿态目标调整至水平
-    else
+
+    // --------------------
+    // 2. 惯性甩起阶段
+    // --------------------
+    if (fabsf(pitch) > 0.35f && fabsf(pitch) <= 0.9f)
     {
-        // 使用线性插值，从当前倾斜角度平滑过渡到水平
-        // 从 pitch=0.5rad 时的 LEG_LENGTH_MIN 线性增加到 pitch=0.1rad 时的 LEG_LENGTH_INIT
-        *l_set = LEG_LENGTH_INIT - (LEG_LENGTH_INIT - LEG_LENGTH_MIN) * (fabs(current_pitch) - 0.1f) / (0.5f - 0.1f);
+        // 快速伸腿，同时反向甩角
+        float phase = sinf((float)t * 0.02f);
+        *l_set = LEG_LENGTH_MIN + 0.05f * phase; // 动态腿长扰动
 
-        // 姿态目标也从当前角度向0平滑过渡
-        *angle_set = current_pitch * 0.5f;
+        if (pitch < 0)      // 前倾：需要向后打力矩（反时针）
+            *angle_set = +1.3f;
+        else                // 后仰：需要向前打力矩（顺时针）
+            *angle_set = -1.3f;
+
+        // 可选：足端轮反转推力（增强起立）
+        chassis->left_leg.wheel_motor.give_current  = -1000.0f;
+        chassis->right_leg.wheel_motor.give_current = -1000.0f;
+        return;
     }
 
-    // 限制最终的设定值范围
-    if (*l_set < LEG_LENGTH_MIN) *l_set = LEG_LENGTH_MIN;
-    if (*l_set > LEG_LENGTH_INIT) *l_set = LEG_LENGTH_INIT;
+    // --------------------
+    // 3. 伸腿扶起阶段
+    // --------------------
+    if (fabsf(pitch) > 0.15f && fabsf(pitch) <= 0.35f)
+    {
+        float k = (fabsf(pitch) - 0.15f) / (0.35f - 0.15f);
+        *l_set = LEG_LENGTH_MIN + (LEG_LENGTH_INIT - LEG_LENGTH_MIN) * (1.0f - k);
+        *angle_set = -pitch * 0.8f;
+        return;
+    }
+
+    // --------------------
+    // 4. 稳定平衡阶段
+    // --------------------
+    *l_set = LEG_LENGTH_INIT;
+    *angle_set = -pitch * 0.4f;
 }
+

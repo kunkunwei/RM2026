@@ -29,19 +29,21 @@ HAL_StatusTypeDef Vofa_Send_Gimbal_Yaw(UART_HandleTypeDef *huart, const gimbal_t
        gimbal->gimbal_pos.yaw_motor->absolute_angle_set,
        gimbal->gimbal_pos.yaw_motor->relative_angle_set,
        gimbal->gimbal_pos.yaw_motor->relative_angle,
+
        gimbal->gimbal_pos.yaw_motor->motor_measure->pos_int,
        gimbal->gimbal_pos.yaw_motor->motor_measure->pos,
-        // gimbal->gimbal_mode,
-        // gimbal->init_manager.init_state,
-
-        INS_Info.yaw_angle,
-        INS_Info.pit_angle,
+       gimbal->gimbal_mode,
+       //  // gimbal->init_manager.init_state,
        //
-        gimbal->gimbal_pos.pitch_motor->add_angle,
-       gimbal->gimbal_pos.pitch_motor->target_angle,
-       gimbal->gimbal_pos.pitch_motor->given_current,
-       gimbal->gimbal_pos.pitch_motor->absolute_angle_set,
-       gimbal->gimbal_pos.pitch_motor->relative_angle_set,
+       INS_Info.yaw_angle,
+        gimbal->gimbal_pos.yaw_motor-> absolute_angle,
+       //  INS_Info.pit_angle,
+       // //
+       //  gimbal->gimbal_pos.pitch_motor->add_angle,
+       // gimbal->gimbal_pos.pitch_motor->target_angle,
+       // gimbal->gimbal_pos.pitch_motor->given_current,
+       // gimbal->gimbal_pos.pitch_motor->absolute_angle_set,
+       // gimbal->gimbal_pos.pitch_motor->relative_angle_set,
         // gimbal->gimbal_mode
        // gimbal->gimbal_pos.pitch_motor->motor_measure->pos_int,
        // gimbal->gimbal_pos.pitch_motor->motor_measure->pos,
@@ -61,17 +63,17 @@ HAL_StatusTypeDef Vofa_Send_Gimbal_Pitch(UART_HandleTypeDef *huart, gimbal_t *gi
 
     Vofa_Frame_t frame={
         .data = {
-            gimbal->gimbal_pos.pitch_motor->add_angle,
-            gimbal->gimbal_pos.pitch_motor->target_angle,
-            gimbal->gimbal_pos.pitch_motor->given_current,
-            gimbal->gimbal_pos.pitch_motor->absolute_angle_set,
-            gimbal->gimbal_pos.pitch_motor->relative_angle_set,
-            // gimbal->gimbal_pos.yaw_motor->motor_measure->total_round,
-            gimbal->gimbal_pos.pitch_motor->motor_measure->pos_int,
-            gimbal->gimbal_pos.pitch_motor->motor_measure->pos,
-
-             INS_Info.yaw_angle,
-             INS_Info.pit_angle,
+            // gimbal->gimbal_pos.pitch_motor->add_angle,
+            // gimbal->gimbal_pos.pitch_motor->target_angle,
+            // gimbal->gimbal_pos.pitch_motor->given_current,
+            // gimbal->gimbal_pos.pitch_motor->absolute_angle_set,
+            // gimbal->gimbal_pos.pitch_motor->relative_angle_set,
+            // // gimbal->gimbal_pos.yaw_motor->motor_measure->total_round,
+            // gimbal->gimbal_pos.pitch_motor->motor_measure->pos_int,
+            // gimbal->gimbal_pos.pitch_motor->motor_measure->pos,
+            //
+            //  INS_Info.yaw_angle,
+            //  INS_Info.pit_angle,
          }, // 1初始化数据数组
              .tail = VOFA_TAIL // 设置JustFloat协议尾部
          };
@@ -88,14 +90,17 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, chassis_move_t *c
 
     Vofa_Frame_t frame={
     .data = {
-      chassis->motor_measure[0]->rpm,
-      chassis->motor_measure[1]->rpm,
-      chassis->motor_measure[2]->rpm,
-      chassis->motor_measure[3]->rpm,
+      // chassis->motor_measure[0]->rpm,
+      // chassis->motor_measure[1]->rpm,
+      // chassis->motor_measure[2]->rpm,
+      // chassis->motor_measure[3]->rpm,
       chassis->vel_set.wz,
-        chassis->spin_ramp.out,
+
        // gimbal->gimbal_pos.yaw_motor_measure->deta_pos,
         INS_Info.yaw_angle,
+        chassis->chassis_yaw,
+        chassis->gimbal_yaw_motor->relative_angle,
+        // chassis.
 
         // INS_Info.pit_angle,
     }, // 1初始化数据数组

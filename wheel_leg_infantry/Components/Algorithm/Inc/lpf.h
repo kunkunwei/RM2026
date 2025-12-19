@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : lowpass_filter.c
-  * @brief          : lowpass filter 
+  * @brief          : 低通滤波器
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be perfected
+  * @attention      : 待完善
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -25,47 +25,43 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /**
- * @brief typedef structure that contains the information  for the first order lowpass filter.
+ * @brief 包含一阶低通滤波器信息的结构体类型。
  */
 typedef struct
 {
-    bool Initialized;     /*!< init flag */
-    float input;          /*!< input value */
-    float output;         /*!< output value */
-    float alpha;          /*!< filter coefficient */
-    float frame_period;   /*!< frame perood */
+    bool Initialized;     /*!< 初始化标志 */
+    float input;          /*!< 输入值 */
+    float output;         /*!< 输出值 */
+    float alpha;          /*!< 滤波系数 */
+    float frame_period;   /*!< 帧周期 */
 }LowPassFilter1p_Info_TypeDef;
 
 /**
- * @brief typedef structure that contains the information for the second order lowpass filter.
+ * @brief 包含二阶低通滤波器信息的结构体类型。
  */
 typedef struct 
 {
-    bool Initialized;  /*!< init flag */
-    float input;       /*!< input value */
-    float output[3];   /*!< output value */
-    float alpha[3];    /*!< filter coefficient */
+    bool Initialized;  /*!< 初始化标志 */
+    float input;       /*!< 输入值 */
+    float output[3];   /*!< 输出数组 */
+    float alpha[3];    /*!< 滤波系数数组 */
 }LowPassFilter2p_Info_TypeDef;
 
 /* Exported functions prototypes ---------------------------------------------*/
 /**
-  * @brief Initializes the first order lowpass filter according to the specified parameters in the
-  *         LowPassFilter1p_Info_TypeDef.
+  * @brief 根据 LowPassFilter1p_Info_TypeDef 中的参数初始化一阶低通滤波器。
   */
 extern void LowPassFilter1p_Init(LowPassFilter1p_Info_TypeDef *lpf,float alpha,float frame_period);
 /**
-  * @brief Update the first order lowpass filter according to the specified parameters in the
-  *         LowPassFilter1p_Info_TypeDef.
+  * @brief 根据 LowPassFilter1p_Info_TypeDef 更新一阶低通滤波器。
   */
 extern float LowPassFilter1p_Update(LowPassFilter1p_Info_TypeDef *lpf,float input);
 /**
-  * @brief Initializes the Second order lowpass filter according to the specified parameters in the
-  *         LowPassFilter2p_Info_TypeDef.
+  * @brief 根据 LowPassFilter2p_Info_TypeDef 中的参数初始化二阶低通滤波器。
   */
 extern void LowPassFilter2p_Init(LowPassFilter2p_Info_TypeDef *lpf,float alpha[3]);
 /**
-  * @brief Update the Second order lowpass filter according to the specified parameters in the
-  *         LowPassFilter2p_Info_TypeDef.
+  * @brief 根据 LowPassFilter2p_Info_TypeDef 更新二阶低通滤波器。
   */
 extern float LowPassFilter2p_Update(LowPassFilter2p_Info_TypeDef *lpf,float input);
 

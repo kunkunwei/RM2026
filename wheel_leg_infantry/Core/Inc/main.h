@@ -80,10 +80,14 @@ void Error_Handler(void);
 #define USB_DP_GPIO_Port GPIOA
 #define USB_DM_Pin GPIO_PIN_11
 #define USB_DM_GPIO_Port GPIOA
+#define IST8310_RSTN_Pin GPIO_PIN_6
+#define IST8310_RSTN_GPIO_Port GPIOG
 #define Heat_Power_Pin GPIO_PIN_6
 #define Heat_Power_GPIO_Port GPIOF
 #define LED_R_Pin GPIO_PIN_12
 #define LED_R_GPIO_Port GPIOH
+#define IST8310_DRDY_Pin GPIO_PIN_3
+#define IST8310_DRDY_GPIO_Port GPIOG
 #define LED_G_Pin GPIO_PIN_11
 #define LED_G_GPIO_Port GPIOH
 #define LED_B_Pin GPIO_PIN_10
@@ -96,7 +100,6 @@ void Error_Handler(void);
 #define INT1_ACCEL_GPIO_Port GPIOC
 #define INT1_GYRO_Pin GPIO_PIN_5
 #define INT1_GYRO_GPIO_Port GPIOC
-#define INT1_GYRO_EXTI_IRQn EXTI9_5_IRQn
 #define CS1_GYRO_Pin GPIO_PIN_0
 #define CS1_GYRO_GPIO_Port GPIOB
 

@@ -1,18 +1,19 @@
 #include "observe_task.h"
 #include "chassis_task.h"
+#include "slip_detector.h"
 KalmanFilter_Info_TypeDef vaEstimateKF;	  
-
+ SlipDetector_t slip_detector;
 float vaEstimateKF_F[4] = {1.0f, 0.005f, 
                            0.0f, 1.0f};	   
 
 float vaEstimateKF_P[4] = {1.0f, 0.0f,
                            0.0f, 1.0f};    
 
-float vaEstimateKF_Q[4] = {5.0f, 0.0f, 
-                           0.0f, 5.0f};    
+float vaEstimateKF_Q[4] = {10.0f, 0.0f,
+                           0.0f, 15.0f};
 
-float vaEstimateKF_R[4] = {100.0f, 0.0f, 
-                            0.0f,  300.0f}; 	
+float vaEstimateKF_R[4] = {100.0f, 0.0f,
+                            0.0f,  300.0f};
 														
 float vaEstimateKF_K[4];
 													 
@@ -20,102 +21,85 @@ const float vaEstimateKF_H[4] = {1.0f, 0.0f,
                                  0.0f, 1.0f};	
 														 															 
 
-float vel_acc[2]; 
-uint32_t OBSERVE_TIME=5;
-fp32 v_real;
-fp32 aver_v;
-fp32 diff_v;
-fp32 body_v;
-// fp32 x_real;
-
-//extern const chassis_move_t* local_chassis_move;
-const chassis_move_t* local_chassis_move;
-extern const fp32 *local_imu_gyro;	  //imu数据		
+// 状态变量
+static float vel_acc[2];
+static fp32 v_real;
+static fp32 aver_v;
+static fp32 diff_v;
+static fp32 body_v;
+static const chassis_move_t* local_chassis_move;
+extern const fp32 *local_imu_gyro;	  //imu数据
+// 静态偏置估计：使用低通滤波估计IMU零偏
+static fp32 imu_bias_estimate = -0.4f;
 //extern bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect);
+/*-------------------------------------------------------------*/
+static void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF);
+static void CalculateWheelSpeed(const chassis_move_t *chassis, float *wr, float *wl, float *vrb, float *vlb);
+static void UpdateIMUBias(fp32 raw_imu_accel, float aver_v);
+void xvEstimateKF_Update(KalmanFilter_Info_TypeDef *EstimateKF ,float acc,float vel);
+/*-------------------------------------------------------------*/
+
 void ObserveTask(void const * argument)
 {
-  // const volatile fp32 *angle;
-  // const volatile fp32 *gyro;
-
-  // angle = get_INS_angle_point();
-  // gyro = get_gyro_data_point();
-
-  local_chassis_move = get_chassis_control_point();
-	// while(local_chassis_move->touchingGroung == false || local_chassis_move->is_conversely == true)
-	// {
-	//   //st
-	// }
-
+	// 初始化
+    local_chassis_move = get_chassis_control_point();
+	SlipDetector_Init(&slip_detector);
+	xvEstimateKF_Init(&vaEstimateKF);
+	// 局部变量
 	static float wr,wl=0.0f;
 	static float vrb,vlb=0.0f;
-	//static float aver_v=0.0f;
-  static float last_v=0.0f;
-	xvEstimateKF_Init(&vaEstimateKF);
-	
+    static float last_v=0.0f;
+	fp32 raw_imu_accel=0.0f;
+	fp32 compensated_accel=0.0f;
   TickType_t systick = 0;
   while(1)
 	{  
 		osDelayUntil(&systick,5);
-		// printf("test\r\n");
-		// wr =    -local_chassis_move->right_leg.wheel_motor.wheel_motor_measure->speed/57.3f \
-    //         + *(gyro+INS_GYRO_Y_ADDRESS_OFFSET) \
-    //         + local_chassis_move->right_leg.angle_dot;
-    wr =    -local_chassis_move->right_leg.wheel_motor.wheel_motor_measure->speed/57.3f \
-            + local_chassis_move->right_leg.angle_dot;        
-    vrb=    wr*WHEEL_R \
-            +local_chassis_move->right_leg.leg_length*local_chassis_move->state_ref.theta_dot*arm_cos_f32(local_chassis_move->state_ref.theta)\
-            +local_chassis_move->right_leg.length_dot*arm_sin_f32(local_chassis_move->state_ref.theta);//
-    //
-    // wl =     local_chassis_move->left_leg.wheel_motor.wheel_motor_measure->speed/57.3f \
-    //          + *(gyro+INS_GYRO_Y_ADDRESS_OFFSET) \
-    //          + local_chassis_move->left_leg.angle_dot;
+  		// 1. 打滑检测数据同步与更新
+  		SlipDetector_SyncData(&slip_detector,
+			local_chassis_move->left_leg.wheel_motor.wheel_motor_measure->speed/57.3f + local_chassis_move->left_leg.angle_dot,
+			-local_chassis_move->right_leg.wheel_motor.wheel_motor_measure->speed/57.3f + local_chassis_move->right_leg.angle_dot,
+			compensated_accel,
+			local_chassis_move->left_leg.wheel_motor.give_current,
+			local_chassis_move->right_leg.wheel_motor.give_current,
+			local_chassis_move->wz_set);;
+		SlipDetector_Update(&slip_detector);
+  		// SlipDetector_GetConfidence(&slip_detector,&slip_detector.left.confidence,&slip_detector.right.confidence);
 
-    wl =     local_chassis_move->left_leg.wheel_motor.wheel_motor_measure->speed/57.3f \
-             + local_chassis_move->left_leg.angle_dot;
+  		// 2. 计算轮速和车体速度
+  		CalculateWheelSpeed(local_chassis_move, &wr, &wl, &vrb, &vlb);
+  	    // 3. 计算平均速度和速度差
+  	    last_v = aver_v;
+  	    aver_v = (vrb + vlb) / 2.0f;
+  	    diff_v = (wr - wl) * WHEEL_R - local_chassis_move->wz_set * 2 * MOTOR_DISTANCE_TO_CENTER;
+  		if(diff_v >2.0f || diff_v <-2.0f){
+  			//滑了
+  			// 调整矩阵R
+  			vaEstimateKF.Data.R[0] = 5000.0f;
+  		}
+  		else{
+  			vaEstimateKF.Data.R[0] = 250.0f;
+  		}
+  		// 5. 更新IMU偏置
+  		raw_imu_accel = *(local_chassis_move->chassis_imu_accel + INS_ACCEL_X_ADDRESS_OFFSET);
+  		UpdateIMUBias(raw_imu_accel, aver_v);
 
-    vlb=    wl*WHEEL_R \
-                +local_chassis_move->left_leg.leg_length*local_chassis_move->state_ref.theta_dot*arm_cos_f32(local_chassis_move->state_ref.theta)\
-                +local_chassis_move->left_leg.length_dot*arm_sin_f32(local_chassis_move->state_ref.theta);//
-                
-   //printf("%f,%f\r\n",wl,vlb);
-    last_v = aver_v;
-    aver_v=(vrb+vlb)/2.0f;//平均速度
 
-    //printf("%f,%f,%f,\r\n",local_chassis_move->left_leg.wheel_motor.wheel_motor_measure->speed_rpm/2160.0f,-*(gyro+INS_GYRO_Y_ADDRESS_OFFSET),-local_chassis_move->left_leg.angle_dot);
-    diff_v = (wr - wl)*WHEEL_R - local_chassis_move->wz_set*2*MOTOR_DISTANCE_TO_CENTER;
-    
-    if(diff_v >2.0f || diff_v <-2.0f){
-      //滑了
-      // 调整矩阵R
-      vaEstimateKF.Data.R[0] = 5000.0f;
-    }
-    else{
-      vaEstimateKF.Data.R[0] = 250.0f;
-    }
-    xvEstimateKF_Update(&vaEstimateKF,*(local_chassis_move->chassis_imu_accel+INS_ACCEL_X_ADDRESS_OFFSET) - 0.4f,aver_v);
-    //xvEstimateKF_Update(&vaEstimateKF,(aver_v - last_v)/0.005,aver_v);
-    //printf("%f,%f\r\n",(*(local_chassis_move->chassis_imu_accel + INS_ACCEL_X_ADDRESS_OFFSET)) - 0.4,aver_v);
+  	// 使用自适应偏置补偿后的加速度
+  		compensated_accel = raw_imu_accel + imu_bias_estimate;
 
-    //v_real = vel_acc[0];
+  	xvEstimateKF_Update(&vaEstimateKF, compensated_accel, aver_v);
+
     body_v = vel_acc[0];
     v_real = vel_acc[0] \
                 -local_chassis_move->leg_length*local_chassis_move->state_ref.theta_dot*arm_cos_f32(local_chassis_move->state_ref.theta);
                 //-local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
-
-    //10 ms
-    // x_real;
-    // x_real += v_real * 0.005f;
-    //fp32 wz = 0.5f * (wr - wl)*WHEEL_R / MOTOR_DISTANCE_TO_CENTER;
-
-    //printf("%f,%f\r\n",v_real,x_real);
-    // 调整矩阵R
-    // rebuild matrix R
-    //kf->R_data[i * kf->MeasurementValidNum + i] = kf->MatR_DiagonalElements[kf->temp[i]];
-    
 	}
 }
-
-void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF)
+/**
+ * @brief 初始化卡尔曼滤波器
+ */
+static void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF)
 {
     Kalman_Filter_Init(EstimateKF, 2, 0, 2);	// 观测维度
 	
@@ -125,6 +109,43 @@ void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF)
     memcpy(EstimateKF->Data.R, vaEstimateKF_R, sizeof(vaEstimateKF_R));
     memcpy(EstimateKF->Data.H, vaEstimateKF_H, sizeof(vaEstimateKF_H));
 
+}
+/**
+ * @brief 计算轮速和车体速度
+ * @param chassis 底盘结构体指针
+ * @param wr 右轮角速度输出
+ * @param wl 左轮角速度输出
+ * @param vrb 右轮线速度输出
+ * @param vlb 左轮线速度输出
+ */
+static void CalculateWheelSpeed(const chassis_move_t *chassis, float *wr, float *wl, float *vrb, float *vlb)
+{
+	if (chassis == NULL || wr == NULL || wl == NULL || vrb == NULL || vlb == NULL) return;
+
+	// 计算轮角速度
+	*wr = -chassis->right_leg.wheel_motor.wheel_motor_measure->speed/57.3f + chassis->right_leg.angle_dot;
+	*wl =  chassis->left_leg.wheel_motor.wheel_motor_measure->speed/57.3f + chassis->left_leg.angle_dot;
+
+	// 计算轮线速度
+	*vrb = *wr * WHEEL_R
+		  + chassis->right_leg.leg_length * chassis->state_ref.theta_dot * arm_cos_f32(chassis->state_ref.theta)
+		  + chassis->right_leg.length_dot * arm_sin_f32(chassis->state_ref.theta);
+
+	*vlb = *wl * WHEEL_R
+		  + chassis->left_leg.leg_length * chassis->state_ref.theta_dot * arm_cos_f32(chassis->state_ref.theta)
+		  + chassis->left_leg.length_dot * arm_sin_f32(chassis->state_ref.theta);
+}
+/**
+ * @brief 更新IMU加速度偏置（低通滤波）
+ * @param raw_imu_accel 原始IMU加速度
+ * @param aver_v 平均速度
+ */
+static void UpdateIMUBias(fp32 raw_imu_accel, float aver_v)
+{
+	// 静止状态下更新偏置（速度和加速度都很小）
+	if (fabsf(aver_v) < 0.01f && fabsf(raw_imu_accel + imu_bias_estimate) < 0.5f) {
+		imu_bias_estimate = imu_bias_estimate * (1.0f - 0.001f) + (-raw_imu_accel) * 0.001f;
+	}
 }
 
 void xvEstimateKF_Update(KalmanFilter_Info_TypeDef *EstimateKF ,float acc,float vel)
@@ -155,4 +176,32 @@ fp32 get_diff_Spd(void)
 fp32 get_body_Spd(void)
 {   	
     return body_v;
+}
+fp32 get_imu_bias(void)
+{
+	return  imu_bias_estimate;
+}
+SlipDetector_t* get_slip_detector_point(void)
+{
+	return &slip_detector;
+}
+ SlipFlag get_slip_flag(void)
+{
+	return slip_detector.slip_flag;
+}
+fp32 get_confidence_left(void)
+{
+	return slip_detector.left.confidence;
+}
+fp32 get_confidence_right(void)
+{
+	return slip_detector.right.confidence;
+}
+fp32 get_r_scale_velocity(void)
+{
+	return slip_detector.r_scale_velocity;
+}
+fp32 get_r_scale_accel(void)
+{
+	return slip_detector.r_scale_accel;
 }

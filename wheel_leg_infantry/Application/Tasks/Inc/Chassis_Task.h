@@ -24,7 +24,8 @@
 #include "user_lib.h"
 #include "observe_task.h"
 // #include "pid.h"
-
+//前向声明
+// struct JumpController_t;
 /*底盘CAN_ID
 		   前	
 		1     4
@@ -47,6 +48,7 @@
 
 // 选择普通底盘状态 开关通道号
 #define MODE_CHANNEL 0
+#define FUNTION_CHANNEL 1
 // 遥控器前进摇杆（max 660）转化成车体前进速度（m/s）的比例
 #define CHASSIS_VX_RC_SEN 0.0033
 // 遥控器的yaw遥杆（max 660）增加到车体角度的比例
@@ -87,7 +89,7 @@
 // 底盘电机最大速度
 #define MAX_WHEEL_SPEED 4.0f
 // 底盘运动过程最大前进速度
-#define NORMAL_MAX_CHASSIS_SPEED_X 0.8f
+#define NORMAL_MAX_CHASSIS_SPEED_X 1.0f
 // 底盘设置旋转速度
 #define CHASSIS_WZ_SET_SCALE 0.0f
 
@@ -98,23 +100,23 @@
 // 腿部离地时便于缓冲需要的长度
 #define LEG_LENGTH_BUFFER 0.20f
 //跳跃时在空中收腿
-#define LEG_LENGTH_JUMPPING 0.12f
+#define LEG_LENGTH_JUMPPING 0.15f
 
 #define LEG_LENGTH_MAX 0.28f
 #define LEG_LENGTH_MIN 0.11f
 
 //
-#define STOP_X_OFFSET -0.30f
+#define STOP_X_OFFSET -0.20f
 // 腿部长度控制PID
 #define LEG_LENGTH_PID_KP 650.0f
-#define LEG_LENGTH_PID_KI 0.0f
+#define LEG_LENGTH_PID_KI 2.0f
 #define LEG_LENGTH_PID_KD 15.0f
 #define LEG_LENGTH_PID_MAX_OUT 150.0f
-#define LEG_LENGTH_PID_MAX_IOUT 10.0f
+#define LEG_LENGTH_PID_MAX_IOUT 20.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
 #define ANGLE_ERR_PID_KP 400.0f
-#define ANGLE_ERR_PID_KI 0.0f
+#define ANGLE_ERR_PID_KI 0.8f
 #define ANGLE_ERR_PID_KD 30.0f
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
 #define ANGLE_ERR_PID_MAX_IOUT 3.0f
@@ -182,6 +184,30 @@
 #define INS_ACCEL_Y_ADDRESS_OFFSET 0
 #define INS_ACCEL_Z_ADDRESS_OFFSET 2
 
+// ============ 跳跃参数（建议放在头文件） ============
+#define JUMP_COOLDOWN_MS     2000.0f   // 跳跃冷却时间（2秒)
+
+#define JUMP_LANDING_DAMPING 1.2f        // 落地阻尼系数
+#define JUMP_LANDING_STIFFNESS 1078.0f    // 落地刚度系数:k = (总重量*9.8)/伸缩量
+#define JUMP_PREPARE_PITCH_COMP 0.1f     // 准备阶段pitch补偿系数
+//空中收腿PID
+#define JUMP_LEFT_LEG_KP 850.0f
+#define JUMP_LEFT_LEG_KI 0.0f
+#define JUMP_LEFT_LEG_KD 20.0f
+#define JUMP_LEFT_LEG_MAX_IOUT 20.0f
+#define JUMP_LEFT_LEG_MAX_OUT 130.0f
+
+#define JUMP_RIGHT_LEG_KP 850.0f
+#define JUMP_RIGHT_LEG_KI 0.0f
+#define JUMP_RIGHT_LEG_KD 20.0f
+#define JUMP_RIGHT_LEG_MAX_IOUT 20.0f
+#define JUMP_RIGHT_LEG_MAX_OUT 130.0f
+///
+// 🔧 关节角度安全参数（核心防碰撞）
+#define FRONT_JOINT_SAFE_MAX  1.3f    // 前关节安全上限（≈51.5°）
+#define BACK_JOINT_SAFE_MIN   1.7f    // 后关节安全下限（≈97.4°）
+#define JOINT_BUFFER_ZONE     0.1f    // 缓冲区宽度（≈5.7°）
+#define COLLISION_FORCE_REDUCE 0.8f   // 接近限位时力衰减比例（最多衰减80%）
 typedef enum
 {
 	CHASSIS_FORCE_RAW,				  // 底盘开环控制
@@ -219,7 +245,7 @@ typedef struct
 	float leg_length_set;
 	float leg_angle;    		   // 摆杆与竖直方向的夹角
 	float angle_dot;   		   // 腿部摆杆的旋转速度
-	float length_dot;   		   // 腿部摆杆的旋转速度
+	float length_dot;   		   // 腿部摆杆的长度变化速度
 
 	float virtual_pole_force;   // 腿部五连杆机构的推力
 	float virtual_pole_torque;  // 沿中心轴的力矩
@@ -243,9 +269,25 @@ typedef struct
 
 typedef struct chassis_task
 {
-	bool_t jump_flag;
+	bool jump_flag;
+	bool last_jump_flag;
 	uint8_t jump_stage;
-
+	float takeoff_velocity_x;
+	float takeoff_velocity;
+	float takeoff_pitch;
+	float last_jump_finish_time;
+	float current_time;
+	float takeoff_start_time;
+	float takeoff_time;
+	float landing_time;
+	float landing_velocity_z;
+	float landing_velocity_x;
+	float landing_left_force;
+	float landing_right_force;
+	float landing_leg_length;
+	float takeoff_leg_length ;
+	PidTypeDef left_leg_sky_pid;
+	PidTypeDef right_leg_sky_pid;
 }Jump_State_t;
 
 
@@ -258,6 +300,7 @@ typedef struct
 
 	chassis_mode_e chassis_mode;	  // 底盘控制状态机
 	chassis_mode_e last_chassis_mode; // 底盘上次控制状态机
+	uint8_t last_chassis_funtion_mode;//底盘上次功能状态机
 
 	Leg_Control_t left_leg;			  //左腿控制结构体
 	Leg_Control_t right_leg;		  //右腿控制结构体
@@ -288,6 +331,9 @@ typedef struct
 	float left_support_force;        // 左腿的支持力
 	float right_support_force;        // 右腿的支持力
 	float ground_force;      		// 地面的支持力
+	float l_force;					// 左腿腿部推力
+	float r_force;					// 右腿腿部推力
+	float tor_vector[4];			// 四个电机的力矩分量
 
 	float leg_angle;					 // 腿部角度，平均值
 	float leg_angle_dot;
@@ -336,6 +382,7 @@ const chassis_move_t *get_chassis_control_point(void);
 extern void chassis_rc_to_control_vector(float *vx_set, float *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 extern void chassis_rc_to_control_euler(float *l_set, float *roll_set, chassis_move_t *chassis_move_rc_to_vector);
 
+fp32 fp32_constrain(fp32 Value, fp32 minValue, fp32 maxValue);
 // // 底盘初始化，主要是pid初始化
 // extern void chassis_init(chassis_move_t *chassis_move_init);
 // // 底盘状态机选择，通过遥控器的开关

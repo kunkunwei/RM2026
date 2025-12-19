@@ -5,17 +5,19 @@
 #include <stdint.h>       // 标准整型
 #include <string.h>       // 字符串处理
 #include "main.h"        // 主头文件
+#include "usart.h"
+#include "vofa.h"
 
 // USB接收数据结构体，初始化为NULL和0
 Usb_receive_data_t usb_recvive_data={.buffer = NULL,.len=0};
 // USB解包数据结构体，初始化为0
-Usb_dpkg_data_t    usb_dpkg_data={.wz_set=0,.vx_set=0};
+Usb_dpkg_data_t    usb_dpkg_data={.wz_set=0,.vx_set=0,.vy_set=0};
+
+// 静态接收缓冲区
+static uint8_t usb_rx_buffer[64];
 
 // CRC8校验函数声明
 uint8_t calculate_crc8(const uint8_t *data, size_t len);
-
-// 数据解包函数声明
-void dpkgReceiveData(Usb_receive_data_t* receive_data);
 
 /**
   * @brief  usb的DP拉低一段时间，需要在usb_init之前调用
@@ -107,32 +109,63 @@ Usb_send_state_e usbDebug_uint(uint16_t data){
     }
 }
 
-// 指向接收区
-void usbReceiveData(uint8_t* Buf, uint32_t *Len){
-    // printf("rec_%d\r\n",*Len);
-    usb_recvive_data.buffer = Buf; // 保存接收缓冲区指针
-    usb_recvive_data.len = *Len;   // 保存接收数据长度
-    // usb_dpkg_data.vx_set=0.0f;
-    // usb_dpkg_data.wz_set=0.0f;
-    if(usb_recvive_data.buffer == NULL)
-        return ;
-    if(usb_recvive_data.len != 9)
-        return ;
-    uint8_t crc,my_crc;
-    memcpy(&usb_dpkg_data.wz_set,Buf,sizeof(float));      // 解析wz_set
-    memcpy(&usb_dpkg_data.vx_set,Buf+4,sizeof(float));    // 解析vx_set
-    memcpy(&crc,Buf+8,sizeof(uint8_t));                   // 解析CRC
-    my_crc = calculate_crc8(Buf,8);                      // 计算CRC
-    // printf("%d\r\n",(int)my_crc);
-    if(my_crc != crc){
-        printf("crc error\r\n");
-        usb_dpkg_data.vx_set=0.0f;
-        usb_dpkg_data.wz_set=0.0f;
+// 指向接收区 float 接收函数
+void usbReceiveData(uint8_t* Buf, const uint32_t *Len)
+{
+    usb_recvive_data.buffer = Buf;
+    usb_recvive_data.len = *Len;
+
+    if(usb_recvive_data.buffer == NULL || usb_recvive_data.len != 13)
+        return;
+    //printf("ROs\r\n");
+    // 先计算CRC（不包括CRC字节本身）
+    uint8_t my_crc = calculate_crc8(Buf, 12); // 只计算前12个字节
+    uint8_t received_crc = Buf[12]; // 第13个字节是CRC
+    if(my_crc != received_crc)
+    {
+        uint8_t *b={"defet"};
+        uart_printf(&huart6,"crc_err ; %d",my_crc);
+        usbDebug_buff(b,sizeof(b));
+
         return;
     }
-    // printf(" data : %.2f,%.2f\r\n",usb_dpkg_data.wz_set,usb_dpkg_data.vx_set);
+    // CRC校验通过，解析数据
+    memcpy(&usb_dpkg_data.vx_set, Buf, sizeof(float));
+    memcpy(&usb_dpkg_data.vy_set, Buf+4, sizeof(float));
+    memcpy(&usb_dpkg_data.wz_set, Buf+8, sizeof(float));
+    // uart_printf(&huart1,"crc_suss ; %d,%d,%f,%f\r\n",my_crc,received_crc,usb_dpkg_data.vx_set,usb_dpkg_data.wz_set);
+    // uart_printf(&huart6,"crc_suss_vx ; %d,%d,%d,%d\r\n",Buf[0],Buf[1],Buf[2],Buf[3]);
+    // uart_printf(&huart6,"crc_suss_vy ; %d,%d,%d,%d\r\n",Buf[4],Buf[5],Buf[6],Buf[7]);
+    // uart_printf(&huart6,"crc_suss_wz ; %d,%d,%d,%d,%d\r\n",Buf[8],Buf[9],Buf[10],Buf[11],Buf[12]);
+    uart_printf(&huart6,"crc_suss ; %f,%f,%f\r\n",usb_dpkg_data.vx_set,usb_dpkg_data.vy_set,usb_dpkg_data.wz_set);
 }
-
+// void usbReceiveData(uint8_t* Buf, const uint32_t *Len)
+// {
+//     if(Buf == NULL || *Len != 9) return;
+//
+//     // CRC校验
+//     uint8_t my_crc = calculate_crc8(Buf, 8);
+//     if(my_crc != Buf[8])
+//     {
+//         uart_printf(&huart1, "crc_err ; %d\r\n", my_crc);
+//         return;
+//     }
+//
+//     // 将前8个字节转换为字符串
+//     char data_str[9];
+//     memcpy(data_str, Buf, 8);
+//     data_str[8] = '\0';  // 添加字符串结束符
+//
+//     // 使用sscanf解析字符串格式的浮点数
+//     float vx, wz;
+//     if(sscanf(data_str, "%f %f", &vx, &wz) == 2) {
+//         usb_dpkg_data.vx_set = vx;
+//         usb_dpkg_data.wz_set = wz;
+//         uart_printf(&huart1, "crc_suss ; %.2f, %.2f\r\n", vx, wz);
+//     } else {
+//         uart_printf(&huart1, "parse failed: %s\r\n", data_str);
+//     }
+// }
 /**
   * @brief  限制速度范围
   * @param  spd: 速度指针
@@ -145,21 +178,6 @@ void limitSpeed(float* spd,float MAX){
         *spd = -MAX;
 }
 
-// //解包
-// void dpkgReceiveData(Usb_receive_data_t* receive_data){
-//     char total;
-//     int result = sscanf(receive_data->buffer, " %f,%f,%c",
-//                         &usb_dpkg_data.wz_set,
-//                         &usb_dpkg_data.vx_set,
-//                         &total);
-//     if(total != 'm'){
-//         usb_dpkg_data.vx_set=0.0f;
-//         usb_dpkg_data.wz_set=0.0f;
-//     }
-//     //限幅
-//     limitSpeed(&usb_dpkg_data.wz_set,2.0f);
-//     limitSpeed(&usb_dpkg_data.vx_set,2.0f);
-// }
 
 /**
   * @brief  CRC8校验计算
@@ -168,19 +186,20 @@ void limitSpeed(float* spd,float MAX){
   * @retval 计算得到的CRC8值
   */
 uint8_t calculate_crc8(const uint8_t *data, size_t len) {
-    uint8_t crc = 0x00;      // 初始化 CRC 为 0x00
-    uint8_t poly = 0x07;     // 使用多项式 0x07
+    uint8_t crc = 0x00;
+    uint8_t poly = 0x07;
+
     for (size_t i = 0; i < len; i++) {
-        crc ^= data[i];      // 将输入字节与当前 CRC 异或
-        for (uint8_t j = 0; j < 8; j++) { // 遍历每一位
+        crc ^= data[i];
+        for (uint8_t j = 0; j < 8; j++) {
             if (crc & 0x80) {
-                crc = (crc << 1) ^ poly;  // 高位为1，移位后与多项式异或
+                crc = (crc << 1) ^ poly;
             } else {
-                crc <<= 1;    // 高位为0，仅左移
+                crc <<= 1;
             }
         }
     }
-    return crc;               // 返回最终的 CRC
+    return crc;
 }
 
 /**
@@ -189,9 +208,9 @@ uint8_t calculate_crc8(const uint8_t *data, size_t len) {
   * @param  NULL
   * @retval point of Usb_receive_data_t
   */
-//Usb_receive_data_t* get_usb_receive_data(void){
-//    return &usb_recvive_data;
-//}
+Usb_receive_data_t* get_usb_receive_data(void){
+    return &usb_recvive_data;
+}
 
 /**
   * @brief  获取解包数据结构体指针
@@ -200,3 +219,20 @@ uint8_t calculate_crc8(const uint8_t *data, size_t len) {
 Usb_dpkg_data_t*    getUsbDpkgData(void){
     return &usb_dpkg_data;
 }
+
+// /**
+//   * @brief  数据解包函数
+//   * @param  receive_data: 接收数据结构体指针
+//   */
+// void dpkg_receive_data(Usb_receive_data_t* receive_data){
+//     char total;
+//     int result = sscanf((const char*)receive_data->buffer, " %f,%f,%c",
+//                         &usb_dpkg_data.wz_set,
+//                         &usb_dpkg_data.vx_set,
+//                         &total);
+//     // 检查解析结果
+//     if(result != 3){
+//         usb_dpkg_data.vx_set=0.0f;
+//         usb_dpkg_data.wz_set=0.0f;
+//     }
+// }

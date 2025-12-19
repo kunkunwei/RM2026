@@ -11,7 +11,7 @@ void Ros_Task(void const * argument)
   osDelay(500);
   /* USER CODE BEGIN Ros_Task */
   /* Infinite loop */
-
+  // usbReset();
   extern INS_Info_Typedef INS_Info;
   const chassis_move_t* local_chassis = get_chassis_point();
 
@@ -34,8 +34,11 @@ void Ros_Task(void const * argument)
     //
     // Usb_send_data.yaw = local_chassis->chassis_yaw;
     Usb_send_data.yaw_gyro = INS_Info.gyro[2];
-	  usbSendData(&Usb_send_data);
+	  // usbSendData(&Usb_send_data);
 
+    //   usbDebug_float(Usb_receive_data->vx_set);
+    //
+    // usbDebug_float(Usb_receive_data->wz_set);
     // osDelay(20);
 
     // wz = Usb_receive_data->wz_set;
@@ -45,7 +48,7 @@ void Ros_Task(void const * argument)
 
     // usb_fliter_data.vx_after_fliter = v_filter_t.out;
     // usb_fliter_data.wz_after_fliter = wz_filter_t.out;
-    usbDebug_uint(5);
+    // usbDebug_uint(5);
     //printf("%.2f,%.2f\r\n",usb_receive_data->vx_set,usb_receive_data->wz_set);
     // osDelay(5);
     osDelay(20);

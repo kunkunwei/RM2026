@@ -3,9 +3,11 @@
 #include "Chassis_Task.h"
 #include "observe_task.h"
 #include "arm_math.h"
+#include "bmi088.h"
 #include "bsp_tim.h"
 #include "usart.h"
 #include "vofa.h"
+// void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info);
 void User_Task(void const * argument)
 {
   /* Infinite loop */
@@ -20,8 +22,12 @@ void User_Task(void const * argument)
 
     extern lk9025_motor_measure_t motor_right, motor_left;
     extern dm8009_motor_measure_t motor_joint[4];
-    
+     SlipDetector_t *local_detector= get_slip_detector_point();
     const chassis_move_t* local_chassis = get_chassis_control_point();
+    const Quaternion_Info_Typedef* local_Quaternion_Info = get_quaternion_info_point();
+    // float q0 = Quaternion_Info.quat[0], q1 = Quaternion_Info.quat[1], q2 = Quaternion_Info.quat[2], q3 = Quaternion_Info.quat[3];
+    // float e0 = Quaternion_Info.EulerAngle[0], e1 = Quaternion_Info.EulerAngle[1], e2 = Quaternion_Info.EulerAngle[2];
+    // float gx = BMI088_Info.gyro[0], gy = BMI088_Info.gyro[1], gz = BMI088_Info.gyro[2];
 		//float leg_cal[2];
     //Usb_send_data_t Usb_send_data_t;
     //Usb_dpkg_data_t* cnm = getUsbDpkgData();
@@ -33,9 +39,14 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
-
+        // Test_MagYaw(&ist8310_Info,&INS_Info);
         //printf("%.2f,%.2f\r\n",local_chassis->chassis_roll,local_chassis->chassis_roll_set);
-        Vofa_Send_Chassis(&huart1,INS_Info,motor_joint,local_chassis);
+        // Vofa_Send_INS(&huart6,INS_Info,ist8310_Info);
+        // Vofa_Send_Q(&huart6,INS_Info,local_Quaternion_Info);
+        // Vofa_Send_Chassis(&huart6,INS_Info,motor_joint,local_chassis);
+        // Vofa_Send_Data(&huart6,local_chassis);
+        Vofa_Send_Slip(&huart6,local_chassis,local_detector);
+        // Vofa_Send_Balance(&huart6,local_chassis);
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();
@@ -69,7 +80,20 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
-        printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        osDelay(10);
+        // printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
+        osDelay(20);
     }
+}
+
+void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info)
+{
+    // 测试数据：IMU水平指向北
+
+    float yaw = ComputeMagYaw(ist8310_Info->calibrated_mag, INS_Info->rol_angle, INS_Info->pit_angle);
+    uart_printf(&huart6, "期望:0°, 实际:%.1f°\r\n", yaw*57.3f);
+
+    // // 测试绕Z轴旋转90度（应该指向东）
+    // float mag_east[3] = {0.0f, -0.2f, 0.4f};  // 假设
+    // float yaw_east = ComputeMagYaw(mag_east, roll, pitch);
+    // uart_printf(&huart6, "水平指向东 - 期望:90°, 实际:%.1f°\n", yaw_east*57.3f);
 }

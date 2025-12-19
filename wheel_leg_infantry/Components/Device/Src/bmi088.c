@@ -450,7 +450,10 @@ void BMI088_Info_Update(BMI088_Info_Typedef *BMI088_Info)
     uint8_t buf[8] = {0, 0, 0, 0, 0, 0};
 
     /* read the accelerator multi data */
-		BMI088_Accel_Read_Multi_Reg(BMI088_ACCEL_XOUT_L, buf, 6);
+    /*!!!!这一行读取加速度计的芯片ID代码最好不要注释掉，因为通信速率比较高，注释了可能会导致加速度计进入挂起模式，不能正常使用*/
+    BMI088_Accel_Read_Multi_Reg(BMI088_ACC_CHIP_ID,buf, 1);
+    //
+    BMI088_Accel_Read_Multi_Reg(BMI088_ACCEL_XOUT_L, buf, 6);
     BMI088_Info->mpu_info.accelx = (int16_t)((buf[1] << 8) | buf[0]);
     BMI088_Info->mpu_info.accely = (int16_t)((buf[3] << 8) | buf[2]);
     BMI088_Info->mpu_info.accelz = (int16_t)((buf[5] << 8) | buf[4]);

@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : crc.c
-  * @brief          : crc check 
+  * @brief          : CRC 校验
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be tested
+  * @attention      : 待测试
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -80,11 +80,11 @@ const uint16_t wCRC_table[256] =
 
 
 /**
-  * @brief          calculate the crc8  
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length: stream length = data + checksum
-  * @param[in]      ucCRC8: init CRC8
-  * @retval         calculated crc8
+  * @brief          计算 CRC8 校验值
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
+  * @param[in]      ucCRC8: 初始 CRC8 值
+  * @retval         计算得到的 CRC8 校验值
   */
 uint8_t get_CRC8_check_sum(unsigned char *pch_message,unsigned int dw_length,unsigned char ucCRC8)
 {
@@ -99,10 +99,10 @@ uint8_t get_CRC8_check_sum(unsigned char *pch_message,unsigned int dw_length,uns
 //------------------------------------------------------------------------------
 
 /**
-  * @brief          CRC8 verify function  
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length:stream length = data + checksum
-  * @retval         true of false
+  * @brief          CRC8 校验验证函数
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
+  * @retval         成功返回 true，失败返回 false
   */
 uint32_t verify_CRC8_check_sum(unsigned char *pch_message, unsigned int dw_length)
 {
@@ -117,9 +117,9 @@ uint32_t verify_CRC8_check_sum(unsigned char *pch_message, unsigned int dw_lengt
 //------------------------------------------------------------------------------
 
 /**
-  * @brief          append CRC8 to the end of data
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length:stream length = data + checksum
+  * @brief          在数据末尾附加 CRC8 校验字节
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
   * @retval         none
   */
 void append_CRC8_check_sum(unsigned char *pch_message, unsigned int dw_length)
@@ -135,11 +135,11 @@ void append_CRC8_check_sum(unsigned char *pch_message, unsigned int dw_length)
 //------------------------------------------------------------------------------
 
 /**
-  * @brief          calculate the crc16  
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length: stream length = data + checksum
-  * @param[in]      wCRC: init CRC16
-  * @retval         calculated crc16
+  * @brief          计算 CRC16 校验值
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
+  * @param[in]      wCRC: 初始 CRC16 值
+  * @retval         计算得到的 CRC16 校验值
   */
 uint16_t get_CRC16_check_sum(uint8_t *pch_message,uint32_t dw_length,uint16_t wCRC)
 {
@@ -158,10 +158,10 @@ uint16_t get_CRC16_check_sum(uint8_t *pch_message,uint32_t dw_length,uint16_t wC
 //------------------------------------------------------------------------------
 
 /**
-  * @brief          CRC16 verify function  
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length:stream length = data + checksum
-  * @retval         true of false
+  * @brief          CRC16 校验验证函数
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
+  * @retval         成功返回 true，失败返回 false
   */
 uint32_t verify_CRC16_check_sum(uint8_t *pchMessage, uint32_t dwLength)
 {
@@ -176,9 +176,9 @@ uint32_t verify_CRC16_check_sum(uint8_t *pchMessage, uint32_t dwLength)
 //------------------------------------------------------------------------------
 
 /**
-  * @brief          append CRC16 to the end of data
-  * @param[in]      pch_message: data
-  * @param[in]      dw_length:stream length = data + checksum
+  * @brief          在数据末尾附加 CRC16 校验字节
+  * @param[in]      pch_message: 数据指针
+  * @param[in]      dw_length: 流长度 = 数据 + 校验字节长度
   * @retval         none
   */
 void append_CRC16_check_sum(uint8_t * pchMessage,uint32_t dwLength)

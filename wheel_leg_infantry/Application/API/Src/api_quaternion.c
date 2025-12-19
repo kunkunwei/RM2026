@@ -35,7 +35,38 @@ static void QuaternionEKF_H_Update(KalmanFilter_Info_TypeDef *);
   * @brief Update the posteriori estimate matrix
   */
 static void QuaternionEKF_xhat_Update(KalmanFilter_Info_TypeDef *);
-
+/**
+ * @brief 四元数转欧拉角 (ZYX旋转顺序)
+ * @param q 输入四元数 [w, x, y, z]
+ * @param euler 输出欧拉角 [0]=Yaw(Z), [1]=Roll(Y), [2]=Pitch(X)
+ *
+ * 旋转顺序: Z(Yaw) → Y(Roll) → X(Pitch)
+ * 符合你的索引定义:
+ *   euler[0] = Yaw (绕Z轴)
+ *   euler[1] = Roll (绕Y轴)
+ *   euler[2] = Pitch (绕X轴)
+ */
+// void Quaternion_To_Euler(const float q[4], float euler[3])
+// {
+//     float qw = q[0], qx = q[1], qy = q[2], qz = q[3];
+//
+//     // 1. Yaw (Z轴) - euler[0]
+//     float siny_cosp = 2.0f * (qw * qz + qx * qy);
+//     float cosy_cosp =  2.0f * (qw * qw + qx * qx) -1.0f ;
+//     euler[0] = atan2f(siny_cosp, cosy_cosp);
+//
+//     // 2. Roll (Y轴) - euler[1]
+//     float sinr = -2.0f * ( qz * qx - qw * qy);
+//     // if (fabsf(sinr) >= 1.0f)
+//     //     euler[1] = copysignf(M_PI / 2.0f, sinr);
+//     // else
+//     euler[1] = asinf(sinr);
+//
+//     // 3. Pitch (X轴) - euler[2]
+//     float sinp_cosp = 2.0f * (qw * qx + qy * qz);
+//     float cosp_cosp =  2.0f * (qw * qw + qz * qz) - 1.0f;
+//     euler[2] = atan2f(sinp_cosp, cosp_cosp);
+// }
 /**
  * @brief 初始化四元数扩展卡尔曼滤波器
  */
@@ -125,7 +156,7 @@ void QuaternionEKF_Update(Quaternion_Info_Typedef *quat,float gyro[3],float acce
   quat->QuaternionEKF.Data.A[18] =  quat->halfgyrodt[2];
   quat->QuaternionEKF.Data.A[19] =  quat->halfgyrodt[1];
   quat->QuaternionEKF.Data.A[20] = -quat->halfgyrodt[0];
-	
+
 	memcpy(quat->accel,accel,sizeof(quat->accel));
 
   /* Calculate direction of gravity indicated by measurement */
@@ -133,7 +164,7 @@ void QuaternionEKF_Update(Quaternion_Info_Typedef *quat,float gyro[3],float acce
   quat->QuaternionEKF.MeasuredVector[0] = quat->accel[0] * quat->accelInvNorm;
   quat->QuaternionEKF.MeasuredVector[1] = quat->accel[1] * quat->accelInvNorm;
   quat->QuaternionEKF.MeasuredVector[2] = quat->accel[2] * quat->accelInvNorm;
-	 
+
   /* chi square test */
   if(1.f/quat->gyroInvNorm < 0.3f && 1.f/quat->accelInvNorm  > (GravityAccel-0.5f) && 1.f/quat->accelInvNorm < (GravityAccel+0.5f))
 	{
@@ -166,7 +197,7 @@ void QuaternionEKF_Update(Quaternion_Info_Typedef *quat,float gyro[3],float acce
   quat->deviate[0] = quat->QuaternionEKF.Output[4];
   quat->deviate[1] = quat->QuaternionEKF.Output[5];
   quat->deviate[2] = 0.f;
-  
+
 	/* Update the Euler angle in radians */
   quat->EulerAngle[0] = atan2f(2.f*(quat->quat[0]*quat->quat[3] + quat->quat[1]*quat->quat[2]), 2.f*(quat->quat[0]*quat->quat[0] + quat->quat[1]*quat->quat[1])-1.f);
   quat->EulerAngle[1] = asinf(-2.f*(quat->quat[1]*quat->quat[3] - quat->quat[0]*quat->quat[2]));
@@ -191,14 +222,14 @@ static void QuaternionEKF_A_Update(KalmanFilter_Info_TypeDef *kf)
   kf->Data.xhatminus[1] *= kf->Data.cache_vector[0][0];
   kf->Data.xhatminus[2] *= kf->Data.cache_vector[0][0];
   kf->Data.xhatminus[3] *= kf->Data.cache_vector[0][0];
-	
+
   /**
    * @brief A = \frac{\partial f}{\partial x}
    *        1,        -halfgxdt,  -halfgydt,  -halfgzdt, (  0.5f*q1*dt,  0.5f*q2*dt )
    *        halfgxdt,  1,          halfgzdt,  -halfgydt, ( -0.5f*q0*dt,  0.5f*q3*dt )
    *        halfgydt, -halfgzdt,   1,          halfgxdt, ( -0.5f*q3*dt, -0.5f*q0*dt )
    *        halfgzdt,  halfgydt,  -halfgxdt,   1,        (  0.5f*q2*dt, -0.5f*q1*dt )
-   *        0,         0,          0,          0,         1,            0 
+   *        0,         0,          0,          0,         1,            0
    *        0,         0,          0,          0,         0,            1
    */
   kf->Data.A[4]  =  0.5f*kf->Data.xhatminus[1]*kf->dt;
@@ -266,12 +297,12 @@ static bool QuaternionEKF_ChiSqrtTest(KalmanFilter_Info_TypeDef *kf)
   /* ChiSquare_Matrix = (z(k) - h(xhatminus)'·inverse(H·Pminus·HT + R)·(z(k) - h(xhatminus)) */
   kf->MatStatus = Matrix_Multiply(&kf->Mat.cache_vector[0], &kf->Mat.cache_matrix[0], &kf->ChiSquareTest.ChiSquare_Matrix);
 
-  /* rk is small,filter converged/converging */ 
+  /* rk is small,filter converged/converging */
   if (kf->ChiSquareTest.ChiSquare_Data[0] < 0.5f * kf->ChiSquareTest.ChiSquareTestThresholds)
   {
       kf->ChiSquareTest.result = true;
   }
-  /* rk is bigger than thre but once converged */ 
+  /* rk is bigger than thre but once converged */
   if (kf->ChiSquareTest.ChiSquare_Data[0] > kf->ChiSquareTest.ChiSquareTestThresholds && kf->ChiSquareTest.result)
   {
       if (kf->ChiSquareTest.TestFlag)
@@ -311,7 +342,7 @@ static bool QuaternionEKF_ChiSqrtTest(KalmanFilter_Info_TypeDef *kf)
 			{
 				kf->Data.cache_vector[0][0] = 1.f;
 			}
-			
+
       kf->ChiSquareTest.ChiSquareCnt = 0;
       kf->SkipStep5 = false;
   }
@@ -335,8 +366,8 @@ static void QuaternionEKF_xhat_Update(KalmanFilter_Info_TypeDef *kf)
   /* cache_matrix[1] = H·Pminus·HT */
   kf->Mat.cache_matrix[1].numRows = kf->Mat.cache_matrix[0].numRows;
   kf->Mat.cache_matrix[1].numCols = kf->Mat.HT.numCols;
-  kf->MatStatus = Matrix_Multiply(&kf->Mat.cache_matrix[0], &kf->Mat.HT, &kf->Mat.cache_matrix[1]); 
-  
+  kf->MatStatus = Matrix_Multiply(&kf->Mat.cache_matrix[0], &kf->Mat.HT, &kf->Mat.cache_matrix[1]);
+
   /* K_denominator = H Pminus HT + R */
   kf->Mat.K_denominator.numRows = kf->Mat.R.numRows;
   kf->Mat.K_denominator.numCols = kf->Mat.R.numCols;
@@ -357,13 +388,13 @@ static void QuaternionEKF_xhat_Update(KalmanFilter_Info_TypeDef *kf)
 
   /* the cosine of three axis orientation */
 	float OrientationCosine[3];
-	
+
   /* calculate the cosine of three axis orientation */
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		OrientationCosine[i] = acosf(fabsf(kf->Data.cache_vector[0][i]));
 	}
-	
+
   /* cache_vector[1] = z(k) - h(xhat'(k)) */
   kf->Mat.cache_vector[1].numRows = kf->Mat.z.numRows;
   kf->Mat.cache_vector[1].numCols = 1;
@@ -382,7 +413,7 @@ static void QuaternionEKF_xhat_Update(KalmanFilter_Info_TypeDef *kf)
 
   /* k = Pminus·HT·inverse(H·Pminus·HT + R) */
   kf->MatStatus = Matrix_Multiply(&kf->Mat.cache_matrix[0], &kf->Mat.cache_matrix[1], &kf->Mat.K);
-	
+
 	/* The smaller the rk , the greater the gain */
 	for(uint8_t i = 0; i < kf->Mat.K.numCols*kf->Mat.K.numRows; i++)
 	{
@@ -394,7 +425,7 @@ static void QuaternionEKF_xhat_Update(KalmanFilter_Info_TypeDef *kf)
    *          = [  0,  1,  2,
    *               3,  4,  5,
    *               6,  7,  8,
-   *               9, 10, 11, 
+   *               9, 10, 11,
    *             (12, 13, 14,)
    *             (15, 16, 17,)]
    * @note  K[12..17] *=  cos(axis)/(PI/2.f)

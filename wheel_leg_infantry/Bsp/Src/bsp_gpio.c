@@ -62,6 +62,15 @@ void BMI088_GYRO_NS_H(void)
     HAL_GPIO_WritePin(CS1_GYRO_GPIO_Port,CS1_GYRO_Pin,GPIO_PIN_SET);
 }
 //------------------------------------------------------------------------------
+void ist8310_RST_H(void)
+{
+    HAL_GPIO_WritePin(IST8310_RSTN_GPIO_Port, IST8310_RSTN_Pin, GPIO_PIN_SET);
+
+}
+void ist8310_RST_L(void)
+{
+    HAL_GPIO_WritePin(IST8310_RSTN_GPIO_Port, IST8310_RSTN_Pin, GPIO_PIN_RESET);
+}
 
 
 

@@ -12,6 +12,7 @@
 #include <stdarg.h>
 
 #include "Chassis_task.h"
+#include "INS_Task.h"
 // #include "main.h"
 
 
@@ -23,10 +24,10 @@ typedef struct {
     uint8_t tail[4];           // JustFloat协议固定尾部
 } Vofa_Frame_t;
 
-// void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...);
+void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...);
 /* JustFloat协议发送遥控器通道值 */
 
-// HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info,dm8009_motor_measure_t motor_joint[], chassis_move_t* chassis);
+HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info);
 // HAL_StatusTypeDef Vofa_SendRCChannels(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Yaw(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Pitch(UART_HandleTypeDef *huart, gimbal_t *gimbal);

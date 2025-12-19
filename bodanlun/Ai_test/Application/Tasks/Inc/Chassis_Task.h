@@ -72,6 +72,7 @@
 #define NORMAL_MAX_CHASSIS_SPEED_X 2.0f
 //底盘运动过程最大平移速度
 #define NORMAL_MAX_CHASSIS_SPEED_Y 2.0f
+#define NORMAL_MAX_CHASSIS_SPEED_Z 4.0f
 
 #define CHASSIS_MOTOR_W_TO_VECTOR_SEN WHEEL_R
 #define WHEELR 0.075f  //7.5cm
@@ -83,6 +84,7 @@
 #define MOTOR_DISTANCE_TO_CENTER 0.2f
 
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
+#define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 
 //小陀螺旋转速度
@@ -128,11 +130,13 @@ typedef struct
 
 	first_order_filter_type_t chassis_cmd_slow_set_vx;
   	first_order_filter_type_t chassis_cmd_slow_set_vy;
+  	first_order_filter_type_t chassis_cmd_slow_set_wz;
 	first_order_filter_type_t state_xdot_filter;
 	ramp_function_source_t rotation_ramp_wz;   //小陀螺斜坡函数缓启动 停止
  	bool_t rotation_diraction;                 //小陀螺旋转的方向
 
 	float vx_from_ros;
+	float vy_from_ros;
 	float wz_from_ros;
 	float kilometer;
 

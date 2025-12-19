@@ -35,13 +35,14 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
+        // uart_printf(&huart1,"crc_suss ");
         // buzzer_on(84,10);
         //printf("%.2f,%.2f\r\n",local_chassis->chassis_roll,local_chassis->chassis_roll_set);
-        // Vofa_Send_Chassis(&huart1,INS_Info,motor_joint,local_chassis);
+        // Vofa_Send_Chassis(&huart1,INS_Info);
         // if (systick<10000)buzzer_on(84,3000);
         // else buzzer_off();
-        if (systick<10000) play_music(jntm_score, sizeof(jntm_score) / sizeof(jntm_score[0]));
-        else buzzer_off();
+        // if (systick<10000) play_music(jntm_score, sizeof(jntm_score) / sizeof(jntm_score[0]));
+        // else buzzer_off();
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();
@@ -75,7 +76,7 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
-
+        // uart_printf(&huart1,"crc_suss ;\r\n");
         // if (switch_is_mid(remote_ctrl.rc.s[1]))
         // {
         //     // buzzer_on(84,10);

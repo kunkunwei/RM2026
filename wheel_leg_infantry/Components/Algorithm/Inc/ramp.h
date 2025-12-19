@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : ramp.c
-  * @brief          : ramp functions 
+  * @brief          : 斜坡（ramp）函数
   * @author         : Yan Yuanbin
   * @date           : 2023/04/27
   * @version        : v1.0
   ******************************************************************************
-  * @attention      : To be perfected
+  * @attention      : 待完善
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -29,32 +29,30 @@ extern "C" {
  */
 typedef struct
 {
-    bool init;             /*!< init flag */
-    float *filter_buff;    /*!< pointer to the floating-point array of filter buff */
-    uint16_t length;       /*!< the length of filter buff */
-    float input;           /*!< input value */
-    float sum;             /*!< sum value */
-    float output;          /*!< output value */
+    bool init;             /*!< 初始化标志 */
+    float *filter_buff;    /*!< 滤波缓冲区浮点数组指针 */
+    uint16_t length;       /*!< 缓冲区长度 */
+    float input;           /*!< 输入值 */
+    float sum;             /*!< 求和变量 */
+    float output;          /*!< 输出值 */
 }MovingAverage_Info_TypeDef;
 
 /* Exported functions prototypes ---------------------------------------------*/
 /**
-  * @brief Calculate the floating-point ramp filter.
+  * @brief 计算浮点斜坡滤波器。
   */
 extern float f_Ramp_Calc(float input,float target,float ramp);
 /**
-  * @brief Calculate the floating-point logistic curves.
+  * @brief 计算浮点 Logistic 曲线。
   */
 extern float f_LogisticCurves_Calc(float x , float k ,float x0);
 /**
-  * @brief Initializes the moving average filter according to the specified parameters in the
-  *         MovingAverage_Info_TypeDef.
+  * @brief 根据 MovingAverage_Info_TypeDef 中的参数初始化移动平均滤波器。
   */
 extern void MovingAverage_Init(MovingAverage_Info_TypeDef *MA,uint16_t length);
 /**
-  * @brief update the floating-point moving average filter.
+  * @brief 更新浮点移动平均滤波器并返回输出。
   */
 extern float MovingAverage_Update(MovingAverage_Info_TypeDef *MA,float input);
 
 #endif //RAMP_H
-
