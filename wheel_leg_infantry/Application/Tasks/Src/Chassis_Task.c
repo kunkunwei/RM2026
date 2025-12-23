@@ -198,8 +198,9 @@ void chassis_init(chassis_move_t *chassis_move_init)
 
     // ============================================================
     // 初始化新增算法模块
-    // JumpController_Init(&jump_ctrl);  // 初始化静态跳跃控制器
-    // chassis_move_init->jump_ctl_ptr = &jump_ctrl;  // 将指针指向静态实例
+    chassis_move_init->leg_dynamics_predictor.effective_mass=2.0f;
+    chassis_move_init->leg_dynamics_predictor.damping_coeff=0.1f;
+    chassis_move_init->leg_dynamics_predictor.K_adjust=2.0f;
 
     // ============================================================
     // 更新一下数据
@@ -935,7 +936,6 @@ static float limitted_motor_current(fp32 current, fp32 max)
     }
     return (float)current;
 }
-
 /**
  * @brief       平衡+转向
  * @author
@@ -1045,6 +1045,202 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     }
 }
 /**
+ * @brief 基于WBR模型的左右腿摆杆角速度预测
+ * @param leg_length_L 左腿长度
+ * @param leg_length_R 右腿长度
+ * @param theta_L 左腿当前角度
+ * @param theta_R 右腿当前角度
+ * @param leg_torque 关节力矩（公共部分）
+ * @param wheel_torque 轮子力矩（公共部分）
+ * @param err_torque 双腿误差力矩
+ * @param predictor 预测器指针
+ */
+void predict_leg_dynamics(float leg_length_L, float leg_length_R,
+                         float theta_L, float theta_R,
+                         float leg_torque, float wheel_torque, float err_torque,
+                         LegDynamicsPredictor_t *predictor)
+{
+    // ========== 1. 简化WBR模型参数 ==========
+    // 连续时间状态空间方程：ẋ = A*x + B*u
+    // x = [θ_L, θ_dot_L, θ_R, θ_dot_R]^T
+    // u = [τ_leg, τ_wheel]^T
+
+    // 模型参数（需要根据实际系统辨识）
+    static const float m_body = 10.0f;      // 机体质量
+    static const float m_leg = 0.3f;       // 单腿等效质量
+    static const float g = 9.81f;
+    static const float dt = 0.002f;        // 控制周期
+
+    // ========== 2. 左右腿分别建模 ==========
+    // 对于每条腿，倒立摆动力学：
+    // θ_ddot_i = (3g/(2L_i)) * θ_i + (3/(m_i*L_i²)) * τ_leg_i + (1/(m_i*L_i)) * τ_wheel_i
+
+    // 左腿参数
+    float L_L = leg_length_L;
+    float m_total_L = m_body * 0.5f + m_leg;  // 假设质量均匀分配
+    float A_L = (3.0f * g) / (2.0f * L_L);
+    float B_leg_L = 3.0f / (m_total_L * L_L * L_L);
+    float B_wheel_L = 1.0f / (m_total_L * L_L);
+
+    // 右腿参数
+    float L_R = leg_length_R;
+    float m_total_R = m_body * 0.5f + m_leg;
+    float A_R = (3.0f * g) / (2.0f * L_R);
+    float B_leg_R = 3.0f / (m_total_R * L_R * L_R);
+    float B_wheel_R = 1.0f / (m_total_R * L_R);
+
+    // ========== 3. 输入力矩分配 ==========
+    // 根据您的VMC解算逻辑：
+    // 左腿关节力矩 = leg_torque - err_torque
+    // 右腿关节力矩 = leg_torque + err_torque
+    // 轮子力矩：假设均分（实际会根据打滑情况调整）
+
+    float tau_leg_L = leg_torque - err_torque;
+    float tau_leg_R = leg_torque + err_torque;
+    float tau_wheel_L = wheel_torque * 0.5f;
+    float tau_wheel_R = wheel_torque * 0.5f;
+
+    // ========== 4. 离散时间预测 ==========
+    // 使用前向欧拉法：x(k+1) = x(k) + (A*x(k) + B*u(k)) * dt
+
+    // 预测角加速度
+     predictor->theta_ddot_pred[0] = A_L * theta_L + B_leg_L * tau_leg_L + B_wheel_L * tau_wheel_L;
+     predictor->theta_ddot_pred[1] = A_R * theta_R + B_leg_R * tau_leg_R + B_wheel_R * tau_wheel_R;
+
+    // 假设当前角速度已知（从实际测量）
+    // 在实际中需要从状态估计获取，这里简化为用上一时刻预测
+    float theta_dot_L_prev = predictor->theta_dot_pred[0];
+    float theta_dot_R_prev = predictor->theta_dot_pred[1];
+
+    // 预测下一时刻角速度
+    predictor->theta_dot_pred[0] = theta_dot_L_prev +  predictor->theta_ddot_pred[0] * dt;
+    predictor->theta_dot_pred[1] = theta_dot_R_prev +  predictor->theta_ddot_pred[1] * dt;
+
+    // 预测下一时刻角度
+    predictor->theta_pred[0] = theta_L + predictor->theta_dot_pred[0] * dt;
+    predictor->theta_pred[1] = theta_R + predictor->theta_dot_pred[1] * dt;
+}
+/**
+ * @brief 基于模型预测的自适应补偿控制器
+ * @param chassis 底盘控制结构体
+ * @param slip_flag 打滑标志
+ */
+void adaptive_compensation_controller(chassis_move_t *chassis, SlipFlag slip_flag)
+{
+    // static LegDynamicsPredictor_t predictor = {
+    //     .effective_mass = 2.8f,
+    //     .damping_coeff = 0.1f,
+    //     .K_adjust = 2.0f,  // 需要调试
+    // };
+
+    // // ========== 1. 只有打滑且触地时才补偿 ==========
+    // if (!chassis->touchingGroung || slip_flag == SLIP_NONE) {
+    //     // c->left_leg.compensation_torque = 0.0f;
+    //     // c->right_leg.compensation_torque = 0.0f;
+    //     chassis->leg_dynamics_predictor.compensation[0]=0.0f;
+    //     chassis->leg_dynamics_predictor.compensation[1]=0.0f;
+    //     return;
+    // }
+
+    // ========== 2. 获取当前状态 ==========
+    float leg_length_L = chassis->left_leg.leg_length;
+    float leg_length_R = chassis->right_leg.leg_length;
+    float theta_L = chassis->left_leg.leg_angle - PI/2 - chassis->chassis_pitch;  // 转换为全局θ
+    float theta_R = chassis->right_leg.leg_angle - PI/2 - chassis->chassis_pitch;
+    // uart_printf(&huart6, "theta_L: %f, theta_R: %f\r\n", theta_L, theta_R);
+    // 获取LQR计算的基础力矩
+    float base_leg_tor = chassis->leg_tor;
+    float base_wheel_tor = chassis->wheel_tor;
+
+    // 获取双腿误差控制力矩（将在VMC中使用）
+    float err_tor = 0.0f;  // 实际会在chassis_control_loop中计算
+
+    // ========== 3. 模型预测 ==========
+    predict_leg_dynamics(leg_length_L, leg_length_R,
+                        theta_L, theta_R,
+                        base_leg_tor, base_wheel_tor, err_tor,
+                        &chassis->leg_dynamics_predictor);
+    // ========== 1. 只有打滑且触地时才补偿 ==========
+    if (!chassis->touchingGroung || slip_flag == SLIP_NONE) {
+        // c->left_leg.compensation_torque = 0.0f;
+        // c->right_leg.compensation_torque = 0.0f;
+        chassis->leg_dynamics_predictor.compensation[0]=0.0f;
+        chassis->leg_dynamics_predictor.compensation[1]=0.0f;
+        return;
+    }
+    // ========== 4. 计算预测偏差 ==========
+    // 实际的θ_dot（从VMC计算的腿部角速度 + 机体角速度）
+    float theta_dot_actual_L = chassis->left_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+    float theta_dot_actual_R = chassis->right_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+    // uart_printf(&huart1,"theta_dot_actual_L: %f, theta_dot_actual_R: %f\r\n",theta_dot_actual_L,theta_dot_actual_R);
+    // 预测偏差
+    float theta_dot_error_L = chassis->leg_dynamics_predictor.theta_dot_pred[0] - theta_dot_actual_L;
+    float theta_dot_error_R = chassis->leg_dynamics_predictor.theta_dot_pred[1] - theta_dot_actual_R;
+    // uart_printf(&huart1,"theta_dot_pred_L: %f, theta_dot_pred_R: %f\r\n",chassis->leg_dynamics_predictor.theta_dot_pred[0],chassis->leg_dynamics_predictor.theta_dot_pred[1]);
+    // ========== 5. 计算自适应补偿 ==========
+    // 基础补偿：T_i = K_adjust * (θ_dot_pred - θ_dot_actual)
+    float comp_L_base = chassis->leg_dynamics_predictor.K_adjust * theta_dot_error_L;
+    float comp_R_base = chassis->leg_dynamics_predictor.K_adjust * theta_dot_error_R;
+
+    // ========== 6. 根据打滑类型调整补偿 ==========
+    float comp_L = comp_L_base;
+    float comp_R = comp_R_base;
+    // uart_printf(&huart1,"slip_flag: %d\r\n",slip_flag);
+     // uart_printf(&huart6,"comp_L_base: %f, comp_R_base: %f\r\n",comp_L_base,comp_R_base);
+    switch (slip_flag) {
+        case SLIP_LEFT:
+            // 左轮打滑：增强左腿补偿，减弱右腿
+            comp_L *= 1.5f;
+            comp_R *= 0.7f;
+
+            // 左轮力矩大幅减小
+            chassis->wheel_tor *= 0.3f;
+            break;
+
+        case SLIP_RIGHT:
+            // 右轮打滑：增强右腿补偿，减弱左腿
+            comp_R *= 1.5f;
+            comp_L *= 0.7f;
+
+            // 右轮力矩大幅减小
+            chassis->wheel_tor *= 0.3f;
+            break;
+
+        case SLIP_BOTH:
+            // 双轮打滑：两侧都增强补偿
+            comp_L *= 1.2f;
+            comp_R *= 1.2f;
+
+            // 双轮力矩都减小
+            chassis->wheel_tor *= 0.2f;
+            break;
+
+        default:
+            break;
+    }
+
+    // ========== 7. 柔顺处理和限幅 ==========
+    // 低通滤波确保平滑
+    static float last_comp_L = 0.0f, last_comp_R = 0.0f;
+    float alpha = 0.4f;  // 滤波系数
+
+    comp_L = alpha * comp_L + (1.0f - alpha) * last_comp_L;
+    comp_R = alpha * comp_R + (1.0f - alpha) * last_comp_R;
+
+    // 限幅保护
+    float max_comp = 3.0f;  // 最大补偿力矩
+    comp_L = fminf(fmaxf(comp_L, -max_comp), max_comp);
+    comp_R = fminf(fmaxf(comp_R, -max_comp), max_comp);
+
+    last_comp_L = comp_L;
+    last_comp_R = comp_R;
+    // uart_printf(&huart1,"comp_L: %f, comp_R: %f\r\n",comp_L,comp_R);
+    // ========== 8. 存储补偿力矩 ==========
+    chassis->left_leg.compensation_torque = comp_L;
+    chassis->right_leg.compensation_torque = comp_R;
+}
+
+/**
  * @brief          底盘控制PID计算
  * @author         pxx
  * @param          chassis_move_control_loop   底盘结构体指针
@@ -1071,13 +1267,6 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
         return;
     }
 
-    // ============================================================
-    // // 更新统一观测器（触地检测、打滑检测）
-
-    //
-
-        // === 正常控制模式 ===
-
         // 获取沿杆的推力F,给出左右leg_force
         cacul_support(chassis_move_control_loop);
 
@@ -1089,10 +1278,9 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 
         // LQR平衡,轮子力矩和推力Tp
         LQR_Balance_Turn(chassis_move_control_loop);
-        // soft_scale_near_limit(chassis_move_control_loop->left_leg.front_joint.angle,M_PI/2,M_PI/2-0.3,0.8);
-    // ============================================================
-    // ============================================================
-    // 原有代码继续执行（无论跳跃还是正常模式都需要VMC解算）
+
+    SlipFlag slip_flag = SlipDetector_GetFlag(&slip_detector);
+    adaptive_compensation_controller(chassis_move_control_loop, slip_flag);
 
     // 双腿角度误差控制
     fp32 err_tor   = 0.0f;
@@ -1104,7 +1292,8 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
     fp32 tor_vector[2] = {0.0f};
 
     //反算出关节力矩
-    leg_conv(-chassis_move_control_loop->right_support_force, chassis_move_control_loop->leg_tor + err_tor,
+    // 右腿VMC：基础leg_tor + 右腿补偿 + err_tor
+    leg_conv(-chassis_move_control_loop->right_support_force, chassis_move_control_loop->leg_tor + chassis_move_control_loop->right_leg.compensation_torque+ err_tor,
             chassis_move_control_loop->right_leg.back_joint.angle, chassis_move_control_loop->right_leg.front_joint.angle, \
             tor_vector);
     chassis_move_control_loop->tor_vector[2]=tor_vector[1];
@@ -1112,7 +1301,7 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
     chassis_move_control_loop->right_leg.back_joint.tor_set = limitted_motor_current(-tor_vector[1] , 15.0f);
     chassis_move_control_loop->right_leg.front_joint.tor_set = limitted_motor_current(-tor_vector[0] , 15.0f);
 
-    leg_conv(-chassis_move_control_loop->left_support_force, chassis_move_control_loop->leg_tor - err_tor,
+    leg_conv(-chassis_move_control_loop->left_support_force, chassis_move_control_loop->leg_tor +chassis_move_control_loop->left_leg.compensation_torque- err_tor,
              chassis_move_control_loop->left_leg.back_joint.angle, chassis_move_control_loop->left_leg.front_joint.angle,
              tor_vector);
     chassis_move_control_loop->tor_vector[0]=tor_vector[0];

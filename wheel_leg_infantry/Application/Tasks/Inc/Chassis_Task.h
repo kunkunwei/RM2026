@@ -234,7 +234,20 @@ typedef struct
 	int16_t give_current;	// 实际由CAN通信给电调发送的电流值
 	float tor_set;
 } Joint_Motor_t; // 关节电机结构体
+typedef struct {
+	// 模型参数（可在线辨识）
+	float effective_mass;     // 等效质量
+	float damping_coeff;      // 阻尼系数
 
+	// 状态变量
+	float theta_pred[2];      // 左右腿预测角度 [left, right]
+	float theta_dot_pred[2];  // 左右腿预测角速度
+	float theta_ddot_pred[2]; // 左右腿预测角加速度
+	// 补偿参数
+	float K_adjust;           // 自适应增益
+	float compensation[2];    // 左右腿补偿力矩
+
+} LegDynamicsPredictor_t;
 typedef struct
 {
 	Wheel_Motor_t wheel_motor;
@@ -246,6 +259,7 @@ typedef struct
 	float leg_angle;    		   // 摆杆与竖直方向的夹角
 	float angle_dot;   		   // 腿部摆杆的旋转速度
 	float length_dot;   		   // 腿部摆杆的长度变化速度
+	float compensation_torque; // 自适应补偿力矩
 
 	float virtual_pole_force;   // 腿部五连杆机构的推力
 	float virtual_pole_torque;  // 沿中心轴的力矩
@@ -304,6 +318,8 @@ typedef struct
 
 	Leg_Control_t left_leg;			  //左腿控制结构体
 	Leg_Control_t right_leg;		  //右腿控制结构体
+
+	LegDynamicsPredictor_t leg_dynamics_predictor; // 腿部动力学预测器
 
 	PidTypeDef left_leg_length_pid;   //腿长控制器
 	PidTypeDef right_leg_length_pid;  //腿长控制器

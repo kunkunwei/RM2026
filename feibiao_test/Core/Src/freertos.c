@@ -49,6 +49,7 @@
 /* USER CODE END Variables */
 osThreadId StartCanTaskHandle;
 osThreadId StartChassisTasHandle;
+osThreadId StartUserTaskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -57,6 +58,7 @@ osThreadId StartChassisTasHandle;
 
 void Can_Task(void const * argument);
 void Chassis_Task(void const * argument);
+void User_Task(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -104,12 +106,16 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of StartCanTask */
-  osThreadDef(StartCanTask, Can_Task, osPriorityNormal, 0, 256);
+  osThreadDef(StartCanTask, Can_Task, osPriorityBelowNormal, 0, 256);
   StartCanTaskHandle = osThreadCreate(osThread(StartCanTask), NULL);
 
   /* definition and creation of StartChassisTas */
-  osThreadDef(StartChassisTas, Chassis_Task, osPriorityIdle, 0, 256);
+  osThreadDef(StartChassisTas, Chassis_Task, osPriorityNormal, 0, 256);
   StartChassisTasHandle = osThreadCreate(osThread(StartChassisTas), NULL);
+
+  /* definition and creation of StartUserTask */
+  osThreadDef(StartUserTask, User_Task, osPriorityNormal, 0, 256);
+  StartUserTaskHandle = osThreadCreate(osThread(StartUserTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -151,6 +157,24 @@ __weak void Chassis_Task(void const * argument)
     osDelay(1);
   }
   /* USER CODE END Chassis_Task */
+}
+
+/* USER CODE BEGIN Header_User_Task */
+/**
+* @brief Function implementing the StartUserTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_User_Task */
+__weak void User_Task(void const * argument)
+{
+  /* USER CODE BEGIN User_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END User_Task */
 }
 
 /* Private application code --------------------------------------------------*/

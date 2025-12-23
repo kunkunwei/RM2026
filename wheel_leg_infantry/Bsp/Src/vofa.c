@@ -287,6 +287,31 @@ HAL_StatusTypeDef Vofa_Send_INS(UART_HandleTypeDef *huart, INS_Info_Typedef INS_
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+HAL_StatusTypeDef Vofa_Send_Pred(UART_HandleTypeDef *huart,chassis_move_t* chassis )
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+            chassis->leg_dynamics_predictor.theta_pred[0],
+            chassis->leg_dynamics_predictor.theta_pred[1],
+            chassis->leg_dynamics_predictor.theta_dot_pred[0],
+            chassis->leg_dynamics_predictor.theta_dot_pred[1],
+            chassis->leg_dynamics_predictor.theta_ddot_pred[0],
+            chassis->leg_dynamics_predictor.theta_ddot_pred[1],
+            chassis->state_ref.theta,
+            chassis->state_ref.theta_dot,
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
 HAL_StatusTypeDef Vofa_Send_Q(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info, Quaternion_Info_Typedef *Quaternion_Info)
 {
 

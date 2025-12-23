@@ -15,7 +15,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "bsp_can.h"
 #include "can.h"
-#include "remote_control.h"
 #include "main.h"
 #include "stepper_can.h"
 #include "stepper_motor.h"
@@ -37,29 +36,25 @@ CAN_RxHeaderTypeDef USER_CAN_RxInstance;
 uint8_t USER_CAN_RxFrameData[8];
 
 /**
- * @brief the structure that contains the Information of CAN Transmit.
+ * @brief Overview:
+ * 该文件为 CAN 总线的底层 BSP 层实现，负责 CAN 过滤器配置、消息发送封装、
+ * 以及接收到消息的分发（包括 CAN1 的接收处理器）。
+ *
+ * 接收处理器说明（多帧）：
+ * - 本项目中步进电机的多帧上报采用两帧结构：首帧（ExtId = frame_id）携带前 8 字节，
+ *   后续帧（ExtId = frame_id + 1）携带剩余字节，且后续帧的 D0 通常放置命令码以便识别。
+ * - 系统状态（命令码 0x43）为多帧返回，接收端需将首帧整包（包含 D0..D7）拷贝，
+ *   后续每帧从 D1 开始拷贝（D0 为重复的命令码），最终以 [0x43, CAN_CHECK_CODE] 作为结束包。
  */
 
-//
-// CAN_TxFrameTypeDef YAW_MOTOR_FRAME ={
-//   	.hcan = &hcan1,
-// 		.header.StdId=CAN1_YAW_MOTOR_ID,
-// 		.header.IDE=CAN_ID_EXT,
-// 		.header.RTR=CAN_RTR_DATA,
-// 		.header.DLC=8,
-// };
-// CAN_TxFrameTypeDef PITCH_MOTOR_FRAME ={
-//   	.hcan = &hcan1,
-// 		.header.StdId=CAN1_PITCH_MOTOR_ID,
-// 		.header.IDE=CAN_ID_EXT,
-// 		.header.RTR=CAN_RTR_DATA,
-// 		.header.DLC=8,
-// };
+//------------------------------------------------------------------------------
 
 /**
   * @brief  Configures the CAN Filter.
   * @param  None
   * @retval None
+  *
+  * @note 初始化 CAN 过滤器、启动 CAN 模块并激活 FIFO0 中断。
   */
 void BSP_CAN_Init(void)
 {
@@ -79,7 +74,7 @@ void BSP_CAN_Init(void)
 
   /* configures the CAN1 filter */
   if(HAL_CAN_ConfigFilter(&hcan1, &CAN_FilterConfig) != HAL_OK)
-  {	
+  {
       Error_Handler();
   }
 
@@ -109,64 +104,68 @@ void BSP_CAN_Init(void)
 
 /**
   * @brief  USER function to transmit the Specifies message.
-	* @param  Instance: pointer to the CAN Register base address
-	* @param  data: pointer to the CAN transmit data
+  * @param  TxHeader: 指向封装好的 CAN_TxFrameTypeDef（包含句柄、header、Data）
   * @retval None
+  *
+  * @note 该接口为发送封装，内部使用 HAL_CAN_AddTxMessage 提交到硬件邮箱。
   */
-
-//------------------------------------------------------------------------------
 void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 {
-	
-	static uint32_t TxMailbox = 0;
 
-	HAL_CAN_AddTxMessage(TxHeader->hcan, &TxHeader->header, TxHeader->Data, &TxMailbox);
+    static uint32_t TxMailbox = 0;
+
+    HAL_CAN_AddTxMessage(TxHeader->hcan, &TxHeader->header, TxHeader->Data, &TxMailbox);
 }
 /**
   * @brief  USER function to converting the CAN1 received message.
-	* @param  Instance: pointer to the CAN Register base address
-	* @param  StdId: Specifies the standard identifier.
-	* @param  data: array that contains the received massage.
+    * @param  StdId: 指向 USER_CAN_RxInstance.StdId 的指针（32 位），
+    *         高 16 位为帧 ID，高 8 位或以项目约定解析，低 8 位为包序号（packet index）。
+    * @param  data: 接收到的 8 字节数据缓存
   * @retval None
+  *
+  * @note 该函数负责把收到的 CAN 帧按照应用协议分发给对应的响应处理函数，
+  * 包括错误应答、系统状态多帧拼接、以及各命令的即时应答。
   */
-//
-static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
+static void CAN1_RxFifo0RxHandler(const uint32_t *StdId,uint8_t data[8])
 {
-	uint16_t frame_id = (*StdId >> 8); // 电机ID
+    uint16_t frame_id = (*StdId >> 8); // 电机ID
     uint8_t packet_idx = *StdId & 0xFF; // 包序号
     uint8_t len = USER_CAN_RxInstance.DLC;
 
-    // 错误应答
+    // 错误应答（通用错误格式 00 EE ...）
     if (data[0] == 0x00 && data[1] == 0xEE && data[2] == CAN_CHECK_CODE) {
         osSemaphoreRelease(can_cmd_semHandle);
         return;
     }
-    // 非目标电机
+    // 非目标电机（忽略其他设备或报文）
     if (frame_id != CAN1_YAW_MOTOR_ID && frame_id != CAN1_PITCH_MOTOR_ID) {
         return;
     }
-    // 系统状态多帧应答
+    // 系统状态多帧应答（命令码 0x43）
     if (data[0] == 0x43) {
+        // 如果包序号或帧来源变化，重置拼接缓存
         if (packet_idx != expected_packet_idx || frame_id != sys_status_frame_id) {
             sys_status_len = 0;
             sys_status_frame_id = frame_id;
             expected_packet_idx = 0;
         }
-        // 防止溢出
+        // 防止缓存溢出
         if (sys_status_len + len > sizeof(sys_status_buffer)) {
             sys_status_len = 0;
             expected_packet_idx = 0;
             return;
         }
         if (packet_idx == 0) {
+            // 首帧：拷贝完整 8 字节（包含命令码在 D0）
             memcpy(&sys_status_buffer[sys_status_len], data, len);
             sys_status_len += len;
         } else {
+            // 后续帧：协议约定 D0 为重复的命令码，因此从 D1 开始拷贝实际剩余数据
             memcpy(&sys_status_buffer[sys_status_len], &data[1], len - 1);
             sys_status_len += (len - 1);
         }
         expected_packet_idx++;
-        // 最后一包（43 6B）
+        // 最后一包标志：协议使用 [0x43, CAN_CHECK_CODE] 作为结束包
         if (len == 2 && data[1] == CAN_CHECK_CODE) {
             StepperCAN_ReadSystemStatus_Response(frame_id, sys_status_buffer, sys_status_len);
             sys_status_len = 0;
@@ -174,7 +173,7 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
         }
         return;
     }
-    // 普通命令应答
+    // 普通命令应答，根据命令码分发到对应处理函数
     switch (data[0]) {
         case 0xF3:
             StepperCAN_Enable_Response(data, len);
@@ -195,7 +194,7 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
             StepperCAN_TriggerHome_Response(data, len);
             break;
         default:
-            // 其他命令
+            // 其他命令：暂不处理
             break;
     }
  }
@@ -204,17 +203,17 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 
 /**
   * @brief  USER function to converting the CAN2 received message.
-	* @param  Instance: pointer to the CAN Register base address
-	* @param  StdId: Specifies the standard identifier.
-	* @param  data: array that contains the received massage.
+    * @param  StdId: 指向 USER_CAN_RxInstance.StdId 的指针
+    * @param  data: 接收到的 8 字节数据缓存
   * @retval None
   */
-static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
+static void CAN2_RxFifo0RxHandler(const uint32_t *StdId,uint8_t data[8])
 {
     //printf("CAN2 STDID: %d\r\n",*StdId);
-  	switch(*StdId)
+      switch(*StdId)
     {
-
+        default:
+            break;
     }
 }
 //------------------------------------------------------------------------------
@@ -224,6 +223,8 @@ static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
   * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
   *         the configuration information for the specified CAN.
   * @retval None
+  *
+  * @note HAL 中断回调会在底层触发此函数，我们从 FIFO 中读取一帧并根据 hcan 实例分发。
   */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {

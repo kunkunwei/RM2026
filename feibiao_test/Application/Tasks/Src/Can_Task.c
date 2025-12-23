@@ -47,31 +47,31 @@ void Can_Task(void const * argument)
 
   for(;;)
   {
-  	// 仅作LED显示
-  	if (remote_ctrl.rc.s[0]== 1)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-  	}
-  	else if (remote_ctrl.rc.s[0] == 2)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-  	}
-  	else if (remote_ctrl.rc.s[0] == 3)
-  	{
-  		HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-  		HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-  	}
-  	feibiao_feedback(&feibiao);
-  	feibiao_setcontrol(&feibiao);
-  	feibiao_control_loop(&feibiao);
-
-  	FeiBiao_Send(feibiao.yaw_6020->target_current, feibiao.roll_6020->target_current, feibiao.pull_3508->target_current);
-
+  	// // 仅作LED显示
+  	// if (remote_ctrl.rc.s[0]== 1)
+  	// {
+  	// 	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
+  	// 	HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
+  	// 	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
+  	// }
+  	// else if (remote_ctrl.rc.s[0] == 2)
+  	// {
+  	// 	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
+  	// 	HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
+  	// 	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
+  	// }
+  	// else if (remote_ctrl.rc.s[0] == 3)
+  	// {
+  	// 	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
+  	// 	HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
+  	// 	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
+  	// }
+  	// feibiao_feedback(&feibiao);
+  	// feibiao_setcontrol(&feibiao);
+  	// feibiao_control_loop(&feibiao);
+	  //
+  	// FeiBiao_Send(feibiao.yaw_6020->target_current, feibiao.roll_6020->target_current, feibiao.pull_3508->target_current);
+	  //
 
     osDelay(2);
   }

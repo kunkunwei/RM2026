@@ -100,6 +100,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM10_Init();
   MX_TIM1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   MCU_Init();
   /* USER CODE END 2 */

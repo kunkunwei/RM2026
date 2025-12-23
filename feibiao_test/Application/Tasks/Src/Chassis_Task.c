@@ -44,25 +44,7 @@ void Chassis_Task(void const * argument)
   for(;;)
   {
 
-      // // HAL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
-      // if (remote_ctrl.rc.s[1]== 1)
-      // {
-      //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
-      //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-      //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-      // }
-      // else if (remote_ctrl.rc.s[1] == 2)
-      // {
-      //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-      //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
-      //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-      // }
-      // else if (remote_ctrl.rc.s[1] == 3)
-      // {
-      //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-      //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-      //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-      // }
+
     systick = osKernelSysTick();
 
     // chassis_behaviour_mode_set(chassis_move.chassis_RC);

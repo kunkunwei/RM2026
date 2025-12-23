@@ -16,7 +16,7 @@
 // #include "main.h"
 
 
-#define VOFA_CHANNELS 30    // VOFA+通道数量
+#define VOFA_CHANNELS 8    // VOFA+通道数量
 #define VOFA_TAIL {0x00, 0x00, 0x80, 0x7F} // JustFloat协议尾部
 
 typedef struct {
@@ -33,6 +33,7 @@ HAL_StatusTypeDef Vofa_Send_INS(UART_HandleTypeDef *huart, INS_Info_Typedef INS_
 HAL_StatusTypeDef Vofa_Send_Q(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info,Quaternion_Info_Typedef *Quaternion_Info);
 HAL_StatusTypeDef Vofa_Send_Balance(UART_HandleTypeDef *huart, chassis_move_t* chassis);
 HAL_StatusTypeDef Vofa_Send_Slip(UART_HandleTypeDef *huart, chassis_move_t* chassis,SlipDetector_t *detector);
+HAL_StatusTypeDef Vofa_Send_Pred(UART_HandleTypeDef *huart,chassis_move_t* chassis );
 // HAL_StatusTypeDef Vofa_SendRCChannels(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Yaw(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Pitch(UART_HandleTypeDef *huart, gimbal_t *gimbal);

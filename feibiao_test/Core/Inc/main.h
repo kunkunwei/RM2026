@@ -38,7 +38,7 @@ extern "C" {
   //matlab
   // #include "leg_pos.h"
   // #include "leg_spd.h"
-#include "lqr_k.h"
+// #include "lqr_k.h"
   // #include "leg_conv.h"
   //bsp
 #include "bsp_can.h"

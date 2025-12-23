@@ -45,8 +45,9 @@ void User_Task(void const * argument)
         // Vofa_Send_Q(&huart6,INS_Info,local_Quaternion_Info);
         // Vofa_Send_Chassis(&huart6,INS_Info,motor_joint,local_chassis);
         // Vofa_Send_Data(&huart6,local_chassis);
-        Vofa_Send_Slip(&huart6,local_chassis,local_detector);
+        // Vofa_Send_Slip(&huart6,local_chassis,local_detector);
         // Vofa_Send_Balance(&huart6,local_chassis);
+        Vofa_Send_Pred(&huart1,local_chassis);
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();

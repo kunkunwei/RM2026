@@ -20,6 +20,9 @@
 #include "stdint.h"
 #include "stdbool.h"
 
+/**
+ * @brief 步进电机回零模式
+ */
 typedef enum {
     STEPPER_HOME_SINGLE_NEAREST = 0x00,    // 单圈就近回零
     STEPPER_HOME_SINGLE_DIR     = 0x01,    // 单圈方向回零
@@ -27,6 +30,9 @@ typedef enum {
     STEPPER_HOME_MULTI_LIMIT    = 0x03     // 多圈有限位开关回零
   } StepperHomeMode_e;
 
+/**
+ * @brief 步进电机状态标志
+ */
 typedef enum {
     STEPPER_STATUS_ENABLED        = 0x01, // 电机使能
     STEPPER_STATUS_IN_POSITION    = 0x02, // 电机到位
@@ -34,6 +40,9 @@ typedef enum {
     STEPPER_STATUS_STALL_PROTECT  = 0x08  // 电机堵转保护
   } StepperStatusFlag_e;
 
+/**
+ * @brief 步进电机测量数据结构
+ */
 typedef struct {
     uint8_t param_len;         // 返回字节数
     uint8_t param_count;       // 配置参数个数
@@ -53,6 +62,11 @@ extern Stepper_motor_measure_t pitch_motor,yaw_motor;   // 两个步进电机接
 /*---------------------------------电机接收结构体声明-----------------------------------*/
 
 /*---------------------------------电机状态信息接收处理函数声明-----------------------------------*/
+/**
+ * @brief 获取步进电机系统状态
+ * @param ptr 指向步进电机测量数据结构的指针
+ * @param rx_message 接收到的消息指针
+ */
 extern void get_stepper_system_status_measure(Stepper_motor_measure_t *ptr, const uint8_t *rx_message);
 /*---------------------------------电机状态信息接收处理函数声明-----------------------------------*/
 

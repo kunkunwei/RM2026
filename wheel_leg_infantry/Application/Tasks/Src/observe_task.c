@@ -1,25 +1,39 @@
 #include "observe_task.h"
 #include "chassis_task.h"
 #include "slip_detector.h"
-KalmanFilter_Info_TypeDef vaEstimateKF;	  
  SlipDetector_t slip_detector;
-float vaEstimateKF_F[4] = {1.0f, 0.005f, 
-                           0.0f, 1.0f};	   
+
+///////////////////////////////////////////////////////////////
+/*------------------机体速度与加速度估计KF--------------------------*/
+KalmanFilter_Info_TypeDef vaEstimateKF;
+float vaEstimateKF_F[4] = {1.0f, 0.005f,
+                           0.0f, 1.0f};
 
 float vaEstimateKF_P[4] = {1.0f, 0.0f,
-                           0.0f, 1.0f};    
+                           0.0f, 1.0f};
 
 float vaEstimateKF_Q[4] = {10.0f, 0.0f,
                            0.0f, 15.0f};
 
 float vaEstimateKF_R[4] = {100.0f, 0.0f,
                             0.0f,  300.0f};
-														
-float vaEstimateKF_K[4];
-													 
+
+// float vaEstimateKF_K[4];
+//u(t)=[轮速,机体速度]^T
 const float vaEstimateKF_H[4] = {1.0f, 0.0f,
-                                 0.0f, 1.0f};	
-														 															 
+                                 0.0f, 1.0f};
+///////////////////////////////////////////////////////////////
+/*------------------各腿theta和theta微分估计KF--------------------------*/
+KalmanFilter_Info_TypeDef left_leg_theta_KF;
+KalmanFilter_Info_TypeDef right_leg_theta_KF;
+float left_leg_Q[4] = {0.01f, 0.0f,   // 过程噪声：角度噪声小，角速度噪声大
+					   0.0f, 0.05f};
+float left_leg_R[4] = {0.02f, 0.0f,   // 观测噪声：角度观测准，角速度观测有噪声
+					   0.0f, 0.1f};
+float left_leg_P[4] = {0.1f, 0.0f,    // 初始协方差
+			           0.0f, 0.1f};
+
+///////////////////////////////////////////////////////////////
 
 // 状态变量
 static float vel_acc[2];
@@ -37,6 +51,19 @@ static void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF);
 static void CalculateWheelSpeed(const chassis_move_t *chassis, float *wr, float *wl, float *vrb, float *vlb);
 static void UpdateIMUBias(fp32 raw_imu_accel, float aver_v);
 void xvEstimateKF_Update(KalmanFilter_Info_TypeDef *EstimateKF ,float acc,float vel);
+/*-------------------------------------------------------------*/
+static void SingleLegKF_Init(KalmanFilter_Info_TypeDef *leg_kf,
+							float dt,
+							float leg_length,
+							float effective_mass,
+							float init_theta,
+							float init_omega);
+
+static void SingleLegKF_Predict(KalmanFilter_Info_TypeDef *leg_kf);
+static void SingleLegKF_Update(KalmanFilter_Info_TypeDef *leg_kf,
+							  float theta_meas,
+							  float omega_meas);
+static void SingleLegKF_CalculateMatrices(KalmanFilter_Info_TypeDef *leg_kf);
 /*-------------------------------------------------------------*/
 
 void ObserveTask(void const * argument)
@@ -96,6 +123,8 @@ void ObserveTask(void const * argument)
                 //-local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
 	}
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*-------------------------------机体速度与加速度估计KF-------------------------------------------*/
 /**
  * @brief 初始化卡尔曼滤波器
  */
@@ -103,7 +132,7 @@ static void xvEstimateKF_Init(KalmanFilter_Info_TypeDef *EstimateKF)
 {
     Kalman_Filter_Init(EstimateKF, 2, 0, 2);	// 观测维度
 	
-		memcpy(EstimateKF->Data.A, vaEstimateKF_F, sizeof(vaEstimateKF_F));
+	memcpy(EstimateKF->Data.A, vaEstimateKF_F, sizeof(vaEstimateKF_F));
     memcpy(EstimateKF->Data.P, vaEstimateKF_P, sizeof(vaEstimateKF_P));
     memcpy(EstimateKF->Data.Q, vaEstimateKF_Q, sizeof(vaEstimateKF_Q));
     memcpy(EstimateKF->Data.R, vaEstimateKF_R, sizeof(vaEstimateKF_R));
@@ -161,6 +190,40 @@ void xvEstimateKF_Update(KalmanFilter_Info_TypeDef *EstimateKF ,float acc,float 
       vel_acc[i] = EstimateKF->Output[i];
     }
 }
+////////////////////////////////////////////////////////////////////////////////////////
+// 基于简化WBR模型的腿摆杆角速度预测函数
+/**
+ * @brief 重置滤波器（使用当前实际状态初始化）
+ */
+void LegPredictor_Reset(chassis_move_t *chassis)
+{
+	if ( chassis == NULL) return;
+
+	// 获取当前实际状态
+	float theta_left = chassis->left_leg.leg_angle - PI/2 - chassis->chassis_pitch;
+	float theta_right = chassis->right_leg.leg_angle - PI/2 - chassis->chassis_pitch;
+
+	float omega_left = chassis->left_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+	float omega_right = chassis->right_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+	//
+	// // 初始化左腿KF
+	// SingleLegKF_Init(&predictor->left_leg,
+	// 				predictor->dt,
+	// 				chassis->left_leg.leg_length,
+	// 				2.8f,  // 默认等效质量，需要辨识
+	// 				theta_left,
+	// 				omega_left);
+	//
+	// // 初始化右腿KF
+	// SingleLegKF_Init(&predictor->right_leg,
+	// 				predictor->dt,
+	// 				chassis->right_leg.leg_length,
+	// 				2.8f,
+	// 				theta_right,
+	// 				omega_right);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 fp32 get_KF_Spd(void)
 {   	
     return v_real;
