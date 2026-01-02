@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "leg_angular_predictor.h"
 #include "slip_detector.h"
 
 
@@ -31,7 +32,7 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef 
         // INS_Info.pit_angle,
         // INS_Info.rol_angle,
         //核心状态变量
-        chassis->chassis_yaw,
+        // chassis->chassis_yaw,
         chassis->chassis_pitch,
         chassis->chassis_roll,
         chassis->jump_state.jump_flag,
@@ -56,10 +57,10 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef 
         // chassis->left_leg.front_joint.tor_set,
         // chassis->left_leg.back_joint.tor_set,
         //
-        motor_joint[0].pos,
-        motor_joint[1].pos,
-        motor_joint[2].pos,
-        motor_joint[3].pos,
+        // motor_joint[0].pos,
+        // motor_joint[1].pos,
+        // motor_joint[2].pos,
+        // motor_joint[3].pos,
     }, // 1初始化数据数组
         .tail = VOFA_TAIL // 设置JustFloat协议尾部
     };
@@ -70,7 +71,7 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef 
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
-HAL_StatusTypeDef Vofa_Send_Data(UART_HandleTypeDef *huart, chassis_move_t* chassis)
+HAL_StatusTypeDef Vofa_Send_Data(UART_HandleTypeDef *huart,const chassis_move_t* chassis)
 {
 
 
@@ -125,10 +126,16 @@ HAL_StatusTypeDef Vofa_Send_Data(UART_HandleTypeDef *huart, chassis_move_t* chas
         chassis->jump_state.takeoff_time,
         chassis->jump_state.landing_time,
         chassis->jump_state.last_jump_finish_time,
-        chassis->state_set.phi,
+        // chassis->state_set.phi,
         chassis->state_ref.phi,
-        chassis->state_set.theta,
-        chassis->state_ref.theta
+        // chassis->state_set.theta,
+        chassis->state_ref.theta,
+        chassis->slip_detector->left.confidence,
+        chassis->slip_detector->right.confidence,
+        chassis->state_set.x_dot,
+        chassis->state_ref.x_dot,
+        chassis->left_leg.leg_length_set,
+        chassis->right_leg.leg_length_set,
         // chassis->state_ref.phi_dot
         // chassis->right_leg.front_joint.tor_set,
         // chassis->right_leg.back_joint.tor_set,
@@ -294,14 +301,83 @@ HAL_StatusTypeDef Vofa_Send_Pred(UART_HandleTypeDef *huart,chassis_move_t* chass
     Vofa_Frame_t frame={
 
         .data = {
-            chassis->leg_dynamics_predictor.theta_pred[0],
-            chassis->leg_dynamics_predictor.theta_pred[1],
-            chassis->leg_dynamics_predictor.theta_dot_pred[0],
-            chassis->leg_dynamics_predictor.theta_dot_pred[1],
-            chassis->leg_dynamics_predictor.theta_ddot_pred[0],
-            chassis->leg_dynamics_predictor.theta_ddot_pred[1],
+            // chassis->leg_dynamics_predictor.theta_pred[0],
+            // chassis->leg_dynamics_predictor.theta_pred[1],
+            // chassis->leg_dynamics_predictor.theta_dot_pred[0],
+            // chassis->leg_dynamics_predictor.theta_dot_pred[1],
+            // chassis->leg_dynamics_predictor.theta_ddot_pred[0],
+            // chassis->leg_dynamics_predictor.theta_ddot_pred[1],
             chassis->state_ref.theta,
             chassis->state_ref.theta_dot,
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
+HAL_StatusTypeDef Vofa_Send_Theata(UART_HandleTypeDef *huart,chassis_move_t* chassis )
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+            chassis->left_leg.leg_length,
+            chassis->right_leg.leg_length,
+            chassis->leg_length,
+            chassis->state_ref.theta,
+            chassis->state_ref.theta_dot,
+            chassis->state_ref.theta_ddot,
+            chassis->left_leg.angle_dot,
+            chassis->right_leg.angle_dot,
+            chassis->leg_tor,
+            chassis->left_leg.leg_angle,
+            chassis->right_leg.leg_angle,
+
+
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
+HAL_StatusTypeDef Vofa_Send_Theata_pre(UART_HandleTypeDef *huart,const chassis_move_t* chassis ,const LegPredictor_t *predictor,const SlipDetector_t *detector)
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+            chassis->left_leg.leg_length,
+            chassis->right_leg.leg_length,
+            chassis->leg_length,
+            chassis->state_ref.theta,
+            chassis->state_ref.theta_dot,
+            chassis->state_ref.theta_ddot,
+            chassis->left_leg.angle_dot,
+            chassis->right_leg.angle_dot,
+            chassis->leg_tor,
+            chassis->left_leg.leg_angle,
+            chassis->right_leg.leg_angle,
+            predictor->K_adjust,
+            predictor->theta_pred_left,
+            predictor->omega_pred_left,
+            predictor->theta_pred_right,
+            predictor->omega_pred_right,
+            predictor->comp_left,
+            predictor->comp_right,
+            detector->slip_flag,
+            detector->left.confidence,
+            detector->right.confidence,
+            chassis->chassis_pitch,
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
         };

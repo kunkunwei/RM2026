@@ -22,9 +22,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-// #include "chassis_task.h"
 #include "config.h"
-// struct chassis_move_t;
 /* ==================== 配置宏定义 ==================== */
     // 特征阈值（可根据实际调试调整）
 #define SLIP_DIFF_THRESHOLD        0.8f   // 差速异常阈值 (m/s)

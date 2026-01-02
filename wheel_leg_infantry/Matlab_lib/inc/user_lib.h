@@ -1,9 +1,23 @@
 #ifndef USER_LIB_H
-#define USER_LIB_Harm
+#define USER_LIB_H
 #include "main.h"
+#ifdef __GNUC__
+    #define PACKED __attribute__((packed))
+#elif defined(__CC_ARM) || defined(__ARMCC_VERSION)
+    #define PACKED __packed
+#else
+    #define PACKED
+#endif
+// 暂时禁用packed警告
+#ifdef __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wattributes"
+#endif
+#ifndef PI
+#define PI 3.1415926f
+#endif
 
-#define PI 3.14159f
-typedef __packed struct
+typedef PACKED struct
 {
     float input;        //输入数据
     float out;          //输出数据
@@ -12,7 +26,7 @@ typedef __packed struct
     float frame_period; //时间间隔
 } ramp_function_source_t;
 
-typedef __packed struct
+typedef PACKED struct
 {
     float input;        //输入数据
     float out;          //滤波输出的数据

@@ -17,7 +17,8 @@
 #include "arm_math.h"
 #include "observe_task.h"
 #include "chassis_task.h"
-#define WHEEL_BASE_HALF 0.27f // 轮距一半 (m)，根据实际机器人调整
+
+// #define WHEEL_BASE_HALF 0.27f // 轮距一半 (m)，根据实际机器人调整
 /* Private functions ---------------------------------------------------------*/
 /**
  * @brief 限幅到[0,1]

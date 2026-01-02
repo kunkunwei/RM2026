@@ -21,9 +21,12 @@
 #include "remote_control.h"
 #include "old_pid.h"
 // #include "CAN_Receive.h"
+
+
+#include "slip_detector.h"
 #include "user_lib.h"
-#include "observe_task.h"
-// #include "pid.h"
+// #include "observe_task.h"
+
 //前向声明
 // struct JumpController_t;
 /*底盘CAN_ID
@@ -82,7 +85,8 @@
 //IMAX 32A
 #define LK9025_TOR_TO_CAN_DATA 195.3125f
 
-#define WHEEL_R 0.0925f
+#define WHEEL_R 0.08f		//新胶轮
+// #define WHEEL_R 0.0925f
 
 #define MOTOR_RPM_TO_ROTATE 0.10471975512f // 2PI /60
 
@@ -106,17 +110,17 @@
 #define LEG_LENGTH_MIN 0.11f
 
 //
-#define STOP_X_OFFSET -0.20f
+#define STOP_X_OFFSET 0.140f
 // 腿部长度控制PID
 #define LEG_LENGTH_PID_KP 650.0f
 #define LEG_LENGTH_PID_KI 2.0f
 #define LEG_LENGTH_PID_KD 15.0f
 #define LEG_LENGTH_PID_MAX_OUT 150.0f
-#define LEG_LENGTH_PID_MAX_IOUT 20.0f
+#define LEG_LENGTH_PID_MAX_IOUT 30.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
 #define ANGLE_ERR_PID_KP 400.0f
-#define ANGLE_ERR_PID_KI 0.8f
+#define ANGLE_ERR_PID_KI 1.5f
 #define ANGLE_ERR_PID_KD 30.0f
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
 #define ANGLE_ERR_PID_MAX_IOUT 3.0f
@@ -191,23 +195,23 @@
 #define JUMP_LANDING_STIFFNESS 1078.0f    // 落地刚度系数:k = (总重量*9.8)/伸缩量
 #define JUMP_PREPARE_PITCH_COMP 0.1f     // 准备阶段pitch补偿系数
 //空中收腿PID
-#define JUMP_LEFT_LEG_KP 850.0f
+#define JUMP_LEFT_LEG_KP 865.0f
 #define JUMP_LEFT_LEG_KI 0.0f
-#define JUMP_LEFT_LEG_KD 20.0f
+#define JUMP_LEFT_LEG_KD 5.0f
 #define JUMP_LEFT_LEG_MAX_IOUT 20.0f
 #define JUMP_LEFT_LEG_MAX_OUT 130.0f
 
-#define JUMP_RIGHT_LEG_KP 850.0f
+#define JUMP_RIGHT_LEG_KP 900.0f
 #define JUMP_RIGHT_LEG_KI 0.0f
-#define JUMP_RIGHT_LEG_KD 20.0f
+#define JUMP_RIGHT_LEG_KD 5.0f
 #define JUMP_RIGHT_LEG_MAX_IOUT 20.0f
 #define JUMP_RIGHT_LEG_MAX_OUT 130.0f
 ///
 // 🔧 关节角度安全参数（核心防碰撞）
-#define FRONT_JOINT_SAFE_MAX  1.3f    // 前关节安全上限（≈51.5°）
-#define BACK_JOINT_SAFE_MIN   1.7f    // 后关节安全下限（≈97.4°）
-#define JOINT_BUFFER_ZONE     0.1f    // 缓冲区宽度（≈5.7°）
-#define COLLISION_FORCE_REDUCE 0.8f   // 接近限位时力衰减比例（最多衰减80%）
+// #define FRONT_JOINT_SAFE_MAX  1.3f    // 前关节安全上限（≈51.5°）
+// #define BACK_JOINT_SAFE_MIN   1.7f    // 后关节安全下限（≈97.4°）
+// #define JOINT_BUFFER_ZONE     0.1f    // 缓冲区宽度（≈5.7°）
+// #define COLLISION_FORCE_REDUCE 0.8f   // 接近限位时力衰减比例（最多衰减80%）
 typedef enum
 {
 	CHASSIS_FORCE_RAW,				  // 底盘开环控制
@@ -234,20 +238,7 @@ typedef struct
 	int16_t give_current;	// 实际由CAN通信给电调发送的电流值
 	float tor_set;
 } Joint_Motor_t; // 关节电机结构体
-typedef struct {
-	// 模型参数（可在线辨识）
-	float effective_mass;     // 等效质量
-	float damping_coeff;      // 阻尼系数
 
-	// 状态变量
-	float theta_pred[2];      // 左右腿预测角度 [left, right]
-	float theta_dot_pred[2];  // 左右腿预测角速度
-	float theta_ddot_pred[2]; // 左右腿预测角加速度
-	// 补偿参数
-	float K_adjust;           // 自适应增益
-	float compensation[2];    // 左右腿补偿力矩
-
-} LegDynamicsPredictor_t;
 typedef struct
 {
 	Wheel_Motor_t wheel_motor;
@@ -259,7 +250,6 @@ typedef struct
 	float leg_angle;    		   // 摆杆与竖直方向的夹角
 	float angle_dot;   		   // 腿部摆杆的旋转速度
 	float length_dot;   		   // 腿部摆杆的长度变化速度
-	float compensation_torque; // 自适应补偿力矩
 
 	float virtual_pole_force;   // 腿部五连杆机构的推力
 	float virtual_pole_torque;  // 沿中心轴的力矩
@@ -275,6 +265,7 @@ typedef struct
 {
 	float theta;			// 摆杆与竖直方向的夹角
 	float theta_dot;		
+	float theta_ddot;
 	float x;				// 驱动轮位移
 	float x_dot;
 	float phi;			// 机体与水平方向夹角
@@ -311,6 +302,7 @@ typedef struct
 	const float *chassis_INS_angle;	  // 获取陀螺仪解算出的欧拉角指针
 	const float *chassis_imu_gyro;	  // 获取角加速度指针
 	const float *chassis_imu_accel;	  // 获取加速度指针
+	const SlipDetector_t * slip_detector; // 获取打滑检测器指针
 
 	chassis_mode_e chassis_mode;	  // 底盘控制状态机
 	chassis_mode_e last_chassis_mode; // 底盘上次控制状态机
@@ -319,7 +311,6 @@ typedef struct
 	Leg_Control_t left_leg;			  //左腿控制结构体
 	Leg_Control_t right_leg;		  //右腿控制结构体
 
-	LegDynamicsPredictor_t leg_dynamics_predictor; // 腿部动力学预测器
 
 	PidTypeDef left_leg_length_pid;   //腿长控制器
 	PidTypeDef right_leg_length_pid;  //腿长控制器
@@ -342,8 +333,11 @@ typedef struct
 	first_order_filter_type_t chassis_cmd_brake_vx;
 
 	bool_t touchingGroung;          // 机器人是否离地
+	float err_tor;					// 误差力矩补偿
 	float wheel_tor;					// 轮毂转矩
 	float leg_tor;					// 髋关节转矩
+	float left_compliment_tor;		// 左腿力矩补偿
+	float right_compliment_tor;		// 右腿力矩补偿
 	float left_support_force;        // 左腿的支持力
 	float right_support_force;        // 右腿的支持力
 	float ground_force;      		// 地面的支持力
@@ -394,6 +388,7 @@ typedef struct
 //
 //获取底盘结构体指针
 const chassis_move_t *get_chassis_control_point(void);
+
 // extern void chassis_task(void *pvParameters);
 extern void chassis_rc_to_control_vector(float *vx_set, float *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 extern void chassis_rc_to_control_euler(float *l_set, float *roll_set, chassis_move_t *chassis_move_rc_to_vector);

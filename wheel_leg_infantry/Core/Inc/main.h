@@ -42,6 +42,7 @@ extern "C" {
 #include "leg_conv.h"
   //bsp
 #include "bsp_can.h"
+#include "bsp_dwt.h"
   //tasks
 #include "INS_Task.h"
 #include "Ros_task.h"

@@ -13,6 +13,7 @@
 #include "remote_control.h"
 
 #include "kalman.h"
+#include "leg_angular_predictor.h"
 #include "slip_detector.h"
 // struct SlipFlag;
 //
@@ -30,11 +31,11 @@ extern fp32 get_body_Spd(void);
 extern fp32 get_imu_bias(void);
 
 SlipDetector_t* get_slip_detector_point(void);
+const LegPredictor_t *get_leg_predictor_point(void);
 extern SlipFlag get_slip_flag(void);
 extern fp32 get_confidence_left(void);
 extern fp32 get_confidence_right(void);
-extern fp32 get_r_scale_velocity(void);
-extern fp32 get_r_scale_accel(void);
+extern void LegPredictor_GetCompensation( float *comp_left,float *comp_right);
 #endif
 
 

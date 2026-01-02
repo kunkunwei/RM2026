@@ -22,9 +22,11 @@ void User_Task(void const * argument)
 
     extern lk9025_motor_measure_t motor_right, motor_left;
     extern dm8009_motor_measure_t motor_joint[4];
-     SlipDetector_t *local_detector= get_slip_detector_point();
+    const SlipDetector_t *local_detector= get_slip_detector_point();
     const chassis_move_t* local_chassis = get_chassis_control_point();
     const Quaternion_Info_Typedef* local_Quaternion_Info = get_quaternion_info_point();
+    const LegPredictor_t *leg_predictor = get_leg_predictor_point();
+    // extern LegPredictor_t leg_predictor;
     // float q0 = Quaternion_Info.quat[0], q1 = Quaternion_Info.quat[1], q2 = Quaternion_Info.quat[2], q3 = Quaternion_Info.quat[3];
     // float e0 = Quaternion_Info.EulerAngle[0], e1 = Quaternion_Info.EulerAngle[1], e2 = Quaternion_Info.EulerAngle[2];
     // float gx = BMI088_Info.gyro[0], gy = BMI088_Info.gyro[1], gz = BMI088_Info.gyro[2];
@@ -44,10 +46,12 @@ void User_Task(void const * argument)
         // Vofa_Send_INS(&huart6,INS_Info,ist8310_Info);
         // Vofa_Send_Q(&huart6,INS_Info,local_Quaternion_Info);
         // Vofa_Send_Chassis(&huart6,INS_Info,motor_joint,local_chassis);
-        // Vofa_Send_Data(&huart6,local_chassis);
+        Vofa_Send_Data(&huart6,local_chassis);
         // Vofa_Send_Slip(&huart6,local_chassis,local_detector);
         // Vofa_Send_Balance(&huart6,local_chassis);
-        Vofa_Send_Pred(&huart1,local_chassis);
+        // Vofa_Send_Pred(&huart1,local_chassis);
+        // Vofa_Send_Theata(&huart6,local_chassis);
+        // Vofa_Send_Theata_pre(&huart6,local_chassis ,leg_predictor,local_detector);
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();
@@ -82,7 +86,7 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
         // printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        osDelay(20);
+        osDelay(5);
     }
 }
 

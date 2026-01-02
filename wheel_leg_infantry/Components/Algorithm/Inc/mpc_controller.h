@@ -25,126 +25,118 @@ extern "C" {
 #include "main.h"
 #include "config.h"
 
-/* ==================== 配置宏定义 ==================== */
-// MPC参数
-#define MPC_HORIZON_N   8     // 预测时域（步数）
-#define MPC_STATE_DIM   3     // 状态维度 [x, x_dot, phi]
-#define MPC_CONTROL_DIM 2     // 控制维度 [T_wheel, l_leg_rate]
-#define MPC_SAMPLE_TIME 0.02f // 采样周期20ms（50Hz）
-
-// 权重矩阵（对角元素）
-#define MPC_Q_X       10.0f // 位置权重
-#define MPC_Q_XDOT    5.0f  // 速度权重
-#define MPC_Q_PHI     20.0f // 姿态权重
-#define MPC_R_TORQUE  1.0f  // 力矩代价
-#define MPC_R_LEGRATE 0.5f  // 腿长变化率代价
-
-// 约束
-#define MPC_TORQUE_MIN   -10.0f // Nm
-#define MPC_TORQUE_MAX   10.0f  // Nm
-#define MPC_LEG_RATE_MIN -0.5f  // m/s（收缩）
-#define MPC_LEG_RATE_MAX 0.5f   // m/s（伸展）
-
-// QP求解器参数
-#define MPC_MAX_ITERATIONS 15    // 最大迭代次数（平衡精度与速度）
-#define MPC_TOLERANCE      1e-3f // 收敛容差
-#define MPC_GRADIENT_STEP  0.01f // 梯度下降步长
-
-// 模型参数（简化线性化）
-#define MPC_MODEL_MASS       4.3f  // 机器人总质量（kg）
-#define MPC_MODEL_INERTIA    0.15f // 机体转动惯量（kg·m²）
-#define MPC_MODEL_LEG_LENGTH 0.20f // 标称腿长（m）
+/* ==================== 配置参数 ==================== */
+#define MPC_STATE_DIM       7      // 状态维度
+#define MPC_CONTROL_DIM     2      // 控制维度
+#define MPC_PRED_HORIZON    12     // 预测时域 N=12
+#define MPC_CTRL_HORIZON    6      // 控制时域 M=6
+#define MPC_MAX_ITER        20     // 最大迭代次数
+#define MPC_TOLERANCE       1e-4f  // 收敛容忍度
 
 /* ==================== 数据结构 ==================== */
+
 /**
- * @brief MPC控制器状态结构体
+ * @brief MPC控制器（高度集成，单文件实现）
  */
 typedef struct {
-    // ========== 输入：当前状态 ==========
-    float state_current[MPC_STATE_DIM];   // [x, x_dot, phi]
-    float state_reference[MPC_STATE_DIM]; // 期望状态
-    float leg_length_current;             // 当前腿长（用于模型线性化）
+    // --- 配置参数 ---
+    float dt;                      // 采样时间 [s]
+    float torque_joint_max;        // 关节力矩上限 [N·m]
+    float torque_wheel_max;        // 轮子力矩上限 [N·m]
+    float slip_rate_max;           // 最大允许滑移率
 
-    // ========== 输出：优化结果 ==========
-    float control_output[MPC_CONTROL_DIM]; // 第一步控制量 [T_wheel, l_rate]
-    float velocity_reference;              // 速度参考（供LQR跟踪）
-    float leg_length_reference;            // 腿长参考
+    // --- 权重矩阵 ---
+    float Q[MPC_STATE_DIM];        // 状态权重（对角，简化存储）
+    float R[MPC_CONTROL_DIM];      // 控制权重（对角）
+    float Qf[MPC_STATE_DIM];       // 终端权重
 
-    // ========== 内部：线性化模型 ==========
-    // 离散状态空间：x[k+1] = A*x[k] + B*u[k]
-    float A[MPC_STATE_DIM * MPC_STATE_DIM];   // 状态转移矩阵
-    float B[MPC_STATE_DIM * MPC_CONTROL_DIM]; // 控制矩阵
+    // --- 当前状态 ---
+    float x[MPC_STATE_DIM];        // 当前状态 [θ, θ_dot, x, x_dot, φ, φ_dot, s]
+    float x_ref[MPC_STATE_DIM];    // 参考状态
+    float u_opt[MPC_CONTROL_DIM];  // 最优控制输出 [τ_wheel, τ_joint]
 
-    // ========== QP问题数据 ==========
-    // 标准形式：min 0.5*u'*H*u + g'*u  s.t. lb <= u <= ub
-    float H[MPC_CONTROL_DIM * MPC_HORIZON_N * MPC_CONTROL_DIM * MPC_HORIZON_N]; // Hessian矩阵
-    float g[MPC_CONTROL_DIM * MPC_HORIZON_N];                                   // 梯度向量
-    float solution[MPC_CONTROL_DIM * MPC_HORIZON_N];                            // 优化变量
+    // --- 工作内存（静态分配，避免动态内存）---
+    // 预测状态序列
+    float X_pred[MPC_PRED_HORIZON+1][MPC_STATE_DIM];
 
-    // ========== 状态信息 ==========
-    bool initialized;     // 是否已初始化
-    uint32_t solve_count; // 求解次数（统计）
-    float solve_time_ms;  // 求解耗时（ms，调试用）
-    bool solve_success;   // 上次求解是否成功
+    // 控制序列
+    float U_opt[MPC_CTRL_HORIZON][MPC_CONTROL_DIM];
 
-} MPC_Controller_t;
+    // QP求解工作内存
+    float H[(MPC_CTRL_HORIZON*MPC_CONTROL_DIM) * (MPC_CTRL_HORIZON*MPC_CONTROL_DIM)];
+    float g[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+    float z[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+    float z_new[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+    float grad[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+
+    // 边界约束
+    float lb[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+    float ub[MPC_CTRL_HORIZON*MPC_CONTROL_DIM];
+
+    // --- 性能统计 ---
+    uint32_t solve_time_us;        // 求解时间 [μs]
+    uint16_t iterations;           // 实际迭代次数
+    uint32_t solve_count;          // 总求解次数
+    uint32_t fail_count;           // 求解失败次数
+    bool_t feasible;               // 当前解是否可行
+
+} MPCController_t;
 
 /* ==================== 函数接口 ==================== */
 
 /**
  * @brief 初始化MPC控制器
- * @param mpc 控制器结构体指针
- * @note 初始化模型参数、权重矩阵等
+ * @param mpc MPC控制器指针
+ * @param dt 采样时间 [s]
  */
-void MPC_Controller_Init(MPC_Controller_t *mpc);
+void MPC_Init(MPCController_t *mpc, float dt);
 
 /**
- * @brief 更新线性化模型（在工作点处）
- * @param mpc 控制器结构体
- * @param leg_length 当前腿长（m）
- * @param velocity 当前速度（m/s）
- * @note 根据当前状态重新线性化A、B矩阵
+ * @brief 设置当前状态
+ * @param mpc MPC控制器指针
+ * @param state 状态数组 [θ, θ_dot, x, x_dot, φ, φ_dot, s]
  */
-void MPC_UpdateModel(MPC_Controller_t *mpc, float leg_length, float velocity);
+void MPC_SetState(MPCController_t *mpc, const float *state);
 
 /**
- * @brief 求解MPC问题
- * @param mpc 控制器结构体
- * @return 是否成功求解
- * @note 耗时操作，建议在低频任务中调用（50Hz）
- * @note 调用前需先设置state_current、state_reference
+ * @brief 设置参考状态
+ * @param mpc MPC控制器指针
+ * @param ref 参考状态数组
  */
-bool MPC_Solve(MPC_Controller_t *mpc);
+void MPC_SetReference(MPCController_t *mpc, const float *ref);
 
 /**
- * @brief 获取优化后的控制量（第一步）
- * @param mpc 控制器结构体
- * @param wheel_torque 输出：轮子力矩参考（Nm）
- * @param leg_length_rate 输出：腿长变化率参考（m/s）
+ * @brief 执行MPC求解
+ * @param mpc MPC控制器指针
+ * @return true 求解成功，false 求解失败
  */
-void MPC_GetControl(const MPC_Controller_t *mpc,
-                    float *wheel_torque,
-                    float *leg_length_rate);
+bool MPC_Solve(MPCController_t *mpc);
 
 /**
- * @brief 获取速度参考值（供LQR跟踪）
- * @param mpc 控制器结构体
- * @return 速度参考值（m/s）
+ * @brief 获取最优控制量（调用MPC_Solve后使用）
+ * @param mpc MPC控制器指针
+ * @param u_wheel 输出：轮子力矩 [N·m]
+ * @param u_joint 输出：关节力矩 [N·m]
  */
-float MPC_GetVelocityReference(const MPC_Controller_t *mpc);
+void MPC_GetControl(const MPCController_t *mpc, float *u_wheel, float *u_joint);
 
 /**
- * @brief 获取腿长参考值
- * @param mpc 控制器结构体
- * @return 腿长参考值（m）
+ * @brief 重置MPC求解器
+ * @param mpc MPC控制器指针
  */
-float MPC_GetLegLengthReference(const MPC_Controller_t *mpc);
+void MPC_Reset(MPCController_t *mpc);
 
 /**
- * @brief 打印调试信息
- * @param mpc 控制器结构体
+ * @brief 设置滑移率相关参数（模型更新）
+ * @param mpc MPC控制器指针
+ * @param slip_rate 当前滑移率
  */
-void MPC_PrintDebugInfo(const MPC_Controller_t *mpc);
+void MPC_UpdateSlipModel(MPCController_t *mpc, float slip_rate);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #ifdef __cplusplus
 }
