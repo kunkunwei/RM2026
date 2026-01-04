@@ -223,7 +223,8 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
           }
           else if(*StdId == CAN_dm8009_M4_ID)
           {
-              motor_joint[3].pos += 2.11726f; // 正确的零点补偿值
+              // motor_joint[3].pos += 2.11726f; // 正确的零点补偿值
+              motor_joint[3].pos += 2.158088f; // 正确的零点补偿值
           	motor_joint[3].pos = 3.141593/2 - motor_joint[3].pos;
           }
           break;

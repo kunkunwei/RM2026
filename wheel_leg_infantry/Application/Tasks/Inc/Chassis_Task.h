@@ -120,7 +120,7 @@
 
 // 腿部误差控制PID  位置 (双腿协调)
 #define ANGLE_ERR_PID_KP 400.0f
-#define ANGLE_ERR_PID_KI 1.5f
+#define ANGLE_ERR_PID_KI 1.9f
 #define ANGLE_ERR_PID_KD 30.0f
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
 #define ANGLE_ERR_PID_MAX_IOUT 3.0f
@@ -195,17 +195,24 @@
 #define JUMP_LANDING_STIFFNESS 1078.0f    // 落地刚度系数:k = (总重量*9.8)/伸缩量
 #define JUMP_PREPARE_PITCH_COMP 0.1f     // 准备阶段pitch补偿系数
 //空中收腿PID
-#define JUMP_LEFT_LEG_KP 865.0f
+#define JUMP_LEFT_LEG_KP 700.0f
 #define JUMP_LEFT_LEG_KI 0.0f
-#define JUMP_LEFT_LEG_KD 5.0f
+#define JUMP_LEFT_LEG_KD 10.0f
 #define JUMP_LEFT_LEG_MAX_IOUT 20.0f
-#define JUMP_LEFT_LEG_MAX_OUT 130.0f
+#define JUMP_LEFT_LEG_MAX_OUT 120.0f
 
-#define JUMP_RIGHT_LEG_KP 900.0f
+#define JUMP_RIGHT_LEG_KP 720.0f
 #define JUMP_RIGHT_LEG_KI 0.0f
-#define JUMP_RIGHT_LEG_KD 5.0f
+#define JUMP_RIGHT_LEG_KD 10.0f
 #define JUMP_RIGHT_LEG_MAX_IOUT 20.0f
-#define JUMP_RIGHT_LEG_MAX_OUT 130.0f
+#define JUMP_RIGHT_LEG_MAX_OUT 120.0f
+
+//空中姿态控制PID 补偿力
+#define JUMP_ROLL_KP 100.00f	//57.295780
+#define JUMP_ROLL_KI 0.0f
+#define JUMP_ROLL_KD 0.5f
+#define JUMP_ROLL_MAX_OUT 65.0f
+#define JUMP_ROLL_MAX_IOUT 1.0f
 ///
 // 🔧 关节角度安全参数（核心防碰撞）
 // #define FRONT_JOINT_SAFE_MAX  1.3f    // 前关节安全上限（≈51.5°）
@@ -278,21 +285,24 @@ typedef struct chassis_task
 	bool last_jump_flag;
 	uint8_t jump_stage;
 	float takeoff_velocity_x;
-	float takeoff_velocity;
-	float takeoff_pitch;
+
 	float last_jump_finish_time;
 	float current_time;
 	float takeoff_start_time;
 	float takeoff_time;
 	float landing_time;
-	float landing_velocity_z;
+
 	float landing_velocity_x;
-	float landing_left_force;
-	float landing_right_force;
+
 	float landing_leg_length;
 	float takeoff_leg_length ;
+	float jump_height[2];
+	float left_target_comp ;
+	float right_target_comp;
+
 	PidTypeDef left_leg_sky_pid;
 	PidTypeDef right_leg_sky_pid;
+	PidTypeDef roll_pid;
 }Jump_State_t;
 
 

@@ -50,6 +50,7 @@ void Can_Task(void const * argument)
       Damiao_Motor_CAN_Send(3,0,0,0,0,0);
       osDelay(1);
 
+      // LK9025_Motor_CAN_Send(local_chassis->chassis_RC->rc.ch[2],local_chassis->chassis_RC->rc.ch[3]);
       LK9025_Motor_CAN_Send(0,0);
       osDelay(1);
     #endif

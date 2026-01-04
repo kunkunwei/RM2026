@@ -38,6 +38,7 @@ HAL_StatusTypeDef Vofa_Send_Slip(UART_HandleTypeDef *huart, chassis_move_t* chas
 HAL_StatusTypeDef Vofa_Send_Pred(UART_HandleTypeDef *huart,chassis_move_t* chassis );
 HAL_StatusTypeDef Vofa_Send_Theata(UART_HandleTypeDef *huart,chassis_move_t* chassis );
 HAL_StatusTypeDef Vofa_Send_Theata_pre(UART_HandleTypeDef *huart,const chassis_move_t* chassis ,const LegPredictor_t *predictor,const SlipDetector_t *detector);
+HAL_StatusTypeDef Vofa_Send_Calibrate(UART_HandleTypeDef *huart,const chassis_move_t* chassis);
 // HAL_StatusTypeDef Vofa_SendRCChannels(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Yaw(UART_HandleTypeDef *huart, gimbal_t *gimbal);
 // HAL_StatusTypeDef Vofa_Send_Gimbal_Pitch(UART_HandleTypeDef *huart, gimbal_t *gimbal);
