@@ -3,7 +3,7 @@
 #include "Chassis_Task.h"
 
 // #define DEBUG
-// #define LEG_DEBUG
+#define LEG_DEBUG
 static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity, float KP, float KD, float Torque);
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left);
 static void Damiao_Motor_Enable(uint8_t Motor_ID);

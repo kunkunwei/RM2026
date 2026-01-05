@@ -726,7 +726,7 @@ void Jump_v_coordinate(chassis_move_t *chassis,float *v_compente)
     }
     if (chassis->jump_state.jump_stage==3)
     {
-        *v_compente=erorr_v*70.0f;
+        *v_compente=erorr_v*85.0f;
     }
 }
 void Jump_length_coordinate(chassis_move_t *chassis,float *l_compente)
@@ -857,14 +857,14 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         float right_theata=chassis_move_control_loop->right_leg.leg_angle - PI / 2 - chassis_move_control_loop->chassis_pitch;
         // h2[0]+=(chassis_move_control_loop->left_leg.length_dot*cosf(left_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
         // h2[1]+=(chassis_move_control_loop->right_leg.length_dot*cosf(right_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        // if (chassis_move_control_loop->left_leg.length_dot>0.0f)
-        // {
-        // h2[0]+=(chassis_move_control_loop->left_leg.length_dot*cosf(left_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        // }
-        // if (chassis_move_control_loop->right_leg.length_dot>0.0f)
-        // {
-        // h2[1]+=(chassis_move_control_loop->right_leg.length_dot*cosf(right_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        // }
+        if (chassis_move_control_loop->left_leg.length_dot>0.0f)
+        {
+        h2[0]+=(chassis_move_control_loop->left_leg.length_dot*cosf(left_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
+        }
+        if (chassis_move_control_loop->right_leg.length_dot>0.0f)
+        {
+        h2[1]+=(chassis_move_control_loop->right_leg.length_dot*cosf(right_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
+        }
         // 目标腿长=初始腿长（0.166）+ 伸腿幅度（0.18m）→ 总0.346m（略超0.33m切换阈值，确保能进入第三阶段）
         float extend_target = 0.35f;
         chassis_move_control_loop->right_leg.leg_length_set = extend_target; // 给右腿伸腿目标
@@ -885,8 +885,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             // 加速段：补偿力从MIN→MAX，同时用速度反馈限制
             float time_ratio = takeoff_elapsed / 50.0f;
             // target_comp = 3.0f + (80.0f - 3.0f) * time_ratio;
-            chassis_move_control_loop->jump_state.left_target_comp  = 3.0f + (80.0f - 3.0f) * time_ratio;
-            chassis_move_control_loop->jump_state.right_target_comp = 3.0f + (80.0f - 3.0f) * time_ratio;
+            chassis_move_control_loop->jump_state.left_target_comp  = 3.0f + (100.0f - 3.0f) * time_ratio;
+            chassis_move_control_loop->jump_state.right_target_comp = 3.0f + (100.0f - 3.0f) * time_ratio;
             // 速度反馈：如果腿伸展过快，减小补偿力（阻尼）
             // float speed_over = v_leg_avg - 0.6f; // 目标匀速1.5m/s
             // if (speed_over > 0.0f) {
@@ -896,25 +896,25 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             // 匀速段：补偿力从MAX→MIN线性衰减
             float time_ratio = (takeoff_elapsed - 50.0f) / (200.0f - 50.0f);
             // target_comp =( 80 - (80.0f - 3.0f) * time_ratio);
-            chassis_move_control_loop->jump_state.left_target_comp  =( 80 - (80.0f - 3.0f) * time_ratio);
-            chassis_move_control_loop->jump_state.right_target_comp =( 80 - (80.0f - 3.0f) * time_ratio);
+            chassis_move_control_loop->jump_state.left_target_comp  =( 100 - (100.0f - 3.0f) * time_ratio);
+            chassis_move_control_loop->jump_state.right_target_comp =( 100 - (100.0f - 3.0f) * time_ratio);
             // 速度反馈：强制限制最大速度（避免超限位）
             // if (v_leg_avg > 1.5f) { // 最大允许伸展速度1.8m/s
             //     target_comp = 0.0f;
             // }
-            if (v_leg_left > 1.8f&& chassis_move_control_loop->jump_state.left_target_comp>0.0f) { // 最大允许伸展速度1.8m/s
-                chassis_move_control_loop->jump_state.left_target_comp *= 0.5f;
+            if (v_leg_left > 1.9f&& chassis_move_control_loop->jump_state.left_target_comp>0.0f) { // 最大允许伸展速度1.8m/s
+                chassis_move_control_loop->jump_state.left_target_comp *= 0.90f;
             }
-            if (v_leg_right > 1.8f&&chassis_move_control_loop->jump_state.right_target_comp>0.0f) { // 最大允许伸展速度1.8m/s
-                chassis_move_control_loop->jump_state.right_target_comp *= 0.5f;
+            if (v_leg_right > 1.9f&&chassis_move_control_loop->jump_state.right_target_comp>0.0f) { // 最大允许伸展速度1.8m/s
+                chassis_move_control_loop->jump_state.right_target_comp *= 0.90f;
             }
         }
 
         // 3. 腿长安全限制：接近LEG_SAFE_MAX时，强制减小补偿力
         float current_avg_leg = 0.5f * (chassis_move_control_loop->left_leg.leg_length + chassis_move_control_loop->right_leg.leg_length);
         // float leg_over = current_avg_leg - (0.32f - 0.02f); // 提前2cm开始减速
-        float left_leg_over = chassis_move_control_loop->left_leg.leg_length - (0.32f - 0.02f); // 提前2cm开始减速
-        float right_leg_over = chassis_move_control_loop->right_leg.leg_length - (0.32f - 0.02f); // 提前2cm开始减速
+        float left_leg_over = chassis_move_control_loop->left_leg.leg_length - (0.34f - 0.02f); // 提前2cm开始减速
+        float right_leg_over = chassis_move_control_loop->right_leg.leg_length - (0.34f - 0.02f); // 提前2cm开始减速
         // if (leg_over > 0.0f) {
         //     // target_comp *= (1.0f - leg_over / 0.02f); // 线性衰减到0
         //     // if (target_comp < 0.0f) target_comp = 0.0f;
@@ -1099,8 +1099,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
                                       chassis_move_control_loop->right_leg.leg_length);
         // 阶段1：前20ms——强支撑力（LANDING_BASE_FORCE=80N），快速抵消冲击
         if (time_since_landing <= 20) {
-            chassis_move_control_loop->left_support_force += 65.0f; // 强支撑力
-            chassis_move_control_loop->right_support_force += 65.0f; // 右腿配重补偿
+            chassis_move_control_loop->left_support_force += 75.0f; // 强支撑力
+            chassis_move_control_loop->right_support_force += 75.0f; // 右腿配重补偿
             chassis_move_control_loop->leg_length_in_sky= LEG_LENGTH_BUFFER; // 设置缓冲腿长0.2m，避免过度伸展
         }
         // 阶段2：20ms后，进入弹簧-阻尼振子，吸收剩余动能
