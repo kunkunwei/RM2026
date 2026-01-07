@@ -5,8 +5,11 @@
 #include "arm_math.h"
 #include "bmi088.h"
 #include "bsp_tim.h"
+#include "monitor.h"
 #include "usart.h"
 #include "vofa.h"
+
+
 // void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info);
 void User_Task(void const * argument)
 {
@@ -14,6 +17,9 @@ void User_Task(void const * argument)
     osDelay(800);
     uint16_t buzzer=1;
     TickType_t systick = 0;
+    static float last_refresh_dog_time = 0.0f;
+    static float last_led_time = 0.0f;
+    float current_time = 0.0f;
     extern INS_Info_Typedef INS_Info;
     extern Remote_Info_Typedef remote_ctrl;
 
@@ -26,6 +32,10 @@ void User_Task(void const * argument)
     const chassis_move_t* local_chassis = get_chassis_control_point();
     const Quaternion_Info_Typedef* local_Quaternion_Info = get_quaternion_info_point();
     const LegPredictor_t *leg_predictor = get_leg_predictor_point();
+
+    //监测
+    const SystemMonitor_t *monitor = SystemMonitor_Get();
+
     // extern LegPredictor_t leg_predictor;
     // float q0 = Quaternion_Info.quat[0], q1 = Quaternion_Info.quat[1], q2 = Quaternion_Info.quat[2], q3 = Quaternion_Info.quat[3];
     // float e0 = Quaternion_Info.EulerAngle[0], e1 = Quaternion_Info.EulerAngle[1], e2 = Quaternion_Info.EulerAngle[2];
@@ -33,7 +43,8 @@ void User_Task(void const * argument)
 		//float leg_cal[2];
     //Usb_send_data_t Usb_send_data_t;
     //Usb_dpkg_data_t* cnm = getUsbDpkgData();
-
+    float cpu_d=0.0f;
+    uint32_t led_update_counter=0; //LED更新计数器
     // float wz,wz_fliter;
     // const float num = 0.2f;
     // first_order_filter_type_t filter_t = {.input = wz, .frame_period=0.05f, .out=wz_fliter, .num=num};
@@ -41,6 +52,32 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
+
+        current_time=DWT_GetTimeline_ms();
+        //每隔1s就要喂狗，防止1.5s看门狗复位
+        if ((current_time-last_refresh_dog_time)>=1300)
+        {
+            last_refresh_dog_time=current_time;
+            SystemMonitor_WatchdogRefresh();
+
+        }
+        // LED更新（每50ms调用一次，即每25个循环）
+        // led_update_counter++;
+        if ((current_time-last_led_time)>=50)
+        {
+            last_led_time=current_time;
+            SystemMonitor_PeriodicTask();
+
+            // led_update_counter = 0;
+        }
+        // cpu_d=Monitor_GetCPULoad();
+            // uart_printf(&huart6, "heart_cont:%d\r\n", monitor_heartbeat->heartbeat_count);
+            // uart_printf(&huart6, "heart_status:%d\r\n", monitor_heartbeat->status);
+            // uart_printf(&huart6, "heart_restart_reason:%d\r\n", monitor_heartbeat->restart_reason);
+            // uart_printf(&huart6, "watchdog_restart_count:%d\r\n", monitor_heartbeat->watchdog_restart_count);
+            // uart_printf(&huart6, "cpu:%f\r\n", monitor->cpu.cpu_load_percent);
+
+        // Monitor_Watchdog_Refresh();
         // Test_MagYaw(&ist8310_Info,&INS_Info);
         //printf("%.2f,%.2f\r\n",local_chassis->chassis_roll,local_chassis->chassis_roll_set);
         // Vofa_Send_INS(&huart6,INS_Info,ist8310_Info);

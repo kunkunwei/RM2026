@@ -4,9 +4,16 @@
 
 // #define DEBUG
 #define LEG_DEBUG
+
+/* CAN 管理器配置 */
+#define JOINT_SEND_INTERVAL_MS  2   // 关节电机发送间隔: 2ms (高响应)
+#define WHEEL_SEND_INTERVAL_MS  8  // 轮子电机发送间隔: 10ms (低要求)
+
+
 static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity, float KP, float KD, float Torque);
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left);
 static void Damiao_Motor_Enable(uint8_t Motor_ID);
+static inline uint8_t CAN_Mailbox_Available(void);
 // #define LEG_DEBUG
 void Can_Task(void const * argument)
 {
@@ -16,16 +23,20 @@ void Can_Task(void const * argument)
   const chassis_move_t* local_chassis = get_chassis_control_point();
   osDelay(1000);
   Damiao_Motor_Enable(0);
-  osDelay(10);
+  osDelay(5);
   Damiao_Motor_Enable(1);
-  osDelay(10);
+  osDelay(5);
   Damiao_Motor_Enable(2);
-  osDelay(10);
+  osDelay(5);
   Damiao_Motor_Enable(3);
-  osDelay(10);
+  osDelay(5);
+	// CAN管理器：时间槽调度
+	uint32_t last_joint_send_time = 0;  // 关节电机上次发送时间
+	uint32_t last_wheel_send_time = 0;  // 轮子电机上次发送时间
 	// float angle_set[4] = 0.0f;
   for(;;)
   {
+
     #ifndef LEG_DEBUG
       Damiao_Motor_CAN_Send(3,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.front_joint.tor_set);
       Damiao_Motor_CAN_Send(2,0,0,0,local_chassis->right_leg.mit_kd,local_chassis->right_leg.back_joint.tor_set);
@@ -54,10 +65,7 @@ void Can_Task(void const * argument)
       LK9025_Motor_CAN_Send(0,0);
       osDelay(1);
     #endif
-  	// angle_set[0]=local_chassis->right_leg.front_joint.tor_set;
-  	// angle_set[1]=local_chassis->right_leg.back_joint.tor_set;
-  	// angle_set[2]=local_chassis->left_leg.front_joint.tor_set;
-  	// angle_set[3]=local_chassis->left_leg.back_joint.tor_set;
+
 
   }
   /* USER CODE END Can_Task */
@@ -113,4 +121,22 @@ static void LK9025_Motor_CAN_Send(int16_t right, int16_t left){
   RMD_L9025_ALL_TxFrame.Data[7] = 0;
 
   USER_CAN_TxMessage(&RMD_L9025_ALL_TxFrame);
+}
+/**
+ * @brief 检查CAN发送邮箱是否有空闲空间
+ * @return 1: 有空闲邮箱可发送, 0: 邮箱已满
+ */
+static inline uint8_t CAN_Mailbox_Available(void)
+{
+	extern CAN_HandleTypeDef hcan1;
+	extern CAN_HandleTypeDef hcan2;
+
+	// 检查CAN1和CAN2的发送邮箱，任意一个有空闲即可
+	// HAL_CAN_GetTxMailboxesFreeLevel 返回空闲邮箱数量 (0-3)
+	uint32_t can1_free = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);
+	// uint32_t can2_free = HAL_CAN_GetTxMailboxesFreeLevel(&hcan2);
+
+	// 只要有至少1个邮箱空闲，就可以发送
+	// return (can1_free > 0 || can2_free > 0);
+	return can1_free > 0;
 }

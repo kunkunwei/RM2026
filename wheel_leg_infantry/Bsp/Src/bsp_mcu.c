@@ -21,7 +21,7 @@
 #include "bmi088.h"
 #include "ist8310.h"
 #include "usb_device.h"
-
+#include "monitor.h"
 /**
   * @brief Initializes the MCU.
   */
@@ -37,6 +37,10 @@ void MCU_Init(void)
   BMI088_Init();
   ist8310_init();
   buzzer_off();
+  /* ----------------------- Monitor Init ----------------------- */
+  SystemMonitor_Init();
+  // Monitor_Heartbeat_Init();
+  // Monitor_CPU_Init();
 }
 //------------------------------------------------------------------------------
 
