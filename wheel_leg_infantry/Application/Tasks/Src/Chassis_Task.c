@@ -845,6 +845,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             //
             L0[0]=chassis_move_control_loop->left_leg.leg_length;
             L0[1]=chassis_move_control_loop->right_leg.leg_length;
+            chassis_move_control_loop->left_leg_length_pid.Iout=0.0f;
+            chassis_move_control_loop->right_leg_length_pid.Iout=0.0f;
         }
         // chassis_move_control_loop->touchingGroung = true;
     }
@@ -962,6 +964,9 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             right_cal_flag=true;
             L1[0]=chassis_move_control_loop->left_leg.leg_length;
             L1[1]=chassis_move_control_loop->right_leg.leg_length;
+
+            chassis_move_control_loop->left_leg_length_pid.Iout=0.0f;
+            chassis_move_control_loop->right_leg_length_pid.Iout=0.0f;
         }
 
     }
@@ -1147,6 +1152,9 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->left_leg.leg_length_set = LEG_LENGTH_INIT;
             chassis_move_control_loop->right_leg.leg_length_set = LEG_LENGTH_INIT;
             chassis_move_control_loop->jump_state.last_jump_finish_time = chassis_move_control_loop->jump_state.current_time; // 记录本次跳跃完成时间
+
+            chassis_move_control_loop->left_leg_length_pid.Iout=0.0f;
+            chassis_move_control_loop->right_leg_length_pid.Iout=0.0f;
         }
         // 超时强制退出，防止卡壳
         if (time_since_landing > 700) {
@@ -1155,6 +1163,9 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->left_leg.leg_length_set = LEG_LENGTH_INIT;
             chassis_move_control_loop->right_leg.leg_length_set = LEG_LENGTH_INIT;
             chassis_move_control_loop->jump_state.last_jump_finish_time = chassis_move_control_loop->jump_state.current_time; // 记录完成时间
+
+            chassis_move_control_loop->left_leg_length_pid.Iout=0.0f;
+            chassis_move_control_loop->right_leg_length_pid.Iout=0.0f;
         }
     }
 }

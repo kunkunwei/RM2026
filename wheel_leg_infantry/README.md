@@ -1,8 +1,5 @@
 # wheel_leg_infantry 项目说明
 
-> 本文档为本仓库的快速上手指南，目标读者为需要在本项目基础上开发、编译、调试和刷写固件的工程师或贡献者。文档以中文编写，保留必要的专业术语（如 CMake、FreeRTOS、STM32 HAL、OpenOCD、ST-Link）。
-
----
 
 ## 1. 项目概述
 
@@ -24,22 +21,20 @@
 
 - `Core/`：MCU 相关核心代码
   - `Core/Src/main.c`：系统入口，任务初始化与调度入口点。
-  - `Core/Startup/`：启动汇编文件（startup_stm32f407ighx.s）与中断向量表。
-  - `Core/Inc`、`Core/Src`：HAL 配置与外设初始化。
-
+- `Application/`:FreeRtos实际运行的任务与自瞄决策模块
+  -`Application/Tasks/Src/`:FreeRtos任务实现文件，开发与调试主要看这部分内容，里面包含了整机控制代码和状态监控、上位机通信等功能模块。
+  -`Application/API`:对外提供的接口函数，其中有对上位机发送数据的结构体（包括云台的角度、装甲板识别信息） 
 - `Drivers/`、`Drivers/STM32F4xx_HAL_Driver/`：STM32 HAL 驱动及 CMSIS 文件。
 
 - `Bsp/`：板级支持包（GPIO、UART、TIM、I2C、SPI、CAN 等封装），常用接口在 `Bsp/Inc`。
 
-- `Components/Algorithm/`：项目的控制与算法实现（电机控制、运动学、轨迹生成等）。这是你日常开发变更的主要目录之一。
+- `Components/Algorithm/`：项目的控制与算法实现（滤波、校验、卡尔曼滤波、打滑检测、theata角度微分预测等）。
 
-- `Matlab_lib/`：由 MATLAB/Simulink 或 MATLAB Coder 生成/移植的函数和头文件（例如 `Matlab_lib/inc/leg_spd.h`、`leg_spd.c` 等），用于实现部分数学/控制算法。
+- `Matlab_lib/`：由 MATLAB/Simulink 生成/移植的函数和头文件（例如 `Matlab_lib/inc/leg_spd.h`、`leg_spd.c` 等），用于实现轮腿运动学解算、足端角速度解算、VMC力矩计算等。
 
-- `USB_DEVICE/` / `Middlewares/`：USB Device 中间件与示例实现（CDC/CDC-IF）
+- `USB_DEVICE/` / `Middlewares/`：USB Device 中间件与示例实现（CDC/CDC-IF），STM32cubemx 生成。
 
-- `Startup/`：启动文件与链接脚本（若存在于仓库根或 Core/Startup 中）
-
-在调试或修改逻辑时，常查看的文件：`Core/Src/main.c`、`CMakeLists.txt`、`wheel_leg_infantry.ioc`、`Components/Algorithm/` 下的各模块、以及 `Matlab_lib/inc` 中的头文件。
+在调试或修改逻辑时，常查看的文件：`Application/Tasks/Src`、`CMakeLists.txt`、`wheel_leg_infantry.ioc`、`Components/Algorithm/` 下的各模块。
 
 ---
 
@@ -208,9 +203,4 @@ arm-none-eabi-gdb ..\cmake-build-debug\wheel_leg_infantry.elf
 
 ---
 
-如果你希望我：
-- 把 README 调整为英文版本，或
-- 添加 CI/CD（GitHub Actions）示例以自动构建并生成固件，或
-- 添加更详细的工具安装步骤（例如在 Windows 上安装 ARM 工具链与 OpenOCD 的具体步骤），
-
-请告诉我，你希望我接下来做哪一项，我会继续按需完善 README。
+感谢使用本项目！如有疑问或建议，请提交 Issue 或联系维护者。祝开发顺利！
