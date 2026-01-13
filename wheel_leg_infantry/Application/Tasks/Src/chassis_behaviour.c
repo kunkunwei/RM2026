@@ -106,7 +106,10 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
         chassis_behaviour_mode=gimbal_chassis_comm.gimbal_cmd.chassis_mode_cmd;
         chassis_move_mode.spining_flag=gimbal_chassis_comm.gimbal_cmd.spinning_cmd;
         chassis_move_mode->jump_state.jump_flag=gimbal_chassis_comm.gimbal_cmd.jump_cmd;
-        // chassis_move_mode->chassis_RC->rc.ch[]
+        chassis_move_mode->vx_from_ros=gimbal_chassis_comm.gimbal_cmd.target_speed_x;
+        chassis_move_mode->wz_from_ros=gimbal_chassis_comm.gimbal_cmd.target_speed_w_z;
+        chassis_move_mode->leg_length_set=gimbal_chassis_comm.gimbal_cmd.target_length;
+        // chassis_move_mode->chassis_yaw_set=gimbal_chassis_comm.gimbal_cmd.gimbal_yaw_angle;
     }
     //  if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==-1)
     // {
