@@ -39,7 +39,23 @@
 
 // 任务开始空闲一段时间
 #define CHASSIS_TASK_INIT_TIME 357
+#ifdef CAN1_Chassis_RC_Mod
+// 前后的遥控器通道号码
+#define CHASSIS_X_CHANNEL 0
+// 旋转的遥控器通道号码
+#define CHASSIS_WZ_CHANNEL 1
+// 腿长的遥控器通道号码
+#define CHASSIS_L_CHANNEL 2
+// ROLL的遥控器通道号码
+#define CHASSIS_ROLL_CHANNEL 3
 
+// 选择普通底盘状态 开关通道号
+#define LEFT_1_SWITCH 0
+#define LEFT_2_SWITCH 1
+#define RIGHT_2_SWITCH 2
+#define RIGHT_1_SWITCH 3
+
+#else
 // 前后的遥控器通道号码
 #define CHASSIS_X_CHANNEL 3
 // 旋转的遥控器通道号码
@@ -52,6 +68,8 @@
 // 选择普通底盘状态 开关通道号
 #define MODE_CHANNEL 0
 #define FUNTION_CHANNEL 1
+#endif
+
 // 遥控器前进摇杆（max 660）转化成车体前进速度（m/s）的比例
 #define CHASSIS_VX_RC_SEN 0.0033
 // 遥控器的yaw遥杆（max 660）增加到车体角度的比例
@@ -221,9 +239,9 @@
 // #define COLLISION_FORCE_REDUCE 0.8f   // 接近限位时力衰减比例（最多衰减80%）
 typedef enum
 {
-	CHASSIS_FORCE_RAW,				  // 底盘开环控制
-	CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW, // 底盘跟随云台
-	CHASSIS_VECTOR_NO_FOLLOW_YAW,	  // 底盘不跟随云台
+	CHASSIS_FORCE_RAW=0,				  // 底盘开环控制
+	CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW=1, // 底盘跟随云台
+	CHASSIS_VECTOR_NO_FOLLOW_YAW=2,	  // 底盘不跟随云台
 } chassis_mode_e;
 
 typedef struct
@@ -309,6 +327,7 @@ typedef struct chassis_task
 typedef struct
 {
 	const Remote_Info_Typedef *chassis_RC;	  // 底盘使用的遥控器指针
+	const Chassis_RC_Info_t *chassis_can_rc_info; // 底盘使用的CAN1遥控器指针
 	const float *chassis_INS_angle;	  // 获取陀螺仪解算出的欧拉角指针
 	const float *chassis_imu_gyro;	  // 获取角加速度指针
 	const float *chassis_imu_accel;	  // 获取加速度指针
@@ -316,8 +335,12 @@ typedef struct
 
 	chassis_mode_e chassis_mode;	  // 底盘控制状态机
 	chassis_mode_e last_chassis_mode; // 底盘上次控制状态机
+#ifdef CAN1_Chassis_RC_Mod
+	int8_t last_chassis_funtion_1_mode;//底盘上次功能1状态机
+	int8_t last_chassis_funtion_2_mode;//底盘上次功能2状态机
+#else
 	uint8_t last_chassis_funtion_mode;//底盘上次功能状态机
-
+#endif
 	Leg_Control_t left_leg;			  //左腿控制结构体
 	Leg_Control_t right_leg;		  //右腿控制结构体
 
@@ -391,7 +414,9 @@ typedef struct
 	float kilometer;
 	float vx_from_ros;
 	float wz_from_ros;
-	
+
+	bool spining_flag;//旋转标志位
+	bool last_spining_flag;
 	float tmp;
 } chassis_move_t;
 

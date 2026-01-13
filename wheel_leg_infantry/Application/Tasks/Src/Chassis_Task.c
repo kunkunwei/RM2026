@@ -149,6 +149,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
     chassis_move_init->touchingGroung = false;
     // 获取遥控器指针
     chassis_move_init->chassis_RC = get_remote_control_point();
+    chassis_move_init->chassis_can_rc_info = get_Chassis_CAN_RC_Info();
     // 获取陀螺仪姿态角指针
     chassis_move_init->chassis_INS_angle = get_INS_angle_point();
     chassis_move_init->chassis_imu_gyro  = get_gyro_data_point();
@@ -623,24 +624,7 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
 void roll_compensate(chassis_move_t *chassis_move_control_loop)
 {
     fp32 feed = 0.0f;
-    // if (chassis_move_control_loop->touchingGroung == true) {
-    //     // feed = PID_Calc(&chassis_move_control_loop->roll_ctrl_f_pid, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
-    // }
-    // chassis_move_control_loop->tmp = feed;
 
-    // chassis_move_control_loop->left_support_force  -=feed;
-    // chassis_move_control_loop->right_support_force +=feed;
-
-    // if (chassis_move_control_loop->jump_state.jump_stage == 2&&chassis_move_control_loop->touchingGroung == true)
-    // {
-    //     feed = old_PID_Calc(&chassis_move_control_loop->roll_ctrl_f_pid, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
-    //     return;
-    // }
-    // else if (chassis_move_control_loop->jump_state.jump_stage == 3)
-    // {
-    //
-    //     return;
-    // }
     fp32 roll_err = 0.0f;
     // PID补偿横滚角roll，这里作为腿长控制的外环，而不是直接补偿支持力
     if (chassis_move_control_loop->touchingGroung == true)
@@ -1206,21 +1190,6 @@ float calc_I_limit(float slip_conf)
     return 1000 +
            w * (2000 - 1000);
 }
-// float speed_scale(float wheel_speed)
-// {
-//     const float W_SAFE = 10.0f;   // rad/s
-//     const float W_SLIP = 40.0f;
-//
-//     if (fabsf(wheel_speed) <= W_SAFE)
-//         return 1.0f;
-//
-//     if (fabsf(wheel_speed) >= W_SLIP)
-//         return 0.3f;
-//
-//     float x = (fabsf(wheel_speed) - W_SAFE) / (W_SLIP - W_SAFE);
-//     return 1.0f - 0.7f * x;
-// }
-
 
 /**
  * @brief       平衡+转向

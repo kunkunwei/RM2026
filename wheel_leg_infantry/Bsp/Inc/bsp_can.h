@@ -39,11 +39,13 @@ typedef struct {
     uint8_t				Data[8];
 }CAN_TxFrameTypeDef;
 
+
 // extern lk9025_motor_measure_t motor_right, motor_left;
 // extern dm8009_motor_measure_t motor_joint[4];
 
 extern CAN_TxFrameTypeDef JointTxFrame[4],ChassisTxFrame,ContorlTxFrame;
 extern CAN_TxFrameTypeDef  RMD_L9025_Left_TxFrame,RMD_L9025_Right_TxFrame,RMD_L9025_ALL_TxFrame;
+  extern CAN_TxFrameTypeDef Chassis_Feeback_TxFrame;
 /**
   * @brief  Configures the CAN Filter.
   */

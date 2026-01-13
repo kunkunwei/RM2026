@@ -12,6 +12,9 @@ typedef enum
     CAN_dm8009_M3_ID = 0x03,
     CAN_dm8009_M4_ID = 0x04,
 
+    CAN1_Chassis_ID=0x60,         // 底盘CAN1发送反馈帧ID,反馈底盘数据
+    CAN1_Chassis_ID_1=0x60,         // CAN1发送命令帧1ID,控制底盘
+    CAN1_Chassis_ID_2=0x61,         // CAN1发送命令帧2ID,控制底盘
     CAN_RIGHT_MOTOR_ID = 0x141,
     CAN_LEFT_MOTOR_ID = 0x142,
     CAN_WHEEL_ALL_ID = 0x280,

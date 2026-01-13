@@ -16,10 +16,12 @@
 #include "bsp_can.h"
 #include "can.h"
 #include "remote_control.h"
+#include "User_Task.h"
+
 
 extern lk9025_motor_measure_t motor_right, motor_left;
 extern dm8009_motor_measure_t motor_joint[4];
-
+void get_chassis_ctrl_measure(Chassis_RC_Info_t *rc_info, uint8_t *data);
 /* Private variables ---------------------------------------------------------*/
 /**
  * @brief the structure that contains the Information of CAN Receive.
@@ -81,6 +83,13 @@ CAN_TxFrameTypeDef RMD_L9025_Right_TxFrame ={
 CAN_TxFrameTypeDef RMD_L9025_ALL_TxFrame ={
     .hcan = &hcan1,
 		.header.StdId=0x280,
+		.header.IDE=CAN_ID_STD,
+		.header.RTR=CAN_RTR_DATA,
+		.header.DLC=8,
+};
+CAN_TxFrameTypeDef Chassis_Feeback_TxFrame ={
+    .hcan = &hcan1,
+		.header.StdId=0x60,
 		.header.IDE=CAN_ID_STD,
 		.header.RTR=CAN_RTR_DATA,
 		.header.DLC=8,
@@ -180,8 +189,15 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
-	
-	if(*StdId == 0x141){
+	if (*StdId==CAN1_Chassis_ID_1)
+	{
+		chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
+	}
+	else if (*StdId==CAN1_Chassis_ID_2)
+	{
+		chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
+	}
+	else if(*StdId == 0x141){
 	  //RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);
     get_lk9025_motor_measure(&motor_right, data);
 	}
@@ -273,3 +289,4 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   }
 }
 //------------------------------------------------------------------------------
+

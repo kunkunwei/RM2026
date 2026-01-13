@@ -31,37 +31,35 @@
 /**
   * @brief          底盘无力的行为状态机下，底盘模式是raw，故而设定值会直接发送到can总线上故而将设定值都设置为0
   * @author         RM
-  * @param[in]      vx_set前进的速度 设定值将直接发送到can总线上
-  * @param[in]      vy_set左右的速度 设定值将直接发送到can总线上
-  * @param[in]      wz_set旋转的速度 设定值将直接发送到can总线上
-  * @param[in]      chassis_move_rc_to_vector底盘数据
+  * @param[in]      vx_can_set 前进的速度 设定值将直接发送到can总线上
+  * @param[in]      l_can_set  腿长的设定值 设定值将直接发送到can总线上
+  * @param[in]      angle_can_set 角度的设定值 设定值将直接发送到can总线上
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-static void chassis_zero_force_control(float *vx_can_set, float *l_can_set, float *wz_can_set, chassis_move_t *chassis_move_rc_to_vector);
+static void chassis_zero_force_control(float *vx_can_set, float *l_can_set, float *angle_can_set, chassis_move_t *chassis_move_rc_to_vector);
 
 /**
   * @brief          底盘站立的行为状态机下，底盘调整状态完成站立操作
   * @author         RM
-  * @param[in]      vx_set前进的速度 设定值将直接发送到can总线上
-  * @param[in]      vy_set左右的速度 设定值将直接发送到can总线上
-  * @param[in]      wz_set旋转的速度 设定值将直接发送到can总线上
-  * @param[in]      chassis_move_rc_to_vector底盘数据
+  * @param[in]      vx_set 前进的速度 设定值将直接发送到can总线上
+  * @param[in]      l_set 腿长的设定值 设定值将直接发送到can总线上
+  * @param[in]      angle_set 角度的设定值 设定值将直接发送到can总线上
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-
-static void chassis_stand_up_control(float *vx_can_set, float *vy_can_set, float *wz_can_set, chassis_move_t *chassis_move_rc_to_vector);
+static void chassis_stand_up_control(float *vx_set, float *l_set, float *angle_set, chassis_move_t *chassis_move_rc_to_vector);
 
 
 /**
   * @brief          底盘不移动的行为状态机下，底盘模式是不跟随角度，
   * @author         RM
-  * @param[in]      vx_set前进的速度
-  * @param[in]      vy_set左右的速度
-  * @param[in]      wz_set旋转的速度，旋转速度是控制底盘的底盘角速度
-  * @param[in]      chassis_move_rc_to_vector底盘数据
+  * @param[in]      vx_set 前进的速度
+  * @param[in]      l_set 腿长的设定值
+  * @param[in]      angle_set 角度的设定值
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-
 static void chassis_no_move_control(float *vx_set, float *l_set, float *angle_set, chassis_move_t *chassis_move_rc_to_vector);
 
 /**
@@ -73,8 +71,19 @@ static void chassis_no_move_control(float *vx_set, float *l_set, float *angle_se
   * @param[in]      chassis_move_rc_to_vector底盘数据
   * @retval         返回空
   */
+
 static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *wz_set, chassis_move_t *chassis_move_rc_to_vector);
 
+/**
+  * @brief          底盘跟随云台角度的行为状态机下，底盘模式是跟随角度，底盘旋转速度由云台参数直接设定
+  * @author         RM
+  * @param[in]      vx_set前进的速度
+  * @param[in]      vy_set左右的速度
+  * @param[in]      wz_set底盘设置的旋转速度
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
+  * @retval         返回空
+  */
+static void chassis_follow_yaw_control(float *vx_set, float *vy_set, float *wz_set, chassis_move_t *chassis_move_rc_to_vector);
 // 新增：分步站立控制函数
 static void chassis_get_up_auto(fp32 *l_set, fp32 *angle_set, chassis_move_t *chassis_move_rc_to_vector);
 
@@ -89,7 +98,28 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     {
         return;
     }
+#ifdef CAN1_Chassis_RC_Mod
 
+     if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==-1)
+    {
+        chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
+    }
+    else if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1)
+    {
+        chassis_behaviour_mode = CHASSIS_NO_MOVE;
+    }
+     if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==-1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
+    {
+        chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
+    }
+    else if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
+     {
+         chassis_behaviour_mode = CHASSIS_FOLLOW_YAW;
+     }
+    chassis_move_mode->last_chassis_funtion_1_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_1_SWITCH];
+    chassis_move_mode->last_chassis_funtion_2_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_2_SWITCH];
+
+#else
     //遥控器设置行为模式
     if (switch_is_up(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
     {
@@ -104,6 +134,8 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
         chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
     }
     chassis_move_mode->last_chassis_funtion_mode=chassis_move_mode->chassis_RC->rc.s[FUNTION_CHANNEL];
+#endif
+
     //根据行为状态机选择底盘状态机
     if (chassis_behaviour_mode == CHASSIS_ZERO_FORCE)
     {
@@ -120,6 +152,10 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     else if (chassis_behaviour_mode == CHASSIS_NO_FOLLOW_YAW)
     {
         chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; //当行为是底盘不跟随角度，则设置底盘状态机为 底盘不跟随角度 状态机。
+    }
+    else if (chassis_behaviour_mode == CHASSIS_FOLLOW_YAW)
+    {
+        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW; //当行为是底盘跟随角度，则设置底盘状态机为 底盘跟随角度 状态机。
     }
 }
 
@@ -149,18 +185,21 @@ void chassis_behaviour_control_set(float *vx_set, float *l_set, float *angle_set
     {
         chassis_no_follow_yaw_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);
     }
+    else if (chassis_behaviour_mode == CHASSIS_FOLLOW_YAW)
+    {
+        chassis_follow_yaw_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);
+    }
 }
 
 /**
   * @brief          底盘无力的行为状态机下，底盘模式是raw，故而设定值会直接发送到can总线上故而将设定值都设置为0
   * @author         RM
-  * @param[in]      vx_set前进的速度 设定值将直接发送到can总线上
-  * @param[in]      vy_set左右的速度 设定值将直接发送到can总线上
-  * @param[in]      wz_set旋转的速度 设定值将直接发送到can总线上
-  * @param[in]      chassis_move_rc_to_vector底盘数据
+  * @param[in]      vx_can_set 前进的速度 设定值将直接发送到can总线上
+  * @param[in]      l_can_set  腿长的设定值 设定值将直接发送到can总线上
+  * @param[in]      wz_can_set 角度的设定值 设定值将直接发送到can总线上
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-
 static void chassis_zero_force_control(float *vx_can_set, float *l_can_set, float *wz_can_set, chassis_move_t *chassis_move_rc_to_vector)
 {
     if (vx_can_set == NULL || l_can_set == NULL || wz_can_set == NULL || chassis_move_rc_to_vector == NULL)
@@ -193,16 +232,16 @@ static void chassis_stand_up_control(float *vx_can_set, float *vy_can_set, float
     *vy_can_set = 0.0f;
     *wz_can_set = 0.0f;
 }
+
 /**
   * @brief          底盘不移动的行为状态机下，底盘模式是不跟随角度，
   * @author         RM
-  * @param[in]      vx_set前进的速度
-  * @param[in]      vy_set左右的速度
-  * @param[in]      wz_set旋转的速度，旋转速度是控制底盘的底盘角速度
-  * @param[in]      chassis_move_rc_to_vector底盘数据
+  * @param[in]      vx_set 前进的速度
+  * @param[in]      l_set 腿长的设定值
+  * @param[in]      angle_set 角度的设定值
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
   * @retval         返回空
   */
-
 static void chassis_no_move_control(float *vx_set, float *l_set, float *angle_set, chassis_move_t *chassis_move_rc_to_vector)
 {
     if (vx_set == NULL || l_set == NULL || angle_set == NULL || chassis_move_rc_to_vector == NULL)
@@ -246,7 +285,26 @@ static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *w
     chassis_rc_to_control_vector(vx_set, vy_set, chassis_move_rc_to_vector);
     *wz_set = CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
 }
+/**
+  * @brief          底盘跟随角度的行为状态机下，底盘模式是跟随角度，底盘旋转速度由云台参数直接设定
+  * @author         RM
+  * @param[in]      vx_set前进的速度
+  * @param[in]      vy_set左右的速度
+  * @param[in]      wz_set底盘设置的旋转速度
+  * @param[in]      chassis_move_rc_to_vector 底盘数据
+  * @retval         返回空
+  */
 
+static void chassis_follow_yaw_control(float *vx_set, float *vy_set, float *wz_set, chassis_move_t *chassis_move_rc_to_vector)
+{
+    if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
+    {
+        return;
+    }
+
+    chassis_rc_to_control_vector(vx_set, vy_set, chassis_move_rc_to_vector);
+    *wz_set = CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
+}
 /**
   * @brief          根据当前俯仰角自动分步站立
   * @author         GitHub Copilot

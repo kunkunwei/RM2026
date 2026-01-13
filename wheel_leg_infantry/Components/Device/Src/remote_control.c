@@ -24,7 +24,8 @@ Remote_Info_Typedef remote_ctrl={
 	.rc_lost = true,
 	.online_cnt = 0xFAU,
 };
-
+//云台CAN帧控制底盘遥控器信息结构体变量
+Chassis_RC_Info_t chassis_can_rc_info;
 /**
  * @brief remote control usart RxDMA MultiBuffer
  */
@@ -124,6 +125,66 @@ void Remote_Info_Update(uint32_t *StdId, uint8_t *rxBuf,Remote_Info_Typedef *rem
 
 const Remote_Info_Typedef *get_remote_control_point(){
   return &remote_ctrl;
+}
+/**
+ * @brief  解析底盘控制帧数据
+ * @details 对应 Chassis_Ctrl_Can_Send 发送的数据格式 (压缩编码)
+ * @param  rc_info: 指向存储解析后数据的结构体指针
+ * @param  data: CAN接收到的8字节数据数组
+ */
+void get_chassis_ctrl_measure(Chassis_RC_Info_t *rc_info, uint8_t *data)
+{
+	// 解压 12-bit 模拟通道数据
+	// Byte 0: X[11:4]
+	// Byte 1: X[3:0] | WZ[11:8]
+	// Byte 2: WZ[7:0]
+	// Byte 3: R1[11:4]
+	// Byte 4: R1[3:0] | R2[11:8]
+	// Byte 5: R2[7:0]
+
+	int16_t x_raw  = ((int16_t)data[0] << 4) | (data[1] >> 4);
+	int16_t wz_raw = ((int16_t)(data[1] & 0x0F) << 8) | data[2];
+	int16_t r1_raw = ((int16_t)data[3] << 4) | (data[4] >> 4);
+	int16_t r2_raw = ((int16_t)(data[4] & 0x0F) << 8) | data[5];
+
+	// 12-bit 符号扩展 (如果最高位 bit11 为 1，则扩展符号位)
+	if (x_raw & 0x0800) x_raw |= 0xF000;
+	if (wz_raw & 0x0800) wz_raw |= 0xF000;
+	if (r1_raw & 0x0800) r1_raw |= 0xF000;
+	if (r2_raw & 0x0800) r2_raw |= 0xF000;
+
+	rc_info->ch[0] = x_raw;
+	rc_info->ch[1] = wz_raw;
+	rc_info->ch[2] = r1_raw;
+	rc_info->ch[3] = r2_raw;
+
+	// rc_info->x = x_raw;
+	// rc_info->w_z = wz_raw;
+	// rc_info->roll_1 = r1_raw;
+	// rc_info->roll_2 = r2_raw;
+
+	// 解压开关数据 (Byte 6)
+	// 映射: 0 -> -1, 1 -> 0, 2 -> 1
+	// s[0] (L1): bits 1:0
+	// s[1] (L2): bits 3:2
+	// s[2] (R2): bits 5:4
+	// s[3] (R1): bits 7:6
+
+	uint8_t sw_byte = data[6];
+
+	rc_info->s[0]  = (int8_t)(sw_byte & 0x03) - 1;
+	rc_info->s[1]  = (int8_t)((sw_byte >> 2) & 0x03) - 1;
+	rc_info->s[2] = (int8_t)((sw_byte >> 4) & 0x03) - 1;
+	rc_info->s[3] = (int8_t)((sw_byte >> 6) & 0x03) - 1;
+	// rc_info->left_switch_1  = (int8_t)(sw_byte & 0x03) - 1;
+	// rc_info->left_switch_2  = (int8_t)((sw_byte >> 2) & 0x03) - 1;
+	// rc_info->right_switch_2 = (int8_t)((sw_byte >> 4) & 0x03) - 1;
+	// rc_info->right_switch_1 = (int8_t)((sw_byte >> 6) & 0x03) - 1;
+}
+
+const Chassis_RC_Info_t* get_Chassis_CAN_RC_Info()
+{
+	return &chassis_can_rc_info;
 }
 //------------------------------------------------------------------------------
 

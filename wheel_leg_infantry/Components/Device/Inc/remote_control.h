@@ -159,11 +159,29 @@ typedef  struct
 	uint8_t online_cnt;   /*!< online count */
 } Remote_Info_Typedef;
 
+/**
+ * @brief 底盘遥控器信息结构体
+ */
+typedef struct {
+	// int16_t x;              // 前后运动，对应 Ch2
+	// int16_t w_z;            // 旋转运动，对应 Ch3
+	// int16_t roll_1;         // 滚转/辅助1，对应 Ch4
+	// int16_t roll_2;         // 滚转/辅助2，对应 Ch5
+	int16_t ch[4];
+	int8_t s[4];
+	// int8_t left_switch_1;   // 左1拨杆 (-1,  1)
+	// int8_t left_switch_2;   // 左2拨杆 (-1,  1)
+	// int8_t right_switch_1;  // 右1拨杆 (-1,  1)
+	// int8_t right_switch_2;  // 右2拨杆 (-1, 0, 1)
+} Chassis_RC_Info_t;
+
 /* Exported variables ---------------------------------------------------------*/
 /**
  * @brief remote control structure variable
  */
 extern Remote_Info_Typedef remote_ctrl;
+
+extern Chassis_RC_Info_t chassis_can_rc_info;
 /**
  * @brief remote control usart RxDMA MultiBuffer
  */
@@ -224,5 +242,6 @@ extern bool Key_C(void);
 extern bool Key_Z(void);
 
 const Remote_Info_Typedef *get_remote_control_point();
+const Chassis_RC_Info_t* get_Chassis_CAN_RC_Info();
 #endif //REMOTE_CONTROL_H
 

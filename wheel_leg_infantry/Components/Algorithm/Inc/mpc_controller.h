@@ -2,7 +2,7 @@
 /**
  ******************************************************************************
  * @file           : mpc_controller.h
- * @brief          : Model Predictive Control (MPC) Module for Wheeled-Legged Robot
+ * @brief          : 轮足机器人模型预测控制 (MPC) 模块
  * @author         : AI Assistant
  * @date           : 2025/11/29
  * @version        : v1.0

@@ -2,7 +2,7 @@
 /**
  ******************************************************************************
  * @file           : slip_detector.h
- * @brief          : Slip Detection and Kalman Filter Optimization Module
+ * @brief          : 打滑检测与卡尔曼滤波优化模块
  * @author         : AI Assistant
  * @date           : 2025/11/29
  * @version        : v1.0

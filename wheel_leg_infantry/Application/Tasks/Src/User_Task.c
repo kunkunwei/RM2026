@@ -9,7 +9,8 @@
 #include "usart.h"
 #include "vofa.h"
 
-
+gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
+void chassis_data_to_gimbal_feedback( const chassis_move_t* chassis);
 // void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info);
 void User_Task(void const * argument)
 {
@@ -22,6 +23,7 @@ void User_Task(void const * argument)
     float current_time = 0.0f;
     extern INS_Info_Typedef INS_Info;
     extern Remote_Info_Typedef remote_ctrl;
+    extern Chassis_RC_Info_t chassis_can_rc_info;
 
     extern Usb_data_fliter_t usb_fliter_data;
     extern Usb_dpkg_data_t* Usb_receive_data;
@@ -52,7 +54,7 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
-
+        chassis_data_to_gimbal_feedback(local_chassis);
         current_time=DWT_GetTimeline_ms();
         //每隔1s就要喂狗，防止1.5s看门狗复位
         if ((current_time-last_refresh_dog_time)>=1300)
@@ -70,6 +72,8 @@ void User_Task(void const * argument)
 
             // led_update_counter = 0;
         }
+
+
         // cpu_d=Monitor_GetCPULoad();
             // uart_printf(&huart6, "heart_cont:%d\r\n", monitor_heartbeat->heartbeat_count);
             // uart_printf(&huart6, "heart_status:%d\r\n", monitor_heartbeat->status);
@@ -84,7 +88,9 @@ void User_Task(void const * argument)
         // Vofa_Send_Q(&huart6,INS_Info,local_Quaternion_Info);
         // Vofa_Send_Chassis(&huart6,INS_Info,motor_joint,local_chassis);
 
-        // Vofa_Send_Data(&huart6,local_chassis);
+
+        // Vofa_Send_Chassis_CMD(&huart1, &chassis_can_rc_info,local_chassis);
+        // Vofa_Send_Data(&huart1,local_chassis);
 
         // Vofa_Send_Calibrate(&huart6,local_chassis);
         // Vofa_Send_Slip(&huart6,local_chassis,local_detector);
@@ -126,19 +132,82 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
         // printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        osDelay(5);
+        osDelay(1);
     }
 }
 
-void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info)
+// void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info)
+// {
+//     // 测试数据：IMU水平指向北
+//
+//     float yaw = ComputeMagYaw(ist8310_Info->calibrated_mag, INS_Info->rol_angle, INS_Info->pit_angle);
+//     uart_printf(&huart6, "期望:0°, 实际:%.1f°\r\n", yaw*57.3f);
+//
+//     // // 测试绕Z轴旋转90度（应该指向东）
+//     // float mag_east[3] = {0.0f, -0.2f, 0.4f};  // 假设
+//     // float yaw_east = ComputeMagYaw(mag_east, roll, pitch);
+//     // uart_printf(&huart6, "水平指向东 - 期望:90°, 实际:%.1f°\n", yaw_east*57.3f);
+// }
+void chassis_data_to_gimbal_feedback( const chassis_move_t* chassis)
 {
-    // 测试数据：IMU水平指向北
+    gimbal_chassis_comm.chassis_feedback.chassis_online=1;
+    gimbal_chassis_comm.chassis_feedback.chassis_yaw_angle=chassis->chassis_yaw;
+    gimbal_chassis_comm.chassis_feedback.chassis_yaw_rate=chassis->chassis_imu_gyro[0];//逆时针为正
+    gimbal_chassis_comm.chassis_feedback.current_speed_x=chassis->state_ref.x_dot;
+    gimbal_chassis_comm.chassis_feedback.current_speed_w_z=chassis->wz;
+    gimbal_chassis_comm.chassis_feedback.jump_state=chassis->jump_state.jump_flag;
+    gimbal_chassis_comm.chassis_feedback.chassis_mode_current=chassis->chassis_mode;
+    gimbal_chassis_comm.chassis_feedback.spinning_state=chassis->spining_flag;
+}
+/**
+ * @brief 解析云台控制命令第一帧
+ * @param cmd 指向控制命令结构的指针
+ * @param data CAN接收到的8字节数据数组
+ */
+void chassis_parse_control_frame1(gimbal_to_chassis_data_t *cmd, uint8_t data[8])
+{
+    if (!cmd || !data) return;
 
-    float yaw = ComputeMagYaw(ist8310_Info->calibrated_mag, INS_Info->rol_angle, INS_Info->pit_angle);
-    uart_printf(&huart6, "期望:0°, 实际:%.1f°\r\n", yaw*57.3f);
+    // 检查帧标志位
+    if (data[7] != 0x00) return;  // 不是第一帧
 
-    // // 测试绕Z轴旋转90度（应该指向东）
-    // float mag_east[3] = {0.0f, -0.2f, 0.4f};  // 假设
-    // float yaw_east = ComputeMagYaw(mag_east, roll, pitch);
-    // uart_printf(&huart6, "水平指向东 - 期望:90°, 实际:%.1f°\n", yaw_east*57.3f);
+    // 解析控制命令
+    cmd->chassis_mode_cmd = data[0] & 0x0F;
+    cmd->spinning_cmd = (data[0] >> 4) & 0x01;
+    cmd->jump_cmd = (data[0] >> 5) & 0x01;
+
+    // 解析云台YAW角度（精度0.001 rad）
+    int16_t yaw_int = (int16_t)((data[2] << 8) | data[1]);
+    cmd->gimbal_yaw_angle = yaw_int / 1000.0f;
+
+    // 解析前进速度（精度0.001 m/s）
+    int16_t speed_x_int = (int16_t)((data[4] << 8) | data[3]);
+    cmd->target_speed_x = speed_x_int / 1000.0f;
+
+    // 解析旋转速度（精度0.001 rad/s）
+    int16_t wz_int = (int16_t)((data[6] << 8) | data[5]);
+    cmd->target_speed_w_z = wz_int / 1000.0f;
+
+}
+
+/**
+ * @brief 解析云台控制命令第二帧
+ * @param cmd 指向控制命令结构的指针
+ * @param data CAN接收到的8字节数据数组
+ */
+void chassis_parse_control_frame2(gimbal_to_chassis_data_t *cmd, uint8_t data[8])
+{
+    if (!cmd || !data) return;
+
+    // 检查帧标志位
+    if (data[7] != 0x01) return;  // 不是第二帧
+
+    // 解析腿长（精度0.001 m）
+    int16_t length_int = (int16_t)((data[1] << 8) | data[0]);
+    cmd->target_length = length_int / 1000.0f;
+
+    // 解析Roll角度（精度0.001 rad）
+    int16_t roll_int = (int16_t)((data[3] << 8) | data[2]);
+    cmd->roll_angle = roll_int / 1000.0f;
+
 }
