@@ -5,19 +5,27 @@
 #include "arm_math.h"
 #include "bmi088.h"
 #include "bsp_tim.h"
+#include "chassis_behaviour.h"
 #include "monitor.h"
 #include "usart.h"
 #include "vofa.h"
-
+// 通信超时阈值（单位：ms）
+#define COMM_TIMEOUT_MS         100.0f   // 通信超时阈值
+#define FRAME_TIMEOUT_MS        20.0f    // 两帧间隔超时阈值
 gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
+
+void init_gimbal_comm_status(void);
+static  bool update_gimbal_comm_status(float current_time);
+static bool get_safe_gimbal_cmd(gimbal_to_chassis_data_t *cmd_out, float current_time);
 void chassis_data_to_gimbal_feedback( const chassis_move_t* chassis);
 // void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info);
 void User_Task(void const * argument)
 {
   /* Infinite loop */
     osDelay(800);
-    uint16_t buzzer=1;
+    // uint16_t buzzer=1;
     TickType_t systick = 0;
+    init_gimbal_comm_status();
     static float last_refresh_dog_time = 0.0f;
     static float last_led_time = 0.0f;
     float current_time = 0.0f;
@@ -54,8 +62,12 @@ void User_Task(void const * argument)
     for(;;)
     {
         systick = osKernelSysTick();
-        chassis_data_to_gimbal_feedback(local_chassis);
         current_time=DWT_GetTimeline_ms();
+
+        update_gimbal_comm_status(current_time);
+        get_safe_gimbal_cmd(&gimbal_chassis_comm.gimbal_cmd,current_time);
+        chassis_data_to_gimbal_feedback(local_chassis);
+
         //每隔1s就要喂狗，防止1.5s看门狗复位
         if ((current_time-last_refresh_dog_time)>=1300)
         {
@@ -101,7 +113,7 @@ void User_Task(void const * argument)
         if (switch_is_down(remote_ctrl.rc.s[0]))
         {
             buzzer_off();
-            buzzer=1;
+            // buzzer=1;
             HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
             HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
@@ -148,6 +160,90 @@ void User_Task(void const * argument)
 //     // float yaw_east = ComputeMagYaw(mag_east, roll, pitch);
 //     // uart_printf(&huart6, "水平指向东 - 期望:90°, 实际:%.1f°\n", yaw_east*57.3f);
 // }
+/**
+ * @brief 初始化云台通信状态
+ */
+void init_gimbal_comm_status(void)
+{
+    float init_time = DWT_GetTimeline_ms();
+
+    // 初始化时间戳为当前时间，确保初始不触发断联
+    gimbal_chassis_comm.last_frame1_time = init_time;
+    gimbal_chassis_comm.last_frame2_time = init_time;
+
+    // 初始状态：等待接收
+    gimbal_chassis_comm.frame1_received = 0;
+    gimbal_chassis_comm.frame2_received = 0;
+    gimbal_chassis_comm.comm_ok = 0;
+    gimbal_chassis_comm.safe_mode = 1;  // 初始为安全模式
+
+    // 初始化安全命令
+    memset(&gimbal_chassis_comm.gimbal_cmd, 0, sizeof(gimbal_to_chassis_data_t));
+    gimbal_chassis_comm.gimbal_cmd.chassis_mode_cmd = CHASSIS_ZERO_FORCE;
+}
+/**
+ * @brief 检查并更新云台通信状态
+ * @param current_time 当前时间(ms)
+ * @return 通信是否正常 (1=正常, 0=断联)
+ */
+static  bool update_gimbal_comm_status(float current_time)
+{
+    static uint8_t last_state = 0;
+
+    // 计算时间差
+    float dt1 = current_time - gimbal_chassis_comm.last_frame1_time;
+    float dt2 = current_time - gimbal_chassis_comm.last_frame2_time;
+
+    // 通信正常条件：
+    // 1. 两帧都在20ms内收到
+    // 2. 两帧都已收到标志位为1
+    uint8_t new_state = (dt1 < 20.0f) &&
+                        (dt2 < 20.0f) &&
+                        gimbal_chassis_comm.frame1_received &&
+                        gimbal_chassis_comm.frame2_received;
+
+    // 状态变化处理
+    if (new_state != last_state) {
+        gimbal_chassis_comm.comm_ok = new_state;
+        gimbal_chassis_comm.safe_mode = !new_state;
+        last_state = new_state;
+
+        // // 可选：调试输出
+        // if (new_state) {
+        //     printf("Gimbal comm OK\n");
+        // } else {
+        //     printf("Gimbal comm LOST\n");
+        // }
+    }
+
+    return new_state;
+}
+/**
+ * @brief 获取安全的控制命令（自动处理断联）
+ * @param cmd_out 输出命令指针
+ * @param current_time 当前时间(ms)
+ * @return 是否是正常通信的命令 (1=正常, 0=安全模式)
+ */
+static bool get_safe_gimbal_cmd(gimbal_to_chassis_data_t *cmd_out, float current_time)
+{
+    uint8_t comm_ok = update_gimbal_comm_status(current_time);
+
+    if (comm_ok) {
+        // 通信正常：直接复制命令
+        // *cmd_out = gimbal_chassis_comm.gimbal_cmd;
+        return 1;
+    } else {
+        // 通信断联：安全命令
+        cmd_out->chassis_mode_cmd = CHASSIS_ZERO_FORCE;
+        cmd_out->target_speed_x = 0.0f;
+        cmd_out->target_speed_w_z = 0.0f;
+        cmd_out->target_length = 0.0f;
+        cmd_out->roll_angle = 0.0f;
+        cmd_out->spinning_cmd = 0;
+        cmd_out->jump_cmd = 0;
+        return 0;
+    }
+}
 void chassis_data_to_gimbal_feedback( const chassis_move_t* chassis)
 {
     gimbal_chassis_comm.chassis_feedback.chassis_online=1;
@@ -210,4 +306,10 @@ void chassis_parse_control_frame2(gimbal_to_chassis_data_t *cmd, uint8_t data[8]
     int16_t roll_int = (int16_t)((data[3] << 8) | data[2]);
     cmd->roll_angle = roll_int / 1000.0f;
 
+}
+
+
+const gimbal_chassis_comm_t* get_gimbal_chassis_comm_point(void)
+{
+    return &gimbal_chassis_comm;
 }

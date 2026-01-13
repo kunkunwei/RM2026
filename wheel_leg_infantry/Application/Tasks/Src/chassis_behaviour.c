@@ -19,8 +19,10 @@
 #include "chassis_task.h"
 
 #include "arm_math.h"
+#include "User_Task.h"
 //#include "led.h"
-
+// gimbal_chassis_comm_t * local_gimbal_chassis_comm ;
+extern gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
 #define RC_SW_UP ((uint16_t)1)
 #define RC_SW_MID ((uint16_t)3)
 #define RC_SW_DOWN ((uint16_t)2)
@@ -99,25 +101,31 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
         return;
     }
 #ifdef CAN1_Chassis_RC_Mod
-
-     if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==-1)
+    if (gimbal_chassis_comm.comm_ok)
     {
-        chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
+        chassis_behaviour_mode=gimbal_chassis_comm.gimbal_cmd.chassis_mode_cmd;
+        chassis_move_mode.spining_flag=gimbal_chassis_comm.gimbal_cmd.spinning_cmd;
+        chassis_move_mode->jump_state.jump_flag=gimbal_chassis_comm.gimbal_cmd.jump_cmd;
+        // chassis_move_mode->chassis_RC->rc.ch[]
     }
-    else if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1)
-    {
-        chassis_behaviour_mode = CHASSIS_NO_MOVE;
-    }
-     if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==-1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
-    {
-        chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
-    }
-    else if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
-     {
-         chassis_behaviour_mode = CHASSIS_FOLLOW_YAW;
-     }
-    chassis_move_mode->last_chassis_funtion_1_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_1_SWITCH];
-    chassis_move_mode->last_chassis_funtion_2_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_2_SWITCH];
+    //  if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==-1)
+    // {
+    //     chassis_behaviour_mode = CHASSIS_ZERO_FORCE;
+    // }
+    // else if (chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1)
+    // {
+    //     chassis_behaviour_mode = CHASSIS_NO_MOVE;
+    // }
+    //  if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==-1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
+    // {
+    //     chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
+    // }
+    // else if ((chassis_move_mode->chassis_can_rc_info->s[LEFT_2_SWITCH]==1)&&(chassis_move_mode->chassis_can_rc_info->s[LEFT_1_SWITCH]==1))
+    //  {
+    //      chassis_behaviour_mode = CHASSIS_FOLLOW_YAW;
+    //  }
+    // chassis_move_mode->last_chassis_funtion_1_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_1_SWITCH];
+    // chassis_move_mode->last_chassis_funtion_2_mode=chassis_move_mode->chassis_can_rc_info->s[RIGHT_2_SWITCH];
 
 #else
     //遥控器设置行为模式

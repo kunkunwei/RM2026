@@ -189,13 +189,18 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
+	float time_now = DWT_GetTimeline_ms();
 	if (*StdId==CAN1_Chassis_ID_1)
 	{
 		chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
+		gimbal_chassis_comm.last_frame1_time=time_now;
+		gimbal_chassis_comm.frame1_received =1;
 	}
 	else if (*StdId==CAN1_Chassis_ID_2)
 	{
 		chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
+		gimbal_chassis_comm.last_frame2_time=time_now;
+		gimbal_chassis_comm.frame2_received =1;
 	}
 	else if(*StdId == 0x141){
 	  //RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);

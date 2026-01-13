@@ -24,7 +24,26 @@ typedef struct __attribute__((packed))
     float roll_angle;           // 目标Roll角度 (rad)
     uint8_t reserved2[8];        // 预留扩展
 } gimbal_to_chassis_data_t;
+typedef struct {
+    // 接收到的控制命令
+    gimbal_to_chassis_data_t current_cmd;
 
+    // 通信状态
+    float last_frame1_time;  // 第一帧最后接收时间
+    float last_frame2_time;  // 第二帧最后接收时间
+    float last_valid_time;   // 最后一次有效通信时间
+
+    // 状态标志
+    uint8_t frame1_received : 1;    // 第一帧已收到
+    uint8_t frame2_received : 1;    // 第二帧已收到
+    uint8_t communication_ok : 1;   // 通信正常
+    uint8_t safe_mode_active : 1;   // 安全模式激活
+    uint8_t reserved : 4;
+
+    // 统计
+    uint32_t timeout_count;     // 超时次数
+    uint32_t recovery_count;    // 恢复次数
+} chassis_comm_manager_t;
 /**
  * @brief 底盘发送给云台的反馈数据
  * @note 使用一帧CAN数据传输（8字节）
@@ -47,16 +66,26 @@ typedef struct __attribute__((packed))
 typedef struct
 {
     gimbal_to_chassis_data_t gimbal_cmd;       // 云台发送的命令
+    // chassis_comm_manager_t gimbal_cmd;       // 云台发送的命令
     chassis_to_gimbal_data_t chassis_feedback; // 底盘反馈的数据
 
     TickType_t last_chassis_update_time; // 上次收到底盘数据的时间
-    uint8_t chassis_online_flag;         // 底盘在线标志
-    uint8_t communication_lost_flag;     // 通信丢失标志
 
-    // 统计信息
-    uint32_t send_count;    // 发送次数
-    uint32_t receive_count; // 接收次数
-    uint32_t error_count;   // 错误次数
+    // 通信状态
+    float last_frame1_time;  // 第一帧最后接收时间
+    float last_frame2_time;  // 第二帧最后接收时间
+    float last_valid_time;   // 最后一次有效通信时间
+
+    // 状态标志
+    uint8_t frame1_received : 1;    // 第一帧已收到
+    uint8_t frame2_received : 1;    // 第二帧已收到
+    uint8_t comm_ok : 1;        // 通信正常标志
+    uint8_t safe_mode : 1;      // 安全模式激活
+    // uint8_t reserved : 4;
+
+    // 统计
+    uint32_t timeout_count;     // 超时次数
+    uint32_t recovery_count;    // 恢复次数
 } gimbal_chassis_comm_t;
 
 extern gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
@@ -64,5 +93,5 @@ void User_Task(void const * argument);
 
 void chassis_parse_control_frame1(gimbal_to_chassis_data_t *cmd, uint8_t data[8]);
 void chassis_parse_control_frame2(gimbal_to_chassis_data_t *cmd, uint8_t data[8]);
-
+const gimbal_chassis_comm_t* get_gimbal_chassis_comm_point(void);
 #endif 

@@ -414,8 +414,8 @@ typedef struct
 	float kilometer;
 	float vx_from_ros;
 	float wz_from_ros;
-
-	bool spining_flag;//旋转标志位
+	bool spining_state;//旋转状态
+	bool spining_flag;//旋转控制标志位
 	bool last_spining_flag;
 	float tmp;
 } chassis_move_t;

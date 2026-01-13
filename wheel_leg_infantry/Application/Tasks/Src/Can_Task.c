@@ -14,11 +14,79 @@
 extern CAN_TxFrameTypeDef Chassis_Feeback_TxFrame;
 extern gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
 
+/* CAN Manager Instance */
+CAN_TxManager_t can_manager;
+
 static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity, float KP, float KD, float Torque);
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left);
 static void Damiao_Motor_Enable(uint8_t Motor_ID);
 static void chassis_send_feedback(const chassis_to_gimbal_data_t *feedback);
-static inline uint8_t CAN_Mailbox_Available(void);
+// static inline uint8_t CAN_Mailbox_Available(void); // No longer needed
+
+/* CAN Manager Implementations */
+
+/**
+ * @brief Initialize CAN Manager
+ */
+void CAN_Manager_Init(void) {
+    memset(&can_manager, 0, sizeof(can_manager));
+}
+
+/**
+ * @brief Update CAN Manager (Process Queues)
+ * Call this function frequently to drain the queues.
+ */
+void CAN_Manager_Update(void) {
+    // Process CAN1 Queue
+    while (can_manager.can1_queue.count > 0 && HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) > 0) {
+        // Send frame at head
+        USER_CAN_TxMessage(&can_manager.can1_queue.buffer[can_manager.can1_queue.head]);
+        // Update Ring Buffer
+        can_manager.can1_queue.head = (can_manager.can1_queue.head + 1) % CAN_QUEUE_SIZE;
+        can_manager.can1_queue.count--;
+    }
+
+    // Process CAN2 Queue
+    while (can_manager.can2_queue.count > 0 && HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) > 0) {
+        // Send frame at head
+        USER_CAN_TxMessage(&can_manager.can2_queue.buffer[can_manager.can2_queue.head]);
+        // Update Ring Buffer
+        can_manager.can2_queue.head = (can_manager.can2_queue.head + 1) % CAN_QUEUE_SIZE;
+        can_manager.can2_queue.count--;
+    }
+}
+
+/**
+ * @brief Add frame to CAN Manager Queue
+ * @param frame Pointer to frame to send
+ * @return 1 if added/sent, 0 if queue full or error
+ */
+uint8_t CAN_Manager_Add(CAN_TxFrameTypeDef *frame) {
+    CAN_Queue_t *q = NULL;
+
+    if (frame->hcan == &hcan1) {
+        q = &can_manager.can1_queue;
+    } else if (frame->hcan == &hcan2) {
+        q = &can_manager.can2_queue;
+    } else {
+        return 0; // Unknown bus
+    }
+
+    if (q->count >= CAN_QUEUE_SIZE) {
+        // Queue Full
+        return 0;
+    }
+
+    // Add to tail
+    q->buffer[q->tail] = *frame; // Struct copy
+    q->tail = (q->tail + 1) % CAN_QUEUE_SIZE;
+    q->count++;
+
+    // Try to send immediately if possible
+    CAN_Manager_Update();
+
+    return 1;
+}
 
 // #define LEG_DEBUG
 void Can_Task(void const * argument)
@@ -27,7 +95,7 @@ void Can_Task(void const * argument)
   /* Infinite loop */
   extern CAN_TxFrameTypeDef JointTxFrame[4];
   const chassis_move_t* local_chassis = get_chassis_control_point();
-
+	CAN_Manager_Init();
 	static float last_time = 0.0f;
 	float current_time = 0.0f;
   osDelay(1000);
@@ -45,6 +113,10 @@ void Can_Task(void const * argument)
   for(;;)
   {
   	current_time=DWT_GetTimeline_ms();
+
+    // Attempt to drain queue at start of loop
+    CAN_Manager_Update();
+
 	//发送底盘反馈数据给云台 (每10ms发送一次)
   	if ((current_time-last_time)>=10) {
   		chassis_send_feedback(&gimbal_chassis_comm.chassis_feedback);
@@ -67,15 +139,15 @@ void Can_Task(void const * argument)
       Damiao_Motor_CAN_Send(0,0,0,0,0,0);
       Damiao_Motor_CAN_Send(1,0,0,0,0,0);
 
-      osDelay(1);
+      // osDelay(1);
 
       Damiao_Motor_CAN_Send(2,0,0,0,0,0);
       Damiao_Motor_CAN_Send(3,0,0,0,0,0);
-      osDelay(1);
+      // osDelay(1);
 
       // LK9025_Motor_CAN_Send(local_chassis->chassis_RC->rc.ch[2],local_chassis->chassis_RC->rc.ch[3]);
       LK9025_Motor_CAN_Send(0,0);
-      osDelay(1);
+      // osDelay(1);
     #endif
 
 
@@ -105,7 +177,8 @@ static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity
 	JointTxFrame[Motor_ID].Data[5] = (uint8_t)(KD_Tmp>>4);
 	JointTxFrame[Motor_ID].Data[6] = (uint8_t)((KD_Tmp&0x0F)<<4) | (uint8_t)(Torque_Tmp>>8);
 	JointTxFrame[Motor_ID].Data[7] = (uint8_t)(Torque_Tmp);
-   USER_CAN_TxMessage(&JointTxFrame[Motor_ID]);
+   // USER_CAN_TxMessage(&JointTxFrame[Motor_ID]);
+   CAN_Manager_Add(&JointTxFrame[Motor_ID]);
 }
 static void Damiao_Motor_Enable(uint8_t Motor_ID){
     //uint8_t Motor_ID = ID-1;
@@ -119,7 +192,8 @@ static void Damiao_Motor_Enable(uint8_t Motor_ID){
 	JointTxFrame[Motor_ID].Data[6] = 0xFF;
 	JointTxFrame[Motor_ID].Data[7] = 0xFC;
 
-  USER_CAN_TxMessage(&JointTxFrame[Motor_ID]);
+  // USER_CAN_TxMessage(&JointTxFrame[Motor_ID]);
+  CAN_Manager_Add(&JointTxFrame[Motor_ID]);
 }
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left){
 
@@ -132,12 +206,14 @@ static void LK9025_Motor_CAN_Send(int16_t right, int16_t left){
   RMD_L9025_ALL_TxFrame.Data[6] = 0;
   RMD_L9025_ALL_TxFrame.Data[7] = 0;
 
-  USER_CAN_TxMessage(&RMD_L9025_ALL_TxFrame);
+  // USER_CAN_TxMessage(&RMD_L9025_ALL_TxFrame);
+  CAN_Manager_Add(&RMD_L9025_ALL_TxFrame);
 }
 /**
  * @brief 检查CAN发送邮箱是否有空闲空间
  * @return 1: 有空闲邮箱可发送, 0: 邮箱已满
  */
+/*
 static inline uint8_t CAN_Mailbox_Available(void)
 {
 	extern CAN_HandleTypeDef hcan1;
@@ -152,6 +228,7 @@ static inline uint8_t CAN_Mailbox_Available(void)
 	// return (can1_free > 0 || can2_free > 0);
 	return can1_free > 0;
 }
+*/
 
 /**
  * @brief 底盘发送反馈数据给云台
@@ -187,6 +264,7 @@ static void chassis_send_feedback(const chassis_to_gimbal_data_t *feedback)
 	// YAW角速度（精度0.01 rad/s）
 	int8_t yaw_rate_int = (int8_t)(feedback->chassis_yaw_rate / 0.01f);
 	Chassis_Feeback_TxFrame.Data[7] = (uint8_t)yaw_rate_int;
-	USER_CAN_TxMessage(&Chassis_Feeback_TxFrame);
+	// USER_CAN_TxMessage(&Chassis_Feeback_TxFrame);
+    CAN_Manager_Add(&Chassis_Feeback_TxFrame);
 
 }
