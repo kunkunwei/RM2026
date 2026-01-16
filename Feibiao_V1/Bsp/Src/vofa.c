@@ -32,7 +32,7 @@ HAL_StatusTypeDef Vofa_Send_Gimbal(UART_HandleTypeDef *huart, gimbal_t gimbal)
             // gimbal.gimbal_pos.yaw_absolute_pos,
             gimbal.gimbal_pos.init_pitch_pos,
             gimbal.gimbal_pos.pitch_target_pos,
-            gimbal.gimbal_pos.pitch_absolute_pos,
+            // gimbal.gimbal_pos.pitch_absolute_pos,
             gimbal.gimbal_mod,
 
             // gimbal.gimbal_pos.roll_absolute_pos,

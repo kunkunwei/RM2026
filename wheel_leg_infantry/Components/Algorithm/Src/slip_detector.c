@@ -136,7 +136,7 @@ static void CalculateWheelFeature(float wheel_vel,
                                            10, &feature->history_idx);
 
     // 特征3：加速度异常（扭矩大但加速度小）
-    float wheel_inertia = 0.3f * 0.0925f;
+    float wheel_inertia = (0.963+0.367f) * 0.08f;
     float expected_accel = fabsf(torque_cmd) / wheel_inertia;
     float accel_error = expected_accel - fabsf(imu_accel);
     float raw_accel = (accel_error > 0) ?

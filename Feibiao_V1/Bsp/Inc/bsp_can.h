@@ -59,16 +59,6 @@ extern "C" {
 
 
 
-  /* CAN管理帧结构（包含原有结构体） */
-  typedef struct {
-    CAN_TxFrameTypeDef base_frame;  // 包含原有的帧结构
-    CAN_Priority_e priority;         // 优先级
-    CAN_Type_e type;                 // 帧类型
-    uint32_t timestamp;              // 时间戳
-    uint8_t retry_count;             // 重试次数
-    bool need_response;              // 是否需要响应
-  } CAN_Managed_Frame_t;
-
 /* Exported functions prototypes ---------------------------------------------*/
 
 /**
@@ -79,17 +69,6 @@ extern void BSP_CAN_Init(void);
   * @brief  USER function to transmit the Specifies message.
   */
 extern void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader);
-  /* CAN管理器函数（简洁版本） */
-  bool CAN_Send_Frame(CAN_TxFrameTypeDef *frame);
-  bool CAN_Send_Frame_Priority(CAN_TxFrameTypeDef *frame, CAN_Priority_e priority);
 
-  /* CAN管理器函数（复杂版本） */
-  bool CAN_Send_Frame_Advanced(CAN_HandleTypeDef *hcan, uint32_t id, uint8_t *data, uint8_t dlc,
-                              CAN_Priority_e priority, CAN_Type_e type, bool need_response);
-
-  /* 队列管理函数 */
-  void CAN_Process_Send_Queue(void);
-  uint32_t CAN_Get_Queue_Size(void);
-  void CAN_Clear_Queue(void);
 #endif //BSP_CAN_H
 

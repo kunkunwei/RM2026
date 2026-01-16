@@ -1,0 +1,8 @@
+//
+// Created by kun on 2026/1/16.
+//
+
+#ifndef GIMBAL_GROUND_CTL_CHASSIS_H
+#define GIMBAL_GROUND_CTL_CHASSIS_H
+
+#endif //GIMBAL_GROUND_CTL_CHASSIS_H

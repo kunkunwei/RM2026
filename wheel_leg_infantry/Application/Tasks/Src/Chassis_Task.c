@@ -162,6 +162,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
     // 获取驱动轮电机指针
     chassis_move_init->right_leg.wheel_motor.wheel_motor_measure = get_Right_Wheel_Motor_Measure_Point();
     chassis_move_init->left_leg.wheel_motor.wheel_motor_measure  = get_Left_Wheel_Motor_Measure_Point();
+
     //获取打滑检测器指针
     chassis_move_init->slip_detector = get_slip_detector_point();
     //获取跳跃控制器指针
@@ -597,12 +598,13 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         l_force = old_PID_Calc(&chassis_move_control_loop->left_leg_length_pid, chassis_move_control_loop->left_leg.leg_length, chassis_move_control_loop->left_leg.leg_length_set);
         /*
         gravity_comp = (机体质量 + 电池质量) × 9.8 / 2
-                     = (10kg + 0.8kg) × 9.8 / 2
-                     = 52.92 N
+                     = (11.983kg ) × 9.8 / 2
+                     = 58.717 N
          */
         chassis_move_control_loop->l_force=l_force;
         chassis_move_control_loop->r_force=r_force;
-        static const fp32 gravity_comp                 = 40.0f; // 补偿机体重力
+        static const fp32 gravity_comp                 = 50.717f; // 补偿机体重力
+        // static const fp32 gravity_comp                 = 40.0f; // 补偿机体重力
         chassis_move_control_loop->left_support_force  = l_force + gravity_comp;
         chassis_move_control_loop->right_support_force = r_force + gravity_comp;
 
@@ -610,7 +612,8 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         r_force = old_PID_Calc(&chassis_move_control_loop->right_leg_length_pid, chassis_move_control_loop->right_leg.leg_length, chassis_move_control_loop->leg_length_in_sky);
         l_force = old_PID_Calc(&chassis_move_control_loop->left_leg_length_pid, chassis_move_control_loop->left_leg.leg_length, chassis_move_control_loop->leg_length_in_sky);
 
-        static const fp32 wheel_gravity_comp           = -3.0f; // 补偿轮子重力
+        static const fp32 wheel_gravity_comp           = -(0.367f+0.963f)*10; // 补偿轮子重力
+        // static const fp32 wheel_gravity_comp           = -3.0f; // 补偿轮子重力
         chassis_move_control_loop->left_support_force  = l_force + wheel_gravity_comp;
         chassis_move_control_loop->right_support_force = r_force + wheel_gravity_comp;
     }
@@ -787,17 +790,17 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             bool_t can_jump = (jump_count == 0) ||
                              (chassis_move_control_loop->jump_state.current_time - chassis_move_control_loop->jump_state.last_jump_finish_time >= JUMP_COOLDOWN_MS);
 
-            if (can_jump) {
-                // 启动新跳跃
-                jump_count++;
-                chassis_move_control_loop->jump_state.jump_stage = 1;
-                // 禁用位置介入控制，避免刹车
-                chassis_move_control_loop->position_control_intervention = false;
-                // chassis_move_control_loop->jump_state.takeoff_velocity = chassis_move_control_loop->state_ref.x_dot;
-                // chassis_move_control_loop->jump_state.takeoff_pitch = chassis_move_control_loop->chassis_pitch;
-                chassis_move_control_loop->jump_state.takeoff_leg_length = 0.5f * (chassis_move_control_loop->left_leg.leg_length +
-                                                                                   chassis_move_control_loop->right_leg.leg_length);
-            }
+            // if (can_jump) {
+            //     // 启动新跳跃
+            //     jump_count++;
+            //     chassis_move_control_loop->jump_state.jump_stage = 1;
+            //     // 禁用位置介入控制，避免刹车
+            //     chassis_move_control_loop->position_control_intervention = false;
+            //     // chassis_move_control_loop->jump_state.takeoff_velocity = chassis_move_control_loop->state_ref.x_dot;
+            //     // chassis_move_control_loop->jump_state.takeoff_pitch = chassis_move_control_loop->chassis_pitch;
+            //     chassis_move_control_loop->jump_state.takeoff_leg_length = 0.5f * (chassis_move_control_loop->left_leg.leg_length +
+            //                                                                        chassis_move_control_loop->right_leg.leg_length);
+            // }
             // 无论是否能跳，都清零当前flag，避免重复触发
             chassis_move_control_loop->jump_state.jump_flag = 0;
         }
@@ -1182,13 +1185,13 @@ float calc_I_limit(float slip_conf)
 
     // 0.65 以上强打滑
     if (slip_conf >= 0.65f)
-        return 1000;
+        return 1400;
 
     float x = (slip_conf - 0.5f) / (0.65f - 0.5f);
     float w = 0.5f * (1.0f + cosf(M_PI * x)); // 1 -> 0
 
-    return 1000 +
-           w * (2000 - 1000);
+    return 1400 +
+           w * (2000 - 1400);
 }
 
 /**
@@ -1208,11 +1211,11 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
                               {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
     fp32 slip_coefficient[2][6] = {{0.7f, 0.6f, 0.9f, 0.7f, 0.8f, 0.7f},
                               {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    fp32 jump_4_coefficient[2][6] = {{0.8f, 0.9f, 0.0f, 0.0f, 0.8f, 0.8f},
+    fp32 jump_4_coefficient[2][6] = {{0.8f, 0.9f, 1.0f, 1.0f, 0.8f, 0.8f},
                                      {1.4f, 1.3f, 1.0f, 1.0f, 1.4f, 1.2f}};
     fp32 jump_3_coefficient[2][6] = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
                                      {1.5f, 1.3f, 0.0f, 0.0f, 1.2f, 1.2f}};
-    fp32 jump_2_coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f},
+    fp32 jump_2_coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                                      {1.5f, 1.3f, 1.0f, 1.0f, 1.5f, 1.3f}};
     fp32 kRes[12] = {0}, k[2][6] = {0};
     // 输入腿长，函数把K矩阵放在k中
@@ -1402,16 +1405,16 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
             tor_vector);
     chassis_move_control_loop->tor_vector[2]=tor_vector[1];
     chassis_move_control_loop->tor_vector[3]=tor_vector[0];
-    if (chassis_move_control_loop->jump_state.jump_stage==0)
-    {
-        chassis_move_control_loop->right_leg.back_joint.tor_set = limitted_motor_current(-tor_vector[1] , 15.0f);
-        chassis_move_control_loop->right_leg.front_joint.tor_set = limitted_motor_current(-tor_vector[0] , 15.0f);
-    }
-    else
-    {
+    // if (chassis_move_control_loop->jump_state.jump_stage==0)
+    // {
         chassis_move_control_loop->right_leg.back_joint.tor_set = limitted_motor_current(-tor_vector[1] , 20.0f);
         chassis_move_control_loop->right_leg.front_joint.tor_set = limitted_motor_current(-tor_vector[0] , 20.0f);
-    }
+    // }
+    // else
+    // {
+        // chassis_move_control_loop->right_leg.back_joint.tor_set = limitted_motor_current(-tor_vector[1] , 20.0f);
+        // chassis_move_control_loop->right_leg.front_joint.tor_set = limitted_motor_current(-tor_vector[0] , 20.0f);
+    // }
 
 
     leg_conv(-chassis_move_control_loop->left_support_force, chassis_move_control_loop->leg_tor +comp_left- err_tor,
@@ -1419,17 +1422,17 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
              tor_vector);
     chassis_move_control_loop->tor_vector[0]=tor_vector[0];
     chassis_move_control_loop->tor_vector[1]=tor_vector[1];
-    if (chassis_move_control_loop->jump_state.jump_stage==0)
-    {
-        chassis_move_control_loop->left_leg.back_joint.tor_set  = limitted_motor_current(tor_vector[1], 15.0f);
-        chassis_move_control_loop->left_leg.front_joint.tor_set = limitted_motor_current(tor_vector[0], 15.0f);
-    }
-    else
-    {
+    // if (chassis_move_control_loop->jump_state.jump_stage==0)
+    // {
         chassis_move_control_loop->left_leg.back_joint.tor_set  = limitted_motor_current(tor_vector[1], 20.0f);
         chassis_move_control_loop->left_leg.front_joint.tor_set = limitted_motor_current(tor_vector[0], 20.0f);
+    // }
+    // else
+    // {
+        // chassis_move_control_loop->left_leg.back_joint.tor_set  = limitted_motor_current(tor_vector[1], 20.0f);
+        // chassis_move_control_loop->left_leg.front_joint.tor_set = limitted_motor_current(tor_vector[0], 20.0f);
 
-    }
+    // }
 
 }
 // 机器人支持力解算，判断离地
@@ -1440,8 +1443,8 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
     // 新增：状态切换计时和计数，用于过滤噪声
     static uint32_t offground_timer = 0;
     static uint32_t touchdown_timer = 0;
-
-    static const fp32 m_w = 0.367f; // 轮毂的质量：0.300f->0.367f
+//轮子总重1.33kg
+    static const fp32 m_w = 0.367f+0.963f; // 轮毂的质量：0.300f->0.367f
     static const fp32 g   = 9.8f;   // 重力加速度
     // 对腿长速度、倾角速度做低通滤波（抑制高频噪声）
     static fp32 filtered_length_dot = 0.0f;

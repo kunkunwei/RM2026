@@ -271,8 +271,8 @@ void gimbal_mod_change_date_transfer(gimbal_t *gimbal_transfer)
     }
     // 从慢速校准模式切换到正常控制模式
     else if (gimbal_transfer->last_gimbal_mod == GIMBAL_MOD_SLOW_CALI && gimbal_transfer->gimbal_mod == GIMBAL_MOD_NORMAL) {
-        gimbal_transfer->gimbal_pos.pitch_target_pos = gimbal_transfer->gimbal_pos.pitch_absolute_pos;
-        gimbal_transfer->gimbal_pos.yaw_target_pos   = gimbal_transfer->gimbal_pos.yaw_absolute_pos;
+        gimbal_transfer->gimbal_pos.pitch_target_pos = gimbal_transfer->gimbal_pos.pitch_relatiive_pos;
+        gimbal_transfer->gimbal_pos.yaw_target_pos   = gimbal_transfer->gimbal_pos.yaw_relattive_pos;
 
     }
     // 切换到自动瞄准模式
@@ -280,8 +280,8 @@ void gimbal_mod_change_date_transfer(gimbal_t *gimbal_transfer)
         // 保留视觉目标设置的代码（已注释）
         // gimbal_transfer->gimbal_pos.usb_autoAim_ptr->minipc_target_pitch = gimbal_transfer->gimbal_pos.pitch_absolute_pos;
         // gimbal_transfer->gimbal_pos.usb_autoAim_ptr->minipc_target_yaw   = gimbal_transfer->gimbal_pos.yaw_absolute_pos;
-        gimbal_transfer->gimbal_pos.pitch_target_pos = gimbal_transfer->gimbal_pos.pitch_absolute_pos;
-        gimbal_transfer->gimbal_pos.yaw_target_pos   = gimbal_transfer->gimbal_pos.yaw_absolute_pos;
+        gimbal_transfer->gimbal_pos.pitch_target_pos = gimbal_transfer->gimbal_pos.pitch_relatiive_pos;
+        gimbal_transfer->gimbal_pos.yaw_target_pos   = gimbal_transfer->gimbal_pos.yaw_relattive_pos;
     }
 }
 /**
@@ -293,17 +293,22 @@ void gimbal_feedback(gimbal_t *gimbal_feedback)
 {
 
     // 更新PITCH轴绝对位置（来自IMU）
-    gimbal_feedback->gimbal_pos.pitch_absolute_pos = gimbal_feedback->ins_info->pit_angle;
-    gimbal_feedback->gimbal_pos.pitch_absolute_pos = rad_format(gimbal_feedback->gimbal_pos.pitch_absolute_pos);
+    // gimbal_feedback->gimbal_pos.pitch_absolute_pos = gimbal_feedback->ins_info->pit_angle;
+    // gimbal_feedback->gimbal_pos.pitch_absolute_pos = rad_format(gimbal_feedback->gimbal_pos.pitch_absolute_pos);
 
     // 更新YAW轴绝对位置（来自IMU）
-    gimbal_feedback->gimbal_pos.yaw_absolute_pos = gimbal_feedback->ins_info->yaw_angle;
-    gimbal_feedback->gimbal_pos.yaw_absolute_pos = rad_format(gimbal_feedback->gimbal_pos.yaw_absolute_pos);
+    // gimbal_feedback->gimbal_pos.yaw_absolute_pos = gimbal_feedback->ins_info->yaw_angle;
+    // gimbal_feedback->gimbal_pos.yaw_absolute_pos = rad_format(gimbal_feedback->gimbal_pos.yaw_absolute_pos);
 
-
+    // 更新PITCH轴相对位置（来自电机编码器）
+    gimbal_feedback->gimbal_pos.pitch_relatiive_pos += gimbal_feedback->gimbal_pos.pitch_motor_measure->realtime_position;
+    //更新速度
+    gimbal_feedback->gimbal_pos.pitch_speed = gimbal_feedback->gimbal_pos.pitch_motor_measure->realtime_speed*60.0f/(2.0f*PI); // 转换为rad/s
     // 更新YAW轴相对位置（来自电机编码器）
     gimbal_feedback->gimbal_pos.yaw_relattive_pos += gimbal_feedback->gimbal_pos.yaw_motor_measure->realtime_position;
-    // gimbal_feedback->gimbal_pos.yaw_relattive_pos = rad_format(gimbal_feedback->gimbal_pos.yaw_relattive_pos);
+    //更新速度
+    gimbal_feedback->gimbal_pos.yaw_speed = gimbal_feedback->gimbal_pos.yaw_motor_measure->realtime_speed*60.0f/(2.0f*PI); // 转换为rad/s
+
 
     // 更新发射系统反馈数据（将RPM转换为rad/s）
     gimbal_feedback->gimbal_shoot.shoot_pull_rad  = gimbal_feedback->gimbal_shoot.pull_motor->rpm * 2.0f * PI / (36.0f * 60.0f);       // 拨弹轮（36:1减速比）
@@ -360,17 +365,17 @@ void calibrate_control(gimbal_t *gimbal, float *add_yaw, float *add_pitch)
 {
 
     // 缓慢将PITCH轴移动到零位（除以500减慢速度，指数衰减）
-    *add_pitch = PITCH_CALI_POS_1 -gimbal->gimbal_pos.pitch_target_pos / 800.0f;
+    *add_pitch = 0 -gimbal->gimbal_pos.pitch_target_pos / 800.0f;
     // 缓慢将ROLL轴移动到零位（除以500减慢速度，指数衰减）
-    *add_yaw = YAW_CALI_POS_1 -gimbal->gimbal_pos.yaw_target_pos / 800.0f;
+    *add_yaw = 0 -gimbal->gimbal_pos.yaw_target_pos / 800.0f;
 
     // 当PITCH角度接近零位时，直接设置目标为零
-    if (fabs(PITCH_CALI_POS_1 -gimbal->gimbal_pos.pitch_motor_measure->realtime_position) < 0.04f) {
-        *add_pitch = PITCH_CALI_POS_1 - gimbal->gimbal_pos.pitch_target_pos;
+    if (fabs(0 -gimbal->gimbal_pos.pitch_motor_measure->realtime_position) < 0.04f) {
+        *add_pitch = 0 - gimbal->gimbal_pos.pitch_target_pos;
     }
     // 当YAW角度接近零位时，直接设置目标为零
-    if (fabs(YAW_CALI_POS_1 -gimbal->gimbal_pos.yaw_motor_measure->realtime_position) < 0.04f) {
-        *add_yaw = YAW_CALI_POS_1 - gimbal->gimbal_pos.yaw_target_pos;
+    if (fabs(0 -gimbal->gimbal_pos.yaw_motor_measure->realtime_position) < 0.04f) {
+        *add_yaw = 0 - gimbal->gimbal_pos.yaw_target_pos;
     }
 }
 /**
@@ -432,8 +437,8 @@ void gimbal_set_control(gimbal_t *gimbal_set_control)
     gimbal_set_control->gimbal_pos.last_yaw_target_pos = gimbal_set_control->gimbal_pos.yaw_target_pos;
     gimbal_set_control->gimbal_pos.yaw_target_pos += yaw_set;
 
-    // 限制ROLL轴角度范围
-    limitPos(&gimbal_set_control->gimbal_pos.yaw_target_pos, MAX_YAW_RAD, MIN_YAW_RAD);
+    // 限制YAW轴角度范围
+    // limitPos(&gimbal_set_control->gimbal_pos.yaw_target_pos, MAX_YAW_RAD, MIN_YAW_RAD);
 
     // // 处理跨零点旋转，选择最短路径
     // cross_roattion_handle(&gimbal_set_control->gimbal_pos.pitch_target_pos,
@@ -558,9 +563,9 @@ void gimbal_control_loop(gimbal_t *gimbal_loop)
     }
 
     // PITCH轴角度环PID控制
-    gimbal_loop->gimbal_pos.pitch_motor_measure->target_speed =
+    gimbal_loop->gimbal_pos.pitch_motor_measure->target_current =
         old_PID_Calc(&gimbal_loop->gimbal_pos.pitch_motor_absolute_angle_pid,
-                              gimbal_loop->gimbal_pos.pitch_absolute_pos,
+                              gimbal_loop->gimbal_pos.pitch_relatiive_pos,
                               gimbal_loop->gimbal_pos.pitch_target_pos);
 
 
@@ -576,13 +581,15 @@ void gimbal_control_loop(gimbal_t *gimbal_loop)
 
 
     // YAW轴双环PID控制（角度环+速度环），排除无力和校准模式
-    if (gimbal_loop->gimbal_mod != GIMBAL_MOD_NO_FORCE && gimbal_loop->gimbal_mod != GIMBAL_MOD_SLOW_CALI) {
+    // if (gimbal_loop->gimbal_mod != GIMBAL_MOD_NO_FORCE && gimbal_loop->gimbal_mod != GIMBAL_MOD_SLOW_CALI) {
+    float yaw_target_pos=old_PID_Calc(&gimbal_loop->gimbal_pos.yaw_motor_gyro_pid,
+                                           gimbal_loop->gimbal_pos.yaw_relattive_pos,
+                                           gimbal_loop->gimbal_pos.yaw_target_pos);
+        gimbal_loop->gimbal_pos.yaw_motor_measure->target_current = old_PID_Calc(&gimbal_loop->gimbal_pos.yaw_absolute_angle_pid,
+                                               gimbal_loop->gimbal_pos.yaw_speed,
+                                               yaw_target_pos);
 
-        gimbal_loop->gimbal_pos.yaw_motor_measure->target_speed = old_PID_Calc(&gimbal_loop->gimbal_pos.yaw_absolute_angle_pid,
-                                               gimbal_loop->gimbal_pos.yaw_absolute_pos,
-                                               gimbal_loop->gimbal_pos.yaw_target_pos);
-
-    }
+    // }
 
     // 控制发射系统（发射轮常开，根据开火标志控制拨弹轮）
     // cal_gimbal_shoot_control(&gimbal_loop->gimbal_shoot,
@@ -594,8 +601,8 @@ void gimbal_control_loop(gimbal_t *gimbal_loop)
 
     // DBUS遥控器控制模式：右拨杆下拨时停止所有电机
     if (switch_is_down(gimbal_loop->gimbal_RC->rc.s[RIGHT_SWITCH]) ){
-        gimbal_loop->gimbal_pos.pitch_motor_measure->target_speed = 0;
-        gimbal_loop->gimbal_pos.yaw_motor_measure->target_speed    = 0;
+        gimbal_loop->gimbal_pos.pitch_motor_measure->target_current = 0;
+        gimbal_loop->gimbal_pos.yaw_motor_measure->target_current    = 0;
         gimbal_loop->gimbal_shoot.shoot_motor_left->target_current    = 0;
         gimbal_loop->gimbal_shoot.shoot_motor_right->target_current   = 0;
         gimbal_loop->gimbal_shoot.pull_motor->target_current         = 0;

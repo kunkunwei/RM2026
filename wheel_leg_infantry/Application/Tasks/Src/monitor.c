@@ -274,7 +274,7 @@ void Monitor_CPU_RecordLoop(void)
                     if (cpu_usage > 100.0f) cpu_usage = 100.0f;
 
                     g_monitor.cpu.cpu_load_percent = (uint8_t)cpu_usage;
-                    // uart_printf(&huart6,"DEBUG: CPU usage = %d%%\r\n", g_monitor.cpu.cpu_load_percent);
+                    uart_printf(&huart1,"DEBUG: CPU usage = %d%%\r\n", g_monitor.cpu.cpu_load_percent);
                 }
 
                 // 保存当前值

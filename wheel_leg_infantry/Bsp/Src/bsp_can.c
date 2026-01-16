@@ -21,6 +21,7 @@
 
 extern lk9025_motor_measure_t motor_right, motor_left;
 extern dm8009_motor_measure_t motor_joint[4];
+extern dji_motor_measure_t yaw_motor;
 void get_chassis_ctrl_measure(Chassis_RC_Info_t *rc_info, uint8_t *data);
 /* Private variables ---------------------------------------------------------*/
 /**
@@ -65,6 +66,7 @@ CAN_TxFrameTypeDef JointTxFrame[4] = {
 		.header.DLC=8,
 	}, 
 };
+
 CAN_TxFrameTypeDef RMD_L9025_Left_TxFrame ={
     .hcan = &hcan1,
 		.header.StdId=0x142,
@@ -88,7 +90,7 @@ CAN_TxFrameTypeDef RMD_L9025_ALL_TxFrame ={
 		.header.DLC=8,
 };
 CAN_TxFrameTypeDef Chassis_Feeback_TxFrame ={
-    .hcan = &hcan1,
+    .hcan = &hcan2,
 		.header.StdId=0x60,
 		.header.IDE=CAN_ID_STD,
 		.header.RTR=CAN_RTR_DATA,
@@ -189,20 +191,21 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
-	float time_now = DWT_GetTimeline_ms();
-	if (*StdId==CAN1_Chassis_ID_1)
-	{
-		chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
-		gimbal_chassis_comm.last_frame1_time=time_now;
-		gimbal_chassis_comm.frame1_received =1;
-	}
-	else if (*StdId==CAN1_Chassis_ID_2)
-	{
-		chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
-		gimbal_chassis_comm.last_frame2_time=time_now;
-		gimbal_chassis_comm.frame2_received =1;
-	}
-	else if(*StdId == 0x141){
+	// float time_now = DWT_GetTimeline_ms();
+	// if (*StdId==CAN1_Chassis_ID_1)
+	// {
+	// 	chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
+	// 	gimbal_chassis_comm.last_frame1_time=time_now;
+	// 	gimbal_chassis_comm.frame1_received =1;
+	// }
+	// else if (*StdId==CAN1_Chassis_ID_2)
+	// {
+	// 	chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
+	// 	gimbal_chassis_comm.last_frame2_time=time_now;
+	// 	gimbal_chassis_comm.frame2_received =1;
+	// }
+	// else
+		if(*StdId == 0x141){
 	  //RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);
     get_lk9025_motor_measure(&motor_right, data);
 	}
@@ -269,6 +272,23 @@ static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 //#if (!REMOTE_FRAME_USART_CAN)
 //	Remote_Info_Update(StdId,data,&remote_ctrl);
 //#endif
+	float time_now = DWT_GetTimeline_ms();
+	if (*StdId==CAN2_YAW_MOTOR_ID)
+	{
+		get_dji_motor_measure(&yaw_motor,data);
+	}
+	if (*StdId==CAN1_Chassis_ID_1)
+	{
+		chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
+		gimbal_chassis_comm.last_frame1_time=time_now;
+		gimbal_chassis_comm.frame1_received =1;
+	}
+	else if (*StdId==CAN1_Chassis_ID_2)
+	{
+		chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
+		gimbal_chassis_comm.last_frame2_time=time_now;
+		gimbal_chassis_comm.frame2_received =1;
+	}
 }
 //------------------------------------------------------------------------------
 

@@ -24,9 +24,9 @@
 typedef enum
 {
     /* CAN1总线电机ID定义 */
-    CAN1_SHOOT_MOTOR_LEFT_ID = 0x202,   // 左摩擦轮电机ID
-    CAN1_SHOOT_MOTOR_RIGHT_ID = 0x201,  // 右摩擦轮电机ID  
-    CAN1_SHOOT_PULL_MOTOR_ID = 0x203,   // 拨弹电机ID
+    CAN2_SHOOT_MOTOR_LEFT_ID = 0x202,   // 左摩擦轮电机ID
+    CAN2_SHOOT_MOTOR_RIGHT_ID = 0x201,  // 右摩擦轮电机ID
+    CAN2_SHOOT_PULL_MOTOR_ID = 0x203,   // 拨弹电机ID
     
     CAN1_CMD_ALL_ID = 0x200,            // CAN1发送命令帧ID
 

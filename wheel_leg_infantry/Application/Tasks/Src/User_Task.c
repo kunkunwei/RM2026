@@ -29,6 +29,7 @@ void User_Task(void const * argument)
     static float last_refresh_dog_time = 0.0f;
     static float last_led_time = 0.0f;
     float current_time = 0.0f;
+    float last_RC_time = 0.0f;
     extern INS_Info_Typedef INS_Info;
     extern Remote_Info_Typedef remote_ctrl;
     extern Chassis_RC_Info_t chassis_can_rc_info;
@@ -54,7 +55,8 @@ void User_Task(void const * argument)
     //Usb_send_data_t Usb_send_data_t;
     //Usb_dpkg_data_t* cnm = getUsbDpkgData();
     float cpu_d=0.0f;
-    uint32_t led_update_counter=0; //LED更新计数器
+    // update_gimbal_comm_status(current_time);
+    // get_safe_gimbal_cmd(&gimbal_chassis_comm.gimbal_cmd,current_time);
     // float wz,wz_fliter;
     // const float num = 0.2f;
     // first_order_filter_type_t filter_t = {.input = wz, .frame_period=0.05f, .out=wz_fliter, .num=num};
@@ -63,11 +65,15 @@ void User_Task(void const * argument)
     {
         systick = osKernelSysTick();
         current_time=DWT_GetTimeline_ms();
-
-        update_gimbal_comm_status(current_time);
-        get_safe_gimbal_cmd(&gimbal_chassis_comm.gimbal_cmd,current_time);
-        chassis_data_to_gimbal_feedback(local_chassis);
-
+        // Vofa_Send_System(&huart1,local_chassis);
+        Vofa_Send_New_Chassis_Data(&huart1,local_chassis);
+        // if (current_time-last_RC_time>10.0f)
+        // {
+        //     update_gimbal_comm_status(current_time);
+        //     get_safe_gimbal_cmd(&gimbal_chassis_comm.gimbal_cmd,current_time);
+        //     chassis_data_to_gimbal_feedback(local_chassis);
+        //     uart_printf(&huart1, "frame1_received:%d,frame2_received:%d,comm_ok:%d,safe_mode:%d\r\n",gimbal_chassis_comm.frame1_received,gimbal_chassis_comm.frame2_received,gimbal_chassis_comm.comm_ok,gimbal_chassis_comm.safe_mode);
+        // }
         //每隔1s就要喂狗，防止1.5s看门狗复位
         if ((current_time-last_refresh_dog_time)>=1300)
         {
@@ -77,14 +83,14 @@ void User_Task(void const * argument)
         }
         // LED更新（每50ms调用一次，即每25个循环）
         // led_update_counter++;
-        if ((current_time-last_led_time)>=50)
-        {
-            last_led_time=current_time;
-            SystemMonitor_PeriodicTask();
-
-            // led_update_counter = 0;
-        }
-
+        // if ((current_time-last_led_time)>=50)
+        // {
+        //     last_led_time=current_time;
+        //     SystemMonitor_PeriodicTask();
+        //
+        //
+        // }
+        // Vofa_Send_Chassis_CMD(&huart1, &gimbal_chassis_comm,local_chassis);
 
         // cpu_d=Monitor_GetCPULoad();
             // uart_printf(&huart6, "heart_cont:%d\r\n", monitor_heartbeat->heartbeat_count);
@@ -144,7 +150,7 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
         // printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        osDelay(1);
+        osDelay(3);
     }
 }
 

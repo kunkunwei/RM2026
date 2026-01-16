@@ -73,7 +73,7 @@
 // 遥控器前进摇杆（max 660）转化成车体前进速度（m/s）的比例
 #define CHASSIS_VX_RC_SEN 0.0033
 // 遥控器的yaw遥杆（max 660）增加到车体角度的比例
-#define CHASSIS_WZ_RC_SEN 0.00001f
+#define CHASSIS_WZ_RC_SEN 0.00003f
 #define CHASSIS_ROS_TO_WZ 0.0021f
 
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
@@ -85,9 +85,9 @@
 //轮子到轮子的距离是54cm
 #define MOTOR_DISTANCE_TO_CENTER 0.27f
 
-// 底盘任务控制间隔 3ms
+// 底盘任务控制间隔 2ms
 #define CHASSIS_CONTROL_TIME_MS 2
-// 底盘任务控制间隔 0.003s
+// 底盘任务控制间隔 0.002s
 #define CHASSIS_CONTROL_TIME 0.002f
 // 底盘任务控制频率，尚未使用这个宏
 #define CHASSIS_CONTROL_FREQUENCE 500.0f
@@ -128,7 +128,7 @@
 #define LEG_LENGTH_MIN 0.11f
 
 //
-#define STOP_X_OFFSET 0.140f
+#define STOP_X_OFFSET 0.1410f
 // 腿部长度控制PID
 #define LEG_LENGTH_PID_KP 650.0f
 #define LEG_LENGTH_PID_KI 2.0f
@@ -332,6 +332,8 @@ typedef struct
 	const float *chassis_imu_gyro;	  // 获取角加速度指针
 	const float *chassis_imu_accel;	  // 获取加速度指针
 	const SlipDetector_t * slip_detector; // 获取打滑检测器指针
+
+	dji_motor_measure_t *yaw_motor_measure;    // YAW轴电机测量数据指针
 
 	chassis_mode_e chassis_mode;	  // 底盘控制状态机
 	chassis_mode_e last_chassis_mode; // 底盘上次控制状态机

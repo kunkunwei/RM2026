@@ -26,21 +26,7 @@ static uint8_t sys_status_buffer[32];
 static uint16_t sys_status_len = 0;
 static uint16_t sys_status_frame_id = 0;
 static uint8_t expected_packet_idx = 0;
-
-
-
-extern dji_motor_measure_t shoot_motor_left,shoot_motor_right,pull_motor;  // 发射机构：2摩擦轮，1拨弹
 /* Private variables ---------------------------------------------------------*/
-/* 静态变量 */
-static CAN_Managed_Frame_t can_queue[CAN_QUEUE_SIZE];
-static uint8_t queue_head = 0;
-static uint8_t queue_tail = 0;
-static uint8_t queue_count = 0;
-
-/* 统计信息 */
-static uint32_t send_success = 0;
-static uint32_t send_failed = 0;
-static uint32_t queue_dropped = 0;
 /**
  * @brief the structure that contains the Information of CAN Receive.
  */
@@ -58,6 +44,7 @@ CAN_TxFrameTypeDef ALLShootTxFrame ={
       .header.DLC=8,
 };
 
+
 /**
  * @brief Overview:
  * 该文件为 CAN 总线的底层 BSP 层实现，负责 CAN 过滤器配置、消息发送封装、
@@ -71,11 +58,6 @@ CAN_TxFrameTypeDef ALLShootTxFrame ={
  */
 
 //------------------------------------------------------------------------------
-/* 私有函数声明 */
-static bool can_queue_push(const CAN_Managed_Frame_t *frame);
-static bool can_queue_pop(CAN_Managed_Frame_t *frame);
-static bool can_send_immediate(const CAN_TxFrameTypeDef *frame);
-static void can_queue_sort_by_priority(void);
 
 /**
   * @brief  Configures the CAN Filter.
@@ -119,7 +101,7 @@ void BSP_CAN_Init(void)
   /* configures the CAN2 filter */
   if(HAL_CAN_ConfigFilter(&hcan2, &CAN_FilterConfig) != HAL_OK)
   {
-      Error_Handler();
+  Error_Handler();
   }
 
   /* Start the CAN2 module. */
@@ -237,18 +219,18 @@ static void CAN1_RxFifo0RxHandler(const uint32_t *StdId,uint8_t data[8])
   */
 static void CAN2_RxFifo0RxHandler(const uint32_t *StdId,uint8_t data[8])
 {
-    //printf("CAN2 STDID: %d\r\n",*StdId);
+
       switch(*StdId)
     {
-        case CAN1_SHOOT_MOTOR_RIGHT_ID:
-            get_dji_motor_measure(&shoot_motor_right,data);
-            break;
-        case CAN1_SHOOT_MOTOR_LEFT_ID:
-            get_dji_motor_measure(&shoot_motor_left,data);
-            break;
-        case CAN1_SHOOT_PULL_MOTOR_ID:
-            get_dji_motor_measure(&pull_motor,data);
-            break;
+          case CAN2_SHOOT_MOTOR_LEFT_ID
+                :
+                get_dji_motor_measure(&shoot_motor_left,data);
+                break;
+            case CAN2_SHOOT_MOTOR_RIGHT_ID:
+                get_dji_motor_measure(&shoot_motor_right,data);
+                break;
+            case CAN2_SHOOT_PULL_MOTOR_ID:
+                get_dji_motor_measure(&pull_motor,data);
         default:
             break;
     }
@@ -279,234 +261,3 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   }
 }
 //------------------------------------------------------------------------------
-
-/*------------------------------------------------------------------------------
-  * @brief  检查CAN邮箱状态
-  * @param  hcan: CAN句柄
-  * @retval 空闲邮箱数量
-  *------------------------------------------------------------------------------*/
-uint32_t CAN_Get_Free_Mailboxes(CAN_HandleTypeDef *hcan)
-{
-    if (hcan == NULL) return 0;
-    return HAL_CAN_GetTxMailboxesFreeLevel(hcan);
-}
-/*------------------------------------------------------------------------------
-  * @brief  获取队列大小
-  * @retval 队列中待发送的帧数
-  *------------------------------------------------------------------------------*/
-uint32_t CAN_Get_Queue_Size(void)
-{
-    return queue_count;
-}
-
-/*------------------------------------------------------------------------------
-  * @brief  清空队列
-  *------------------------------------------------------------------------------*/
-void CAN_Clear_Queue(void)
-{
-    queue_head = 0;
-    queue_tail = 0;
-    queue_count = 0;
-}
-/*------------------------------------------------------------------------------
-  * @brief  队列排序函数（按优先级）
-  *------------------------------------------------------------------------------*/
-static void can_queue_sort_by_priority(void)
-{
-    if (queue_count <= 1) return;
-
-    /* 简单的冒泡排序（队列不大时效率足够） */
-    for (int i = 0; i < queue_count - 1; i++) {
-        for (int j = 0; j < queue_count - i - 1; j++) {
-            int current_idx = (queue_head + j) % CAN_QUEUE_SIZE;
-            int next_idx = (queue_head + j + 1) % CAN_QUEUE_SIZE;
-
-            /* 优先级高的在前 */
-            if (can_queue[current_idx].priority < can_queue[next_idx].priority) {
-                CAN_Managed_Frame_t temp = can_queue[current_idx];
-                can_queue[current_idx] = can_queue[next_idx];
-                can_queue[next_idx] = temp;
-            }
-        }
-    }
-}
-
-/*------------------------------------------------------------------------------
-  * @brief  入队函数
-  *------------------------------------------------------------------------------*/
-static bool can_queue_push(const CAN_Managed_Frame_t *frame)
-{
-    if (queue_count >= CAN_QUEUE_SIZE) {
-        /* 队列满时，尝试删除一个低优先级的帧 */
-        int lowest_idx = -1;
-        CAN_Priority_e lowest_priority = CAN_PRIORITY_CRITICAL;
-
-        for (int i = 0; i < queue_count; i++) {
-            int idx = (queue_head + i) % CAN_QUEUE_SIZE;
-            if (can_queue[idx].priority < lowest_priority) {
-                lowest_priority = can_queue[idx].priority;
-                lowest_idx = i;
-            }
-        }
-
-        /* 如果新帧优先级比最低的高，替换它 */
-        if (lowest_idx >= 0 && frame->priority > lowest_priority) {
-            int replace_idx = (queue_head + lowest_idx) % CAN_QUEUE_SIZE;
-            can_queue[replace_idx] = *frame;
-            queue_dropped++;
-            return true;
-        }
-
-        /* 否则丢弃新帧 */
-        queue_dropped++;
-        return false;
-    }
-
-    /* 正常入队 */
-    can_queue[queue_tail] = *frame;
-    queue_tail = (queue_tail + 1) % CAN_QUEUE_SIZE;
-    queue_count++;
-
-    /* 入队后按优先级排序 */
-    can_queue_sort_by_priority();
-
-    return true;
-}
-
-/*------------------------------------------------------------------------------
-  * @brief  出队函数
-  *------------------------------------------------------------------------------*/
-static bool can_queue_pop(CAN_Managed_Frame_t *frame)
-{
-    if (queue_count == 0) return false;
-
-    *frame = can_queue[queue_head];
-    queue_head = (queue_head + 1) % CAN_QUEUE_SIZE;
-    queue_count--;
-
-    return true;
-}
-
-/*------------------------------------------------------------------------------
-  * @brief  立即发送函数
-  *------------------------------------------------------------------------------*/
-static bool can_send_immediate(const CAN_TxFrameTypeDef *frame)
-{
-    if (frame == NULL || frame->hcan == NULL) return false;
-
-    uint32_t mailbox;
-    HAL_StatusTypeDef status;
-
-    status = HAL_CAN_AddTxMessage(frame->hcan, &frame->header, frame->Data, &mailbox);
-
-    if (status == HAL_OK) {
-        send_success++;
-        return true;
-    } else {
-        send_failed++;
-        return false;
-    }
-}
-void CAN_Process_Send_Queue(void)
-{
-    CAN_Managed_Frame_t frame;
-
-    // 只要队列不为空且有空闲邮箱，就一直发送
-    while (queue_count > 0) {
-        // 检查CAN邮箱状态
-        CAN_TxFrameTypeDef *base_frame = &can_queue[queue_head].base_frame;
-        if (HAL_CAN_GetTxMailboxesFreeLevel(base_frame->hcan) == 0) {
-            // 邮箱满了，停止发送
-            break;
-        }
-
-        // 从队列取出一帧
-        can_queue_pop(&frame);
-
-        // 发送这帧
-        uint32_t mailbox;
-        HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(
-            frame.base_frame.hcan,
-            &frame.base_frame.header,
-            frame.base_frame.Data,
-            &mailbox
-        );
-
-        if (status != HAL_OK && frame.retry_count < 2) {
-            // 发送失败，重试
-            frame.retry_count++;
-            frame.timestamp = xTaskGetTickCount();
-            can_queue_push(&frame);
-        }
-    }
-}
-/*------------------------------------------------------------------------------
-  * @brief  复杂版本：发送CAN帧（支持所有参数）
-  *------------------------------------------------------------------------------*/
-bool CAN_Send_Frame_Advanced(CAN_HandleTypeDef *hcan, uint32_t id, uint8_t *data, uint8_t dlc,
-                            CAN_Priority_e priority, CAN_Type_e type, bool need_response)
-{
-    if (hcan == NULL || data == NULL || dlc > 8) return false;
-
-    CAN_Managed_Frame_t managed_frame;
-
-    /* 填充基础帧信息 */
-    managed_frame.base_frame.hcan = hcan;
-
-    if (id > 0x7FF) {
-        managed_frame.base_frame.header.ExtId = id;
-        managed_frame.base_frame.header.IDE = CAN_ID_EXT;
-        managed_frame.base_frame.header.StdId = 0;
-    } else {
-        managed_frame.base_frame.header.StdId = id;
-        managed_frame.base_frame.header.IDE = CAN_ID_STD;
-        managed_frame.base_frame.header.ExtId = 0;
-    }
-
-    managed_frame.base_frame.header.RTR = CAN_RTR_DATA;
-    managed_frame.base_frame.header.DLC = dlc;
-    managed_frame.base_frame.header.TransmitGlobalTime = DISABLE;
-    memcpy(managed_frame.base_frame.Data, data, dlc);
-
-    /* 填充管理信息 */
-    managed_frame.priority = priority;
-    managed_frame.type = type;
-    managed_frame.timestamp = xTaskGetTickCount();
-    managed_frame.retry_count = 0;
-    managed_frame.need_response = need_response;
-
-    /* 尝试立即发送 */
-    if (CAN_Get_Free_Mailboxes(hcan) > 0) {
-        return can_send_immediate(&managed_frame.base_frame);
-    }
-
-    /* 邮箱忙，放入队列 */
-    return can_queue_push(&managed_frame);
-}
-
-/*------------------------------------------------------------------------------
-  * @brief  简洁版本1：使用现有结构体发送（默认优先级）
-  *------------------------------------------------------------------------------*/
-bool CAN_Send_Frame(CAN_TxFrameTypeDef *frame)
-{
-    if (frame == NULL) return false;
-
-    /* 提取ID */
-    uint32_t id = (frame->header.IDE == CAN_ID_EXT) ? frame->header.ExtId : frame->header.StdId;
-
-    /* 使用默认优先级（普通） */
-    return CAN_Send_Frame_Advanced(frame->hcan, id, frame->Data, frame->header.DLC,
-                                  CAN_PRIORITY_NORMAL, CAN_TYPE_OTHER, false);
-}
-/*------------------------------------------------------------------------------
-  * @brief  简洁版本2：使用现有结构体+优先级
-  *------------------------------------------------------------------------------*/
-bool CAN_Send_Frame_Priority(CAN_TxFrameTypeDef *frame, CAN_Priority_e priority)
-{
-    if (frame == NULL) return false;
-
-    uint32_t id = (frame->header.IDE == CAN_ID_EXT) ? frame->header.ExtId : frame->header.StdId;
-
-    return CAN_Send_Frame_Advanced(frame->hcan, id, frame->Data, frame->header.DLC,
-                                  priority, CAN_TYPE_OTHER, false);
-}

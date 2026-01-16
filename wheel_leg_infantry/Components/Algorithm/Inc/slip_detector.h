@@ -37,7 +37,7 @@ extern "C" {
 #define SLIP_WEIGHT_INNOVATION     0.2f   // 残差特征权重
 
     // 状态判定参数
-#define SLIP_CONFIDENCE_ENTER      0.63f   // 进入打滑的置信度阈值
+#define SLIP_CONFIDENCE_ENTER      0.55f   // 进入打滑的置信度阈值
 #define SLIP_CONFIDENCE_EXIT       0.3f   // 退出打滑的置信度阈值
 #define SLIP_ENTER_COUNT           5      // 连续n次满足则判定为打滑
 #define SLIP_EXIT_COUNT            8      // 连续n次满足则判定为正常
@@ -45,7 +45,7 @@ extern "C" {
     // 噪声缩放系数
 #define R_SCALE_MIN                1.0f   // 最小观测噪声系数
 #define R_SCALE_MAX                20.0f   // 最大观测噪声系数（打滑时增大）
-#define WHEEL_BASE_HALF            0.15f  // 轮距一半 (m)，与底盘参数一致
+#define WHEEL_BASE_HALF            0.27f  // 轮距一半 (m)，与底盘参数一致
 
     //更新配置宏定义
 

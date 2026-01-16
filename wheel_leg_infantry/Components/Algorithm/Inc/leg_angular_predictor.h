@@ -19,7 +19,7 @@ extern "C" {
  */
 /* ==================== 配置参数 ==================== */
 #define PREDICTOR_DT          0.005f     // 预测周期 5ms
-#define LEG_MASS_EFFECTIVE    5.1f       // 单腿等效质量 [kg]
+#define LEG_MASS_EFFECTIVE    7.5f       // 单腿等效质量 [kg]
 #define WHEEL_RADIUS          0.08f      // 轮子半径 [m]
 
 /* ==================== 数据结构 ==================== */

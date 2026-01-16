@@ -22,21 +22,21 @@
 #define RC_ROLL_CH    4 // 滚转通道
 ///////////////////////
 /* 云台遥控灵敏度设置 */
-#define GIMBAL_WZ_RC_SEN    -0.000006f // YAW轴遥控灵敏度
-#define GIMBAL_PITCH_RC_SEN 0.000007f  // PITCH轴遥控灵敏度
-#define GIMBAL_ROLL_RC_SEN 0.000007f  // ROLL轴遥控灵敏度
+#define GIMBAL_WZ_RC_SEN    -0.06f // YAW轴遥控灵敏度
+#define GIMBAL_PITCH_RC_SEN 0.07f  // PITCH轴遥控灵敏度
+
 ////////////////////////////
 /* PITCH轴角度限制 */
 #define MAX_PITCH_RAD 0.27f  // 最大俯仰角度（弧度）
 #define MIN_PITCH_RAD -0.52f // 最小俯仰角度（弧度）
 /* YAW轴角度限制 */
-#define MAX_YAW_RAD 0.28f  // 最大俯仰角度（弧度）
-#define MIN_YAW_RAD -0.28f // 最小俯仰角度（弧度）
+// #define MAX_YAW_RAD 0.28f  // 最大俯仰角度（弧度）
+// #define MIN_YAW_RAD -0.28f // 最小俯仰角度（弧度）
 ///////////////////////////////
-/*PITCH轴校准的目标位置*/
-#define PITCH_CALI_POS_1 0.0f // PITCH轴校准目标位置（弧度）
-/*YAW轴校准的目标位置*/
-#define YAW_CALI_POS_1 0.0f  // YAW轴校准目标
+// /*PITCH轴校准的目标位置*/
+// #define PITCH_CALI_POS_1 0.0f // PITCH轴校准目标位置（弧度）
+// /*YAW轴校准的目标位置*/
+// #define YAW_CALI_POS_1 0.0f  // YAW轴校准目标
 ///////////////////////////////
 /*角度转换系数*/
 #define RAD_TO_DEG 57.295779f   // 弧度转角度系数
@@ -150,12 +150,12 @@ typedef struct
     Stepper_motor_measure_t* yaw_motor_measure;
     Stepper_motor_measure_t* pitch_motor_measure;
 
-    float pitch_absolute_pos; // PITCH轴绝对位置
-    float yaw_absolute_pos;   // YAW轴绝对位置
+
 
     float pitch_relatiive_pos; // PITCH轴相对位置
     float yaw_relattive_pos;   // YAW轴相对位置
-
+    float yaw_speed;              // YAW实时速度(rad/s)
+    float pitch_speed; // PITCH实时速度(rad/s)
     float pitch_target_pos;      // PITCH轴目标位置
     float last_pitch_target_pos; // PITCH轴上次目标位置
     float yaw_target_pos;        // YAW轴目标位置

@@ -56,9 +56,9 @@ typedef struct {
     uint8_t home_status;       // 回零状态标志
     StepperStatusFlag_e motor_status;      // 电机状态标志
 
+
     float target_current;      // 目标电流(A)
-    float target_speed;        // 目标速度(度/s)
-    float target_position_deg; // 目标位置(度)
+
 } Stepper_motor_measure_t;
 
 /*---------------------------------电机接收结构体声明-----------------------------------*/

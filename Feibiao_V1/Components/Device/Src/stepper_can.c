@@ -55,114 +55,76 @@ static uint8_t is_multi_packet = 0; /**< 是否为多帧发送标志 */
  * - 多帧：len > 8，第一帧发送前 8 字节，ExtId = motor_id；第二帧首字节为命令码（cmd[0]），后续为 cmd[8..]，ExtId = motor_id + 1。
  * - 多帧第二包会把命令码重复放在 D0，以便接收端区分包类型（遵循已有设备协议）。
  */
+
 bool StepperCAN_SendCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len)
 {
     if (cmd == NULL || len == 0 || len > 16) {
         return false;
     }
 
-    // 保存最后发送的命令
     last_motor_id = motor_id;
     last_cmd_len = len;
     memcpy(last_cmd, cmd, len);
     is_multi_packet = (len > 8) ? 1 : 0;
 
-    bool success = true;
+    uint8_t retries = CAN_MAX_RETRIES;
+    bool response_received = false;
 
-    if (len <= 8) {
-        // 单帧发送
-        success = CAN_Send_Frame_Advanced(&hcan1, motor_id, cmd, len,
-                                         CAN_PRIORITY_HIGH, CAN_TYPE_STEPPER_CTRL, true);
-    } else {
-        // 多帧发送
-        // 第一帧（前8字节）
-        success = CAN_Send_Frame_Advanced(&hcan1, motor_id, cmd, 8,
-                                         CAN_PRIORITY_HIGH, CAN_TYPE_STEPPER_CTRL, false);
+    while (retries-- && !response_received) {
+        while (osSemaphoreWait(can_cmd_semHandle, 0) == osOK) {}
 
-        if (success) {
-            // 第二帧（命令码+剩余数据）
-            uint8_t second_frame[9];
-            uint8_t second_len = len - 8 + 1;
+        if (len <= 8) {
+            CAN_TxFrameTypeDef tx_frame = {
+                .hcan = &hcan1,
+                .header = {
+                    .ExtId = motor_id,
+                    .IDE = CAN_ID_EXT,
+                    .RTR = CAN_RTR_DATA,
+                    .DLC = len
+                }
+            };
+            memcpy(tx_frame.Data, cmd, len);
+            USER_CAN_TxMessage(&tx_frame);
+        } else {
+            // 第一帧
+            CAN_TxFrameTypeDef tx_frame1 = {
+                .hcan = &hcan1,
+                .header = {
+                    .ExtId = motor_id,
+                    .IDE = CAN_ID_EXT,
+                    .RTR = CAN_RTR_DATA,
+                    .DLC = 8
+                }
+            };
+            memcpy(tx_frame1.Data, cmd, 8);
+            USER_CAN_TxMessage(&tx_frame1);
+            osDelay(CAN_PACKET_DELAY_MS);
 
-            second_frame[0] = cmd[0];  // 重复命令码
-            memcpy(&second_frame[1], cmd + 8, len - 8);
+            // 第二帧（将命令码放在 D0，后面是剩余数据）
+            uint8_t second_len = len - 8 + 1; // 例如 12-8+1 = 5
+            CAN_TxFrameTypeDef tx_frame2 = {
+                .hcan = &hcan1,
+                .header = {
+                    .ExtId = motor_id + 1,
+                    .IDE = CAN_ID_EXT,
+                    .RTR = CAN_RTR_DATA,
+                    .DLC = second_len
+                }
+            };
+            tx_frame2.Data[0] = cmd[0]; // 把命令码（如 0xFD）放在第二帧的 D0
+            memcpy(&tx_frame2.Data[1], cmd + 8, len - 8); // 拷贝剩余数据（包括校验码 0x6B）
+            USER_CAN_TxMessage(&tx_frame2);
+        }
 
-            success = CAN_Send_Frame_Advanced(&hcan1, motor_id + 1, second_frame, second_len,
-                                             CAN_PRIORITY_HIGH, CAN_TYPE_STEPPER_CTRL, true);
+        if (osSemaphoreWait(can_cmd_semHandle, CAN_SEM_WAIT_TIMEOUT) == osOK) {
+            response_received = true;
+        } else {
+            osDelay(CAN_RETRY_DELAY_MS);
         }
     }
 
-    return success;
+    return response_received;
 }
-// bool StepperCAN_SendCommand(StepperMotorID_e motor_id, uint8_t *cmd, uint8_t len)
-// {
-//     if (cmd == NULL || len == 0 || len > 16) {
-//         return false;
-//     }
-//
-//     last_motor_id = motor_id;
-//     last_cmd_len = len;
-//     memcpy(last_cmd, cmd, len);
-//     is_multi_packet = (len > 8) ? 1 : 0;
-//
-//     uint8_t retries = CAN_MAX_RETRIES;
-//     bool response_received = false;
-//
-//     while (retries-- && !response_received) {
-//         while (osSemaphoreWait(can_cmd_semHandle, 0) == osOK) {}
-//
-//         if (len <= 8) {
-//             CAN_TxFrameTypeDef tx_frame = {
-//                 .hcan = &hcan1,
-//                 .header = {
-//                     .ExtId = motor_id,
-//                     .IDE = CAN_ID_EXT,
-//                     .RTR = CAN_RTR_DATA,
-//                     .DLC = len
-//                 }
-//             };
-//             memcpy(tx_frame.Data, cmd, len);
-//             USER_CAN_TxMessage(&tx_frame);
-//         } else {
-//             // 第一帧
-//             CAN_TxFrameTypeDef tx_frame1 = {
-//                 .hcan = &hcan1,
-//                 .header = {
-//                     .ExtId = motor_id,
-//                     .IDE = CAN_ID_EXT,
-//                     .RTR = CAN_RTR_DATA,
-//                     .DLC = 8
-//                 }
-//             };
-//             memcpy(tx_frame1.Data, cmd, 8);
-//             USER_CAN_TxMessage(&tx_frame1);
-//             osDelay(CAN_PACKET_DELAY_MS);
-//
-//             // 第二帧（将命令码放在 D0，后面是剩余数据）
-//             uint8_t second_len = len - 8 + 1; // 例如 12-8+1 = 5
-//             CAN_TxFrameTypeDef tx_frame2 = {
-//                 .hcan = &hcan1,
-//                 .header = {
-//                     .ExtId = motor_id + 1,
-//                     .IDE = CAN_ID_EXT,
-//                     .RTR = CAN_RTR_DATA,
-//                     .DLC = second_len
-//                 }
-//             };
-//             tx_frame2.Data[0] = cmd[0]; // 把命令码（如 0xFD）放在第二帧的 D0
-//             memcpy(&tx_frame2.Data[1], cmd + 8, len - 8); // 拷贝剩余数据（包括校验码 0x6B）
-//             USER_CAN_TxMessage(&tx_frame2);
-//         }
-//
-//         if (osSemaphoreWait(can_cmd_semHandle, CAN_SEM_WAIT_TIMEOUT) == osOK) {
-//             response_received = true;
-//         } else {
-//             osDelay(CAN_RETRY_DELAY_MS);
-//         }
-//     }
-//
-//     return response_received;
-// }
 /*---------------------------------------------电机基本控制函数---------------------------------------------------------*/
 /* Motor Control Functions */
 /**
@@ -272,16 +234,10 @@ void StepperCAN_TriggerHome(StepperMotorID_e motor_id, StepperHomeMode_e mode)
  * @brief 请求读取电机系统状态
  * @param motor_id 目标电机 ID
  */
-/* 步进电机状态查询函数（使用低优先级） */
+/* 步进电机状态查询函数 */
+
 void StepperCAN_ReadSystemStatus(StepperMotorID_e motor_id)
 {
     uint8_t cmd[3] = {0x43, 0x7A, CAN_CHECK_CODE};
-
-    CAN_Send_Frame_Advanced(&hcan1, motor_id, cmd, sizeof(cmd),
-                           CAN_PRIORITY_LOW, CAN_TYPE_STEPPER_QUERY, true);
+    StepperCAN_SendCommand(motor_id, cmd, sizeof(cmd));
 }
-// void StepperCAN_ReadSystemStatus(StepperMotorID_e motor_id)
-// {
-//     uint8_t cmd[3] = {0x43, 0x7A, CAN_CHECK_CODE};
-//     StepperCAN_SendCommand(motor_id, cmd, sizeof(cmd));
-// }

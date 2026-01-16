@@ -36,8 +36,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
     /* Motor IDs */
     typedef enum {
-        CAN1_YAW_MOTOR_ID   = 0x100,
-        CAN1_PITCH_MOTOR_ID = 0x200
+        CAN1_YAW_MOTOR_ID   = 0x200,
+        CAN1_PITCH_MOTOR_ID = 0x100
     } StepperMotorID_e; /**< 电机帧 ID，使用扩展帧范围 */
 
     /* Motor Info Structure */
