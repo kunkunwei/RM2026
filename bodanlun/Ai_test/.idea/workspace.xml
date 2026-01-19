@@ -29,72 +29,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7c3c33c-1fdf-40ac-a97d-3f025fe2c746" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/tools/crc_check.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tools/find_valid_packet.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Bsp/Inc/bsp_gpio.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Bsp/Inc/bsp_i2c.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Bsp/Inc/vofa.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Components/Device/Inc/ist8310.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Matlab_lib/inc/user_lib.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../gimbal_fly/Matlab_lib/src/user_lib.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/mahony.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/mahony.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/bsp_i2c.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_i2c.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/mpc_controller.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/slip_detector.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/mpc_controller.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/slip_detector.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Inc/ist8310.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/ist8310.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/提示词.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_i2c.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_i2c.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_mcu.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../Bmi/Bsp/Src/bsp_mcu.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../New_Chassis/Bsp/Inc/vofa.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../New_Chassis/Bsp/Inc/vofa.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../New_Chassis/Bsp/Src/vofa.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../New_Chassis/Bsp/Src/vofa.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/copilotDiffState.xml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../gimbal_ground/Application/Tasks/Inc/monitor.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../gimbal_ground/Application/Tasks/Src/monitor.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../gimbal_ground/Bsp/Inc/buzzer_music.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../gimbal_ground/Bsp/Src/buzzer_music.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Inc/ctl_chassis.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/ctl_chassis.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/lqr.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Ai_test.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Ai_test.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Application/Tasks/Inc/Chassis_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Inc/Chassis_Task.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/Chassis_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/Chassis_Task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/Ros_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/Ros_Task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Application/Tasks/Src/User_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Tasks/Src/User_Task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Bsp/Inc/vofa.h" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Inc/vofa.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Bsp/Src/vofa.c" beforeDir="false" afterPath="$PROJECT_DIR$/Bsp/Src/vofa.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Components/Device/Inc/usb.h" beforeDir="false" afterPath="$PROJECT_DIR$/Components/Device/Inc/usb.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Components/Device/Src/usb.c" beforeDir="false" afterPath="$PROJECT_DIR$/Components/Device/Src/usb.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/main.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/.mxproject" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/.mxproject" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_quaternion.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Inc/api_quaternion.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_quaternion.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/API/Src/api_quaternion.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../gimbal_ground/Components/Device/Inc/ctl_chassis.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../gimbal_ground/Components/Device/Inc/ctl_chassis.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../gimbal_ground/Components/Device/Src/ctl_chassis.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../gimbal_ground/Components/Device/Src/ctl_chassis.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/Chassis_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/Chassis_Task.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/INS_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/INS_Task.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/observe_task.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/observe_task.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/User_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Inc/User_Task.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Can_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Can_Task.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Chassis_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Chassis_Task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/INS_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/INS_Task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Ros_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/Ros_Task.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/User_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/User_Task.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/chassis_behaviour.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/chassis_behaviour.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/observe_task.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Application/Tasks/Src/observe_task.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/bsp_gpio.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/bsp_gpio.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/vofa.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Inc/vofa.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_gpio.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_gpio.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_mcu.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_mcu.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_can.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_uart.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/bsp_uart.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/vofa.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Bsp/Src/vofa.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/crc.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/crc.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/kalman.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/kalman.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/lpf.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/lpf.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/ramp.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Inc/ramp.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/crc.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/crc.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/kalman.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/kalman.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/lpf.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/lpf.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/ramp.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Algorithm/Src/ramp.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/bmi088.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/bmi088.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/main.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/stm32f4xx_hal_conf.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/stm32f4xx_hal_conf.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Inc/mymotor.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Inc/mymotor.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/mymotor.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Components/Device/Src/mymotor.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/stm32f4xx_it.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Inc/stm32f4xx_it.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/gpio.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/gpio.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/dma.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/dma.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/main.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/stm32f4xx_it.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/stm32f4xx_it.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/usart.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Core/Src/usart.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/lqr_k.c" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/Matlab_lib/src/lqr_k.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/can_fifo.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/can_fifo.h" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../../wheel_leg_infantry/wheel_leg_infantry.ioc" beforeDir="false" afterPath="$PROJECT_DIR$/../../wheel_leg_infantry/wheel_leg_infantry.ioc" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -129,6 +95,9 @@
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
   </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="31fIy0Bd" />
+  </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
     <option name="majorVersion" value="2025" />
@@ -147,33 +116,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;OpenOCD 下载并运行.Ai_test.elf.executor&quot;: &quot;Debug&quot;,
-    &quot;OpenOCD 下载并运行.DAP.executor&quot;: &quot;Run&quot;,
-    &quot;OpenOCD 下载并运行.STlink.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.west.config.association.type.startup.service&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/C_EX/RM_wck/bodanlun/Ai_test/Components/Algorithm/Inc&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "OpenOCD 下载并运行.Ai_test.elf.executor": "Debug",
+    "OpenOCD 下载并运行.DAP.executor": "Run",
+    "OpenOCD 下载并运行.STlink.executor": "Run",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "RunOnceActivity.west.config.association.type.startup.service": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "D:/C_EX/RM_wck/bodanlun/Ai_test/Components/Algorithm/Inc",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "CMakeSettings",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\C_EX\RM_wck\bodanlun\Ai_test\Components\Algorithm\Inc" />
@@ -192,6 +162,11 @@
   </component>
   <component name="RunManager" selected="OpenOCD 下载并运行.DAP">
     <configuration name="Ai_test.elf" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Ai_test" TARGET_NAME="Ai_test.elf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Ai_test" RUN_TARGET_NAME="Ai_test.elf">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -269,6 +244,7 @@
       <workItem from="1765276351776" duration="643000" />
       <workItem from="1765802807763" duration="1207000" />
       <workItem from="1765805994804" duration="349000" />
+      <workItem from="1768742642924" duration="1568000" />
     </task>
     <servers />
   </component>

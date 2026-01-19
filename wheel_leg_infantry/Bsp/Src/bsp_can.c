@@ -272,23 +272,12 @@ static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 //#if (!REMOTE_FRAME_USART_CAN)
 //	Remote_Info_Update(StdId,data,&remote_ctrl);
 //#endif
-	float time_now = DWT_GetTimeline_ms();
-	if (*StdId==CAN2_YAW_MOTOR_ID)
-	{
-		get_dji_motor_measure(&yaw_motor,data);
-	}
-	if (*StdId==CAN1_Chassis_ID_1)
-	{
-		chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
-		gimbal_chassis_comm.last_frame1_time=time_now;
-		gimbal_chassis_comm.frame1_received =1;
-	}
-	else if (*StdId==CAN1_Chassis_ID_2)
-	{
-		chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
-		gimbal_chassis_comm.last_frame2_time=time_now;
-		gimbal_chassis_comm.frame2_received =1;
-	}
+	// float time_now = DWT_GetTimeline_ms();
+	// if (*StdId==CAN2_YAW_MOTOR_ID)
+	// {
+	// 	get_dji_motor_measure(&yaw_motor,data);
+	// }
+
 }
 //------------------------------------------------------------------------------
 

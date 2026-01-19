@@ -2,7 +2,7 @@
 
 lk9025_motor_measure_t motor_right, motor_left;
 dm8009_motor_measure_t motor_joint[4];
-dji_motor_measure_t yaw_motor;  // Yaw电机
+// dji_motor_measure_t yaw_motor;  // Yaw电机
 
 static float uint_to_float(int X_int, float X_min, float X_max, int Bits);
 
@@ -71,10 +71,10 @@ const dm8009_motor_measure_t *get_Joint_Motor_Measure_Point(uint8_t i)
 {
     return &motor_joint[(i & 0x03)];
 }
-/**
- * @brief  获取Yaw轴达妙电机数据指针
- * @retval dm_motor_measure_t* Yaw轴达妙电机数据结构体指针
- */
-dji_motor_measure_t* get_yaw_motor(){
-    return &yaw_motor;
-}
+// /**
+//  * @brief  获取Yaw轴达妙电机数据指针
+//  * @retval dm_motor_measure_t* Yaw轴达妙电机数据结构体指针
+//  */
+// dji_motor_measure_t* get_yaw_motor(){
+//     return &yaw_motor;
+// }

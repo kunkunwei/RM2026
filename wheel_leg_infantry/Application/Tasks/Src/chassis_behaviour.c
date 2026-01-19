@@ -22,7 +22,7 @@
 #include "User_Task.h"
 //#include "led.h"
 // gimbal_chassis_comm_t * local_gimbal_chassis_comm ;
-extern gimbal_chassis_comm_t gimbal_chassis_comm; // 云台与底盘通信结构体
+
 #define RC_SW_UP ((uint16_t)1)
 #define RC_SW_MID ((uint16_t)3)
 #define RC_SW_DOWN ((uint16_t)2)

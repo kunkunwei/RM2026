@@ -14,12 +14,20 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "bsp_uart.h"
+
+#include "ctl_chassis.h"
 #include "usart.h"
 #include "remote_control.h"
 #include "referee_info.h"
 
 /* Private variables ---------------------------------------------------------*/
+/*云台-底盘通信*/
+/* DMA双缓冲 */
+__attribute__ ((section (".AXI_SRAM"))) uint8_t Mode_Buf[2][1];
+uint8_t Usart_Mode=0;
 
+__attribute__ ((section (".AXI_SRAM")))
+uint8_t UART6_Rx_Buf[2][FRAME_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
 /**
@@ -40,6 +48,13 @@ void BSP_USART_Init(void)
 
 	  /* Starts the Referee multi_buffer DMA Transfer with interrupt enabled. */
 	USART_RxDMA_MultiBufferStart(&huart1,(uint32_t *)&(huart1.Instance->DR),(uint32_t *)REFEREE_MultiRx_Buf[0],(uint32_t *)REFEREE_MultiRx_Buf[1],REFEREE_RXFRAME_LENGTH);
+
+	/* 初始化云台-底盘通信DMA双缓冲接收 */
+	USART_RxDMA_MultiBufferStart(&huart6,
+								 (uint32_t *)&(huart6.Instance->DR),
+								 (uint32_t *)UART6_Rx_Buf[0],
+								 (uint32_t *)UART6_Rx_Buf[1],
+								 FRAME_SIZE);
 }
 //------------------------------------------------------------------------------
 
@@ -177,6 +192,23 @@ static void USER_USART1_RxHandler(UART_HandleTypeDef *huart,uint16_t Size)
       }
   }
 }
+static void USER_USART6_RxHandler(UART_HandleTypeDef *huart,uint16_t Size)
+{
+	static uint8_t buf_index = 0;
+
+	if (Size != FRAME_SIZE) {
+		return;
+	}
+
+
+	// 当前使用的缓冲区
+	uint8_t *rx_buf = (buf_index == 0) ? UART6_Rx_Buf[0] : UART6_Rx_Buf[1];
+
+	// 解析控制帧
+	chassis_parse_ctrl_cmd( UART6_Rx_Buf[buf_index]);
+	// 切换缓冲区索引
+	buf_index = !buf_index;
+}
 
 /**
   * @brief  Rx Transfer completed callbacks.
@@ -194,7 +226,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
 	{
 		USER_USART1_RxHandler(huart,Size);
 	}
-
+	else if(huart->Instance == USART6)
+	{
+		USER_USART6_RxHandler(huart,Size);
+	}
   /* reset the Reception Type */
 	huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;
 	

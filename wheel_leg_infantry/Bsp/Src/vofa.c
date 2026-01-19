@@ -72,49 +72,49 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef 
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
-HAL_StatusTypeDef Vofa_Send_Chassis_CMD(UART_HandleTypeDef *huart,const gimbal_chassis_comm_t *gimbal_chassis_comm, const chassis_move_t* chassis)
-{
-
-
-    Vofa_Frame_t frame={
-
-        .data = {
-            gimbal_chassis_comm->gimbal_cmd.chassis_mode_cmd,
-            gimbal_chassis_comm->gimbal_cmd.target_speed_x,
-            gimbal_chassis_comm->gimbal_cmd.target_speed_w_z,
-            gimbal_chassis_comm->gimbal_cmd.target_length,
-            gimbal_chassis_comm->gimbal_cmd.spinning_cmd,
-            gimbal_chassis_comm->gimbal_cmd.gimbal_yaw_angle,
-            gimbal_chassis_comm->gimbal_cmd.jump_cmd,
-            gimbal_chassis_comm->gimbal_cmd.roll_angle,
-            gimbal_chassis_comm->gimbal_cmd.reserved1,
-            // gimbal_chassis_comm->gimbal_cmd.reserved2
-            // Chassis_cmd->ch[0] ,
-            // Chassis_cmd->ch[1] ,
-            // Chassis_cmd->ch[2] ,
-            // Chassis_cmd->ch[3] ,
-            // Chassis_cmd->s[0],
-            // Chassis_cmd->s[1],
-            // Chassis_cmd->s[2],
-            // Chassis_cmd->s[3],
-            // Chassis_cmd->x,
-            // Chassis_cmd->w_z,
-            // Chassis_cmd->roll_1,
-            // Chassis_cmd->roll_2,
-            // Chassis_cmd->left_switch_1,
-            // Chassis_cmd->right_switch_1,
-            // Chassis_cmd->left_switch_2,
-            // Chassis_cmd->right_switch_2,
-        }, // 1初始化数据数组
-            .tail = VOFA_TAIL // 设置JustFloat协议尾部
-        };
-    HAL_StatusTypeDef status;
-
-
-    // 发送整个帧（避免逐字节发送，提高效率）
-    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
-    return status;
-}
+// HAL_StatusTypeDef Vofa_Send_Chassis_CMD(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
+// {
+//
+//
+//     Vofa_Frame_t frame={
+//
+//         .data = {
+//             gimbal_chassis_comm->gimbal_cmd.chassis_mode_cmd,
+//             gimbal_chassis_comm->gimbal_cmd.target_speed_x,
+//             gimbal_chassis_comm->gimbal_cmd.target_speed_w_z,
+//             gimbal_chassis_comm->gimbal_cmd.target_length,
+//             gimbal_chassis_comm->gimbal_cmd.spinning_cmd,
+//             gimbal_chassis_comm->gimbal_cmd.gimbal_yaw_angle,
+//             gimbal_chassis_comm->gimbal_cmd.jump_cmd,
+//             gimbal_chassis_comm->gimbal_cmd.roll_angle,
+//             gimbal_chassis_comm->gimbal_cmd.reserved1,
+//             // gimbal_chassis_comm->gimbal_cmd.reserved2
+//             // Chassis_cmd->ch[0] ,
+//             // Chassis_cmd->ch[1] ,
+//             // Chassis_cmd->ch[2] ,
+//             // Chassis_cmd->ch[3] ,
+//             // Chassis_cmd->s[0],
+//             // Chassis_cmd->s[1],
+//             // Chassis_cmd->s[2],
+//             // Chassis_cmd->s[3],
+//             // Chassis_cmd->x,
+//             // Chassis_cmd->w_z,
+//             // Chassis_cmd->roll_1,
+//             // Chassis_cmd->roll_2,
+//             // Chassis_cmd->left_switch_1,
+//             // Chassis_cmd->right_switch_1,
+//             // Chassis_cmd->left_switch_2,
+//             // Chassis_cmd->right_switch_2,
+//         }, // 1初始化数据数组
+//             .tail = VOFA_TAIL // 设置JustFloat协议尾部
+//         };
+//     HAL_StatusTypeDef status;
+//
+//
+//     // 发送整个帧（避免逐字节发送，提高效率）
+//     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+//     return status;
+// }
 HAL_StatusTypeDef Vofa_Send_System(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
 {
 
@@ -127,6 +127,48 @@ HAL_StatusTypeDef Vofa_Send_System(UART_HandleTypeDef *huart, const chassis_move
             chassis->right_leg.wheel_motor.speed,
             chassis->left_leg.wheel_motor.give_current,
             chassis->right_leg.wheel_motor.give_current,
+
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
+HAL_StatusTypeDef Vofa_Send_Tor(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+
+            chassis->jump_state.jump_comtorque[0],
+            chassis->jump_state.jump_comtorque[1],
+            chassis->jump_state.jump_comtorque[2],
+            chassis->jump_state.jump_comtorque[3],
+            chassis->left_support_force,
+            chassis->left_leg.leg_length,
+            chassis->left_leg.length_dot,
+            chassis->tor_vector[0],
+            chassis->tor_vector[1],
+            chassis->tor_vector[2],
+            chassis->tor_vector[3],
+            chassis->right_leg.back_joint.tor_set,
+            chassis->right_leg.front_joint.tor_set,
+            // chassis->jump_state.F0,
+            // chassis->jump_state.Tp,
+            // chassis->jump_state.L0,
+            // chassis->jump_state.Phi0,
+            // chassis->jump_state.Fee[0],
+            // chassis->jump_state.Fee[1],
+            // chassis->left_leg.wheel_motor.speed,
+            // chassis->right_leg.wheel_motor.speed,
+            // chassis->left_leg.wheel_motor.give_current,
+            // chassis->right_leg.wheel_motor.give_current,
 
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
@@ -221,6 +263,7 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+
 HAL_StatusTypeDef Vofa_Send_Data(UART_HandleTypeDef *huart,const chassis_move_t* chassis)
 {
 
@@ -291,8 +334,8 @@ HAL_StatusTypeDef Vofa_Send_Data(UART_HandleTypeDef *huart,const chassis_move_t*
         // chassis->state_set.x_dot,
         // chassis->state_set.theta,
         // chassis->state_set.phi,
-        chassis->jump_state.left_target_comp ,
-        chassis->jump_state.right_target_comp,
+        // chassis->jump_state.left_target_comp ,
+        // chassis->jump_state.right_target_comp,
         chassis->jump_state.jump_height[0],
         chassis->jump_state.jump_height[1],
         chassis->left_leg.front_joint.tor_set,

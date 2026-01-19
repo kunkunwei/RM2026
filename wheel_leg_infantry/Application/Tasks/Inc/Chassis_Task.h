@@ -74,7 +74,7 @@
 #define CHASSIS_VX_RC_SEN 0.0033
 // 遥控器的yaw遥杆（max 660）增加到车体角度的比例
 #define CHASSIS_WZ_RC_SEN 0.00003f
-#define CHASSIS_ROS_TO_WZ 0.0021f
+#define CHASSIS_ROS_TO_WZ 0.0007f
 
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_SPEED_NUM 0.05f
@@ -86,6 +86,7 @@
 #define MOTOR_DISTANCE_TO_CENTER 0.27f
 
 // 底盘任务控制间隔 2ms
+// #define CHASSIS_CONTROL_TIME_MS 5
 #define CHASSIS_CONTROL_TIME_MS 2
 // 底盘任务控制间隔 0.002s
 #define CHASSIS_CONTROL_TIME 0.002f
@@ -128,10 +129,16 @@
 #define LEG_LENGTH_MIN 0.11f
 
 //
-#define STOP_X_OFFSET 0.1410f
+// #define STOP_X_OFFSET -0.01f
+// #define STOP_X_OFFSET -0.282f
+#define STOP_X_OFFSET 0.100f
+// #define STOP_X_OFFSET 0.1410f
 // 腿部长度控制PID
+// #define LEG_LENGTH_PID_KP 250.0f
 #define LEG_LENGTH_PID_KP 650.0f
+// #define LEG_LENGTH_PID_KI 3.0f
 #define LEG_LENGTH_PID_KI 2.0f
+// #define LEG_LENGTH_PID_KD 24.0f
 #define LEG_LENGTH_PID_KD 15.0f
 #define LEG_LENGTH_PID_MAX_OUT 150.0f
 #define LEG_LENGTH_PID_MAX_IOUT 30.0f
@@ -232,11 +239,7 @@
 #define JUMP_ROLL_MAX_OUT 65.0f
 #define JUMP_ROLL_MAX_IOUT 1.0f
 ///
-// 🔧 关节角度安全参数（核心防碰撞）
-// #define FRONT_JOINT_SAFE_MAX  1.3f    // 前关节安全上限（≈51.5°）
-// #define BACK_JOINT_SAFE_MIN   1.7f    // 后关节安全下限（≈97.4°）
-// #define JOINT_BUFFER_ZONE     0.1f    // 缓冲区宽度（≈5.7°）
-// #define COLLISION_FORCE_REDUCE 0.8f   // 接近限位时力衰减比例（最多衰减80%）
+
 typedef enum
 {
 	CHASSIS_FORCE_RAW=0,				  // 底盘开环控制
@@ -302,6 +305,16 @@ typedef struct chassis_task
 	bool jump_flag;
 	bool last_jump_flag;
 	uint8_t jump_stage;
+	float jump_comtorque[4];
+
+	//
+	float F0;
+	float Tp;
+	float L0;
+	float Phi0;
+	float Fee[2];
+
+	//
 	float takeoff_velocity_x;
 
 	float last_jump_finish_time;
@@ -315,8 +328,7 @@ typedef struct chassis_task
 	float landing_leg_length;
 	float takeoff_leg_length ;
 	float jump_height[2];
-	float left_target_comp ;
-	float right_target_comp;
+
 
 	PidTypeDef left_leg_sky_pid;
 	PidTypeDef right_leg_sky_pid;
@@ -333,7 +345,7 @@ typedef struct
 	const float *chassis_imu_accel;	  // 获取加速度指针
 	const SlipDetector_t * slip_detector; // 获取打滑检测器指针
 
-	dji_motor_measure_t *yaw_motor_measure;    // YAW轴电机测量数据指针
+	// dji_motor_measure_t *yaw_motor_measure;    // YAW轴电机测量数据指针
 
 	chassis_mode_e chassis_mode;	  // 底盘控制状态机
 	chassis_mode_e last_chassis_mode; // 底盘上次控制状态机
