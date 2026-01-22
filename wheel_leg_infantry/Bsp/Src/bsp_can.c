@@ -230,18 +230,18 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
           //detect_hook(CHASSIS_MOTOR1_TOE + i);
           //输出位置修正
           if( *StdId == CAN_dm8009_M1_ID ){
-              motor_joint[0].pos += 2.000267f; // 正确的零点补偿值
+              motor_joint[0].pos += 3.0556903f; // 正确的零点补偿值
           	// motor_joint[0].pos += 3.141593f;
-              // motor_joint[0].pos = 3.141593/2 - motor_joint[0].pos;
+
           }
           else if( *StdId== CAN_dm8009_M2_ID){
-              motor_joint[1].pos += 1.396533f; // 正确的零点补偿值
+              motor_joint[1].pos += 0.3876503f; // 正确的零点补偿值
           	// motor_joint[1].pos += 3.141593f/2;
-              // motor_joint[1].pos = 3.141593/2 - motor_joint[1].pos;
+
 
           }
           else if(*StdId == CAN_dm8009_M3_ID){
-              motor_joint[2].pos += 2.044518f; // 正确的零点补偿值
+              motor_joint[2].pos += 3.057657f; // 正确的零点补偿值
           	 // motor_joint[3].pos += 3.141593/2;
           	motor_joint[2].pos = 3.141593f - motor_joint[2].pos;
           }

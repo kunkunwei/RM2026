@@ -78,12 +78,12 @@ void User_Task(void const * argument)
         // }
 
         //每隔1s就要喂狗，防止1.5s看门狗复位
-        if ((current_time-last_refresh_dog_time)>=800)
-        {
-            last_refresh_dog_time=current_time;
-            SystemMonitor_WatchdogRefresh();
-
-        }
+        // if ((current_time-last_refresh_dog_time)>=800)
+        // {
+        //     last_refresh_dog_time=current_time;
+        //     SystemMonitor_WatchdogRefresh();
+        //
+        // }
         // LED更新（每50ms调用一次，即每25个循环）
         // led_update_counter++;
         if ((current_time-last_led_time)>=50)
@@ -93,8 +93,10 @@ void User_Task(void const * argument)
 
 
         }
+        // Vofa_Send_joint_angle(&huart1,local_chassis);
         Vofa_Send_Tor(&huart1,local_chassis);
         // chassis_send_feedback(local_chassis);
+
         // Vofa_Send_Chassis_CMD(&huart1, &gimbal_chassis_comm,local_chassis);
 
         // cpu_d=Monitor_GetCPULoad();

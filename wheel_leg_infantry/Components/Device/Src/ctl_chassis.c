@@ -91,8 +91,8 @@ void chassis_send_feedback(const chassis_move_t* chassis)
 
     // 添加CRC并发送
     append_CRC16_check_sum(tx_buffer, FRAME_SIZE);
-    HAL_UART_Transmit_DMA(&huart6, tx_buffer, FRAME_SIZE);
-    // HAL_UART_Transmit(&huart6, tx_buffer, FRAME_SIZE,100);
+    // HAL_UART_Transmit_DMA(&huart6, tx_buffer, FRAME_SIZE);
+    HAL_UART_Transmit(&huart6, tx_buffer, FRAME_SIZE,100);
     HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
     chassis_comm.last_tx_time = current_time;
     chassis_comm.tx_count++;

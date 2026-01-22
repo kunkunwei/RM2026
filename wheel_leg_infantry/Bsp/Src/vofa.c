@@ -72,6 +72,40 @@ HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef 
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+HAL_StatusTypeDef Vofa_Send_joint_angle(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+
+
+            //腿部状态变量 (分析动作细节)
+            // chassis->right_leg.leg_angle,
+            // chassis->right_leg.leg_length,
+            // chassis->left_leg.leg_angle,
+            // chassis->left_leg.leg_length,
+            // chassis->state_ref.phi_dot
+            // chassis->right_leg.front_joint.tor_set,
+            // chassis->right_leg.back_joint.tor_set,
+            // chassis->left_leg.front_joint.tor_set,
+            // chassis->left_leg.back_joint.tor_set,
+            //
+            motor_joint[0].pos,
+            motor_joint[1].pos,
+            motor_joint[2].pos,
+            motor_joint[3].pos,
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
 // HAL_StatusTypeDef Vofa_Send_Chassis_CMD(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
 // {
 //
@@ -146,19 +180,29 @@ HAL_StatusTypeDef Vofa_Send_Tor(UART_HandleTypeDef *huart, const chassis_move_t*
 
         .data = {
 
-            chassis->jump_state.jump_comtorque[0],
-            chassis->jump_state.jump_comtorque[1],
-            chassis->jump_state.jump_comtorque[2],
-            chassis->jump_state.jump_comtorque[3],
+            // chassis->jump_state.jump_comtorque[0],
+            // chassis->jump_state.jump_comtorque[1],
+            // chassis->jump_state.jump_comtorque[2],
+            // chassis->jump_state.jump_comtorque[3],
             chassis->left_support_force,
             chassis->left_leg.leg_length,
-            chassis->left_leg.length_dot,
-            chassis->tor_vector[0],
-            chassis->tor_vector[1],
-            chassis->tor_vector[2],
-            chassis->tor_vector[3],
+            chassis->right_support_force,
+            chassis->right_leg.leg_length,
+            // chassis->left_leg.length_dot,
+            // chassis->tor_vector[0],
+            // chassis->tor_vector[1],
+            // chassis->tor_vector[2],
+            // chassis->tor_vector[3],
+            chassis->left_leg.front_joint.tor_set,
+            chassis->left_leg.back_joint.tor_set,
             chassis->right_leg.back_joint.tor_set,
             chassis->right_leg.front_joint.tor_set,
+            chassis->jump_state.jump_flag,
+            chassis->left_leg.length_dot,
+            chassis->jump_state.jump_stage,
+            // chassis->right_leg.wheel_motor.give_current,
+            // chassis->left_leg.wheel_motor.give_current,
+
             // chassis->jump_state.F0,
             // chassis->jump_state.Tp,
             // chassis->jump_state.L0,
@@ -676,6 +720,7 @@ HAL_StatusTypeDef Vofa_Send_Q(UART_HandleTypeDef *huart, INS_Info_Typedef INS_In
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+
 void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
 {
     char buffer[128]; // 根据需要可增大

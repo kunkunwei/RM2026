@@ -7,7 +7,7 @@
 #include "bsp_dwt.h"
 
 #include "leg_angular_predictor.h"
-#include "leg_conv_forward.h"
+
 #include "monitor.h"
 #include "slip_detector.h"
 
@@ -29,9 +29,6 @@
 static chassis_move_t chassis_move;
 
 // ============================================================
-// 新增算法模块实例
-
-// static MPC_Controller_t mpc_ctrl;
 
 // ============================================================
 // 底盘初始化，主要是pid初始化
@@ -47,62 +44,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control);
 // loop
 void chassis_control_loop(chassis_move_t *chassis_move_control_loop);
 // ============================================================
-void jump_test(chassis_move_t *chassis)
-{
-    float tor0=2.0f;
-    float tor1=4.0f;
-    float tor2=6.0f;
-    float tor3=7.0f;
-    float tor4=7.0f;
-    if (chassis->jump_state.jump_stage==0)
-    {
-        chassis->jump_state.jump_comtorque[0]=-tor0;
-        chassis->jump_state.jump_comtorque[1]= tor0;
-        chassis->jump_state.jump_comtorque[2]=-tor0;
-        chassis->jump_state.jump_comtorque[3]= tor0;
-    }
-    else if (chassis->jump_state.jump_stage==1)
-    {
-        chassis->jump_state.jump_comtorque[0]=-tor1;//左前电机
-        chassis->jump_state.jump_comtorque[1]= tor1;//左后电机
-        chassis->jump_state.jump_comtorque[2]=-tor1;//右后电机
-        chassis->jump_state.jump_comtorque[3]= tor1;//右前电机
-    }
-    else if (chassis->jump_state.jump_stage==2)
-    {
-        chassis->jump_state.jump_comtorque[0]= tor2;
-        chassis->jump_state.jump_comtorque[1]=-tor2;
-        chassis->jump_state.jump_comtorque[2]= tor2;
-        chassis->jump_state.jump_comtorque[3]=-tor2;
-    }
-    else if (chassis->jump_state.jump_stage==3)
-    {
-        chassis->jump_state.jump_comtorque[0]=-tor3;
-        chassis->jump_state.jump_comtorque[1]= tor3;
-        chassis->jump_state.jump_comtorque[2]=-tor3;
-        chassis->jump_state.jump_comtorque[3]= tor3;
-    }
-    else if (chassis->jump_state.jump_stage==4)
-    {
-        chassis->jump_state.jump_comtorque[0]= tor4;
-        chassis->jump_state.jump_comtorque[1]=-tor4;
-        chassis->jump_state.jump_comtorque[2]= tor4;
-        chassis->jump_state.jump_comtorque[3]=-tor4;
-    }
-    // vmc_forward_stm32(chassis->jump_state.jump_comtorque[1],
-    //                   chassis->jump_state.jump_comtorque[0],
-    //                   chassis->left_leg.back_joint.angle,
-    //                   chassis->left_leg.front_joint.angle,
-    //                  &chassis->jump_state.F0,
-    //                  &chassis->jump_state.Tp,
-    //                  &chassis->jump_state.L0,
-    //                  &chassis->jump_state.Phi0,
-    //                   chassis->jump_state.Fee);
-    // chassis->jump_state.jump_comtorque[0]=-3.0f*arm_sin_f32(time);
-    // chassis->jump_state.jump_comtorque[1]=3.0f*arm_sin_f32(time);
-    // chassis->jump_state.jump_comtorque[2]=0;
-    // chassis->jump_state.jump_comtorque[3]=0;
-}
+
 
 // ===========================================================
 static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect);
@@ -114,10 +56,10 @@ void Chassis_Task(void const *argument)
     osDelay(100);
     TickType_t systick = 0;
     chassis_init(&chassis_move);
-    float time=0.0f;
+    // float time=0.0f;
     for (;;) {
         systick = osKernelSysTick();
-        time=DWT_GetTimeline_s();
+        // time=DWT_GetTimeline_s();
         // printf("%.2f,%.2f,%.2f,%.2f\r\n",chassis_move.right_leg.leg_angle)
         chassis_set_mode(&chassis_move);
         // 遥控器状态切换数据保存
@@ -200,11 +142,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
     const static fp32 chassis_yaw_gyro_pid[3] = {YAW_SPEED_PID_KP, YAW_SPEED_PID_KI, YAW_SPEED_PID_KD};
     // ROS_PID
     const static fp32 chassis_ros_pid[3] = {ROS_WZ_PID_KP, ROS_WZ_PID_KI, ROS_WZ_PID_KD};
-    //空中收腿PID
-    const static fp32  left_leg_sky_pid[3] = {JUMP_LEFT_LEG_KP,JUMP_LEFT_LEG_KI,JUMP_LEFT_LEG_KD};
-    const static fp32  right_leg_sky_pid[3]= {JUMP_RIGHT_LEG_KP,JUMP_RIGHT_LEG_KI,JUMP_RIGHT_LEG_KD};
-    //空中roll姿态补偿PID
-    const  static fp32  jump_roll_pid[3]= {JUMP_ROLL_KP,JUMP_ROLL_KI,JUMP_ROLL_KD};
+
     // 一阶低通滤波初始化
     const static fp32 chassis_x_order_filter[1] = {CHASSIS_ACCEL_X_NUM};
     const static fp32 state_xdot_constant[1]    = {0};
@@ -248,12 +186,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
     old_PID_Init(&chassis_move_init->chassis_yaw_gyro_pid, PID_POSITION, chassis_yaw_gyro_pid, YAW_SPEED_PID_MAX_OUT, YAW_SPEED_PID_MAX_IOUT);
     // ros
     old_PID_Init(&chassis_move_init->chassis_ros_wz_pid, PID_POSITION, chassis_ros_pid, ROS_WZ_PID_MAX_OUT, ROS_WZ_PID_MAX_IOUT);
-    //空中收腿PID
-    old_PID_Init(&chassis_move_init->jump_state.left_leg_sky_pid,PID_POSITION,left_leg_sky_pid,JUMP_LEFT_LEG_MAX_OUT,JUMP_LEFT_LEG_MAX_IOUT);
-    old_PID_Init(&chassis_move_init->jump_state.right_leg_sky_pid,PID_POSITION,right_leg_sky_pid,JUMP_RIGHT_LEG_MAX_OUT,JUMP_RIGHT_LEG_MAX_IOUT);
-    //空中roll姿态补偿PID
-    old_PID_Init(&chassis_move_init->jump_state.roll_pid,PID_POSITION,jump_roll_pid,JUMP_ROLL_MAX_OUT,JUMP_ROLL_MAX_IOUT);
-    // 用一阶滤波代替斜波函数生成
+        // 用一阶滤波代替斜波函数生成
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_x_order_filter);
     first_order_filter_init(&chassis_move_init->state_xdot_filter, CHASSIS_CONTROL_TIME, state_xdot_constant);
     first_order_filter_init(&chassis_move_init->chassis_cmd_brake_vx, CHASSIS_CONTROL_TIME, chassis_x_brake);
@@ -380,7 +313,7 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
     }
     else if (chassis_move.position_control_intervention == false&&(chassis_move.jump_state.jump_stage!=0))//跳跃阶段，位置控制不介入，只做平衡点补偿，
     {
-        chassis_move_update->state_ref.x = 0;
+        chassis_move_update->state_ref.x = STOP_X_OFFSET;
     }
 
 
@@ -678,7 +611,7 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
          */
         chassis_move_control_loop->l_force=l_force;
         chassis_move_control_loop->r_force=r_force;
-        static const fp32 gravity_comp                 = 60.9f; // 补偿机体重力
+        static const fp32 gravity_comp                 = 50.9f; // 补偿机体重力
         // static const fp32 gravity_comp                 = 64.9f; // 补偿机体重力
         // static const fp32 gravity_comp                 = 40.0f; // 补偿机体重力
         chassis_move_control_loop->left_support_force  = l_force + gravity_comp;
@@ -755,26 +688,8 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
     // chassis_move_control_loop->left_support_force -= feed;
     // chassis_move_control_loop->right_support_force += feed;
 }
-void Jump_roll_compensate(chassis_move_t *chassis_move_control_loop)
-{
-    if (chassis_move_control_loop->touchingGroung==true||chassis_move_control_loop->jump_state.jump_stage==4)
-        return;
-    fp32 feed = 0.0f;
-    feed = old_PID_Calc(&chassis_move_control_loop->jump_state.roll_pid, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
-    if (chassis_move_control_loop->jump_state.jump_stage == 2) {
-        fp32_constrain(feed, -15.0f, 15.0f);
-    } else if (chassis_move_control_loop->jump_state.jump_stage == 3) {
 
-        fp32_constrain(feed, -65.0f, 65.0f);
-    }else
-    {
-        return;
-    }
-
-    chassis_move_control_loop->left_support_force  -= feed;
-    chassis_move_control_loop->right_support_force += feed;
-}
-void Jump_v_coordinate(chassis_move_t *chassis,float v_compente_tor[4])
+void Jump_v_coordinate(const chassis_move_t *chassis,float v_compente_tor[4])
 {
     if (chassis->jump_state.jump_stage==0)
         return;
@@ -788,6 +703,10 @@ void Jump_v_coordinate(chassis_move_t *chassis,float v_compente_tor[4])
         v_compente_tor[1] = erorr_v*2.0f;
         v_compente_tor[2] = erorr_v*2.0f;
         v_compente_tor[3] =-erorr_v*2.0f;
+    abs_limit(&v_compente_tor[0],2.0f);
+    abs_limit(&v_compente_tor[1],2.0f);
+    abs_limit(&v_compente_tor[2],2.0f);
+    abs_limit(&v_compente_tor[3],2.0f);
     // }
     // else if (chassis->jump_state.jump_stage==3)
     // {
@@ -821,9 +740,9 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     //基本补偿力矩
      float tor0=2.0f;
      float tor1=0.0f;
-     float tor2=2.0f;
-     float tor3=2.8f;
-     float tor4=2.0f;
+     float tor2=3.0f;
+     float tor3=2.6f;
+     float tor4=4.1f;
      // float tor0=2.0f;
      // float tor1=4.0f;
      // float tor2=5.0f;
@@ -866,12 +785,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->jump_state.jump_stage = 1;
             // 禁用位置介入控制，避免刹车
             chassis_move_control_loop->position_control_intervention = false;
-                // //重新初始化补偿力矩
-                // tor0=2.0f;
-                // tor1=4.0f;
-                // tor2=5.0f;
-                // tor3=5.8f;
-                // tor4=5.0f;
+
             // chassis_move_control_loop->jump_state.takeoff_velocity = chassis_move_control_loop->state_ref.x_dot;
             // chassis_move_control_loop->jump_state.takeoff_pitch = chassis_move_control_loop->chassis_pitch;
             chassis_move_control_loop->jump_state.takeoff_leg_length = 0.5f * (chassis_move_control_loop->left_leg.leg_length +
@@ -886,7 +800,10 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         }
         // 未触发时，保持初始状态
         chassis_move_control_loop->leg_length_in_sky = LEG_LENGTH_INIT;
-
+        chassis_move_control_loop->jump_state.jump_comtorque[0]= 0;
+        chassis_move_control_loop->jump_state.jump_comtorque[1]= 0;
+        chassis_move_control_loop->jump_state.jump_comtorque[2]= 0;
+        chassis_move_control_loop->jump_state.jump_comtorque[3]= 0;
     }
 
     // ########## 更新上一周期指令状态（必须放在最后） ##########
@@ -926,7 +843,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     if (chassis_move_control_loop->jump_state.jump_stage == 2) {
 
         float takeoff_elapsed = chassis_move_control_loop->jump_state.current_time - chassis_move_control_loop->jump_state.takeoff_start_time; // 起跳阶段经过时间
-
+        chassis_move_control_loop->leg_length_in_sky = 0.35f;
         // /*计算上升高度*/
         jump_2_dlta_time=chassis_move_control_loop->jump_state.current_time-jump_2_laste_time;// 当前时间（DWT高精度计时）
         jump_2_laste_time=chassis_move_control_loop->jump_state.current_time;
@@ -954,12 +871,12 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
         if (left_leg_over > 0.0f) {
            // tor2=tor2-1.0f;
-            stage_slow_com_tor[0]=-0.5f;
-            stage_slow_com_tor[1]=0.5f;
+            stage_slow_com_tor[0]=-0.9f;
+            stage_slow_com_tor[1]= 0.9f;
         }
         if (right_leg_over > 0.0f) {
-            stage_slow_com_tor[2]=-0.5f;
-            stage_slow_com_tor[3]=0.5f;
+            stage_slow_com_tor[2]=-0.9f;
+            stage_slow_com_tor[3]= 0.9f;
         }
 
         chassis_move_control_loop->jump_state.jump_comtorque[0]= tor2+stage_slow_com_tor[0]+v_compente_tor[0];
@@ -1061,17 +978,21 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         // chassis_move_control_loop->right_support_force += chassis_move_control_loop->jump_state.right_target_comp+l_compente;
         // chassis_move_control_loop->left_support_force  = fp32_constrain(chassis_move_control_loop->left_support_force ,-300.0f, 150.0f);
         // chassis_move_control_loop->right_support_force = fp32_constrain(chassis_move_control_loop->right_support_force, -300.0f, 150.0f);
-        float left_leg_over  = chassis_move_control_loop->left_leg.leg_length  - (0.13f + 0.02f); // 提前2cm开始减速
-        float right_leg_over = chassis_move_control_loop->right_leg.leg_length - (0.13f + 0.02f); // 提前2cm开始减速
+        // float left_leg_over  = chassis_move_control_loop->left_leg.leg_length  - (0.15f); // 提前2cm开始减速
+        // float right_leg_over = chassis_move_control_loop->right_leg.leg_length - (0.15f); // 提前2cm开始减速
 
         //减小力矩绝对值
-        if (left_leg_over < 0.0f) {
-            stage_slow_com_tor[0] = 0.5f;
-            stage_slow_com_tor[1] =-0.5f;
+        if ( chassis_move_control_loop->left_leg.length_dot < -2.7f) {
+            stage_slow_com_tor[0] = 5.9f;
+            stage_slow_com_tor[1] =-5.9f;
+            if (chassis_move_control_loop->left_leg.leg_length<0.17)
+            chassis_move_control_loop->left_leg.leg_length_set  = 0.20f;
         }
-        if (right_leg_over < 0.0f) {
-            stage_slow_com_tor[2] = 0.5f;
-            stage_slow_com_tor[3] =-0.5f;
+        if ( chassis_move_control_loop->right_leg.length_dot < -2.7f) {
+            stage_slow_com_tor[2] = 5.9f;
+            stage_slow_com_tor[3] =-5.9f;
+            if (chassis_move_control_loop->right_leg.leg_length<0.17)
+            chassis_move_control_loop->right_leg.leg_length_set = 0.20f;
         }
 
         chassis_move_control_loop->jump_state.jump_comtorque[0]=-tor3+stage_slow_com_tor[0]+v_compente_tor[0];
@@ -1079,12 +1000,14 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->jump_state.jump_comtorque[2]=-tor3+stage_slow_com_tor[2]+v_compente_tor[2];
         chassis_move_control_loop->jump_state.jump_comtorque[3]= tor3+stage_slow_com_tor[3]+v_compente_tor[3];
 
-        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length<0.14&&chassis_move_control_loop->right_leg.leg_length<0.14) ;
+        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length<0.15&&chassis_move_control_loop->right_leg.leg_length<0.15) ;
         bool_t time_out_sky = (time_in_sky > 450); // 超时保护
         if (compelete_shrink || time_out_sky) {
         // if (chassis_move_control_loop->left_leg.leg_length<0.15) {
             chassis_move_control_loop->jump_state.jump_stage = 4;
             chassis_move_control_loop->jump_state.landing_time = DWT_GetTimeline_ms();
+            chassis_move_control_loop->left_leg.leg_length_set  = 0.20f;
+            chassis_move_control_loop->right_leg.leg_length_set = 0.20f;
             chassis_move_control_loop->state_set.theta= 0.0f; // 落地后摆杆回正
             // 记录落地瞬间收腿力，用于缓冲阶段力衔接
             // chassis_move_control_loop->jump_state.landing_left_force = chassis_move_control_loop->left_support_force;
@@ -1109,14 +1032,14 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->jump_state.jump_comtorque[3]=-tor4+v_compente_tor[3];
         // 退出条件：缓冲稳定后回到初始状态
         // bool_t time_enough = (time_since_landing > 600);
-        // bool_t leg_stable =  (fabsf(chassis_move_control_loop->left_leg.length_dot) < 0.02f) &&
-                           // (fabsf(chassis_move_control_loop->right_leg.length_dot) < 0.02f) &&
-                           // (fabsf(current_leg_len - LEG_LENGTH_BUFFER) < 0.01f);
-        // bool_t force_stable = (fabsf(chassis_move_control_loop->left_support_force - 45.0f) < 5.0f) &&
-                            // (fabsf(chassis_move_control_loop->right_support_force - 47.0f) < 5.0f);
+        bool_t leg_stable =  (fabsf(chassis_move_control_loop->left_leg.length_dot) < 0.02f) &&
+                           (fabsf(chassis_move_control_loop->right_leg.length_dot) < 0.02f);
+        bool_t force_stable = (fabsf(chassis_move_control_loop->left_support_force - 60.0f) < 10.0f) &&
+                            (fabsf(chassis_move_control_loop->right_support_force - 60.0f) < 10.0f);
         // bool_t attitude_stable = (fabsf(chassis_move_control_loop->chassis_pitch) < 0.05f); // 姿态稳定（<2.9°）
         // if (time_enough && leg_stable && force_stable && attitude_stable) {
-        if (chassis_move_control_loop->left_leg.leg_length>0.18&&chassis_move_control_loop->right_leg.leg_length>0.18||chassis_move_control_loop->touchingGroung) {
+        if ( leg_stable &&force_stable) {
+        // if (chassis_move_control_loop->left_leg.leg_length>0.15&&chassis_move_control_loop->right_leg.leg_length>0.15&&chassis_move_control_loop->touchingGroung) {
             chassis_move_control_loop->jump_state.jump_stage = 0;
             chassis_move_control_loop->jump_state.jump_flag = false;
             chassis_move_control_loop->jump_state.jump_comtorque[0]=0.0f;
@@ -1131,7 +1054,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->right_leg_length_pid.Iout=0.0f;
         }
         // 超时强制退出，防止卡壳
-        if (time_since_landing > 500) {
+        if (time_since_landing > 350) {
             chassis_move_control_loop->jump_state.jump_stage = 0;
             chassis_move_control_loop->jump_state.jump_flag = false;
             chassis_move_control_loop->left_leg.leg_length_set = LEG_LENGTH_INIT;
@@ -1154,12 +1077,7 @@ static float limitted_motor_current(fp32 current, fp32 max)
     }
     return (float)current;
 }
-// static float lambda_compensate(chassis_move_t *chassis)
-// {
-//     float v_w = 0.5f * (left_wheel_speed + right_wheel_speed); // 轮子等效前向速度
-//     float v_b = chassis_move_control_loop->state_ref.x_dot;   // 机体前向速度（KF）
-//
-// }
+
 float calc_lambda(float slip_conf)
 {
     if (slip_conf <= 0.5f) return 1.0f;
@@ -1175,10 +1093,10 @@ float calc_I_limit(float slip_conf)
         return 2000;
 
     // 0.65 以上强打滑
-    if (slip_conf >= 0.65f)
+    if (slip_conf >= 0.60f)
         return 1400;
 
-    float x = (slip_conf - 0.5f) / (0.65f - 0.5f);
+    float x = (slip_conf - 0.5f) / (0.60f - 0.5f);
     float w = 0.5f * (1.0f + cosf(M_PI * x)); // 1 -> 0
 
     return 1400 +
@@ -1198,15 +1116,16 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     fp32 yaw_force_from_ros = 0.0f;
     //状态变量x=[theata, theta_dot, x, x_dot, phi, phi_dot]T
     //u=[T,Tp]^T
+
     // 反馈矩阵乘以一定系数用于调整
     fp32 coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                               {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
     fp32 slip_coefficient[2][6] = {{0.7f, 0.6f, 0.9f, 0.7f, 0.8f, 0.7f},
                               {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    fp32 jump_4_coefficient[2][6] = {{0.8f, 0.9f, 1.0f, 1.0f, 0.8f, 0.8f},
+    fp32 jump_4_coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.1f, 1.0f},
                                      {1.4f, 1.3f, 1.0f, 1.0f, 1.4f, 1.2f}};
     fp32 jump_3_coefficient[2][6] = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-                                     {1.5f, 1.3f, 0.0f, 0.0f, 1.2f, 1.2f}};
+                                     {1.5f, 1.3f, 0.0f, 0.0f, 1.8f, 1.4f}};
     fp32 jump_2_coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                                      {1.5f, 1.3f, 1.0f, 1.0f, 1.5f, 1.3f}};
     fp32 kRes[12] = {0}, k[2][6] = {0};
@@ -1243,6 +1162,12 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
             for (int j = 0; j < 2; j++)
                 k[j][i] = kRes[i * 2 + j] * jump_3_coefficient[j][i];
     }
+    else if (chassis_move_control_loop->jump_state.jump_stage==4&&chassis_move_control_loop->touchingGroung==false)
+    {
+        for (int i = 0; i < 6; i++)
+            for (int j = 0; j < 2; j++)
+                k[j][i] = kRes[i * 2 + j] * jump_3_coefficient[j][i];
+    }
     else if (chassis_move_control_loop->jump_state.jump_stage==4&&chassis_move_control_loop->touchingGroung)
     {
         for (int i = 0; i < 6; i++)
@@ -1256,7 +1181,8 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
         // k[1][0] = kRes[1] * 1.5f;// pitch角反馈系数（加大）
         // k[1][1] = kRes[3] * 1.3f; // pitch角速度反馈系数（加大）
         k[1][0] = kRes[1] * 1.5f;// theata角反馈系数（加大）
-        k[1][1] = kRes[3] * 1.3f; // theata角速度反馈系数（加大）
+        k[1][1] = kRes[3] * 1.2f; // theata角速度反馈系数（加大）
+
         k[1][4]=kRes[9]*1.3;  //phi角反馈系数
         k[1][5]=kRes[11]*1.2; //phi角速度反馈系数
     }
@@ -1306,10 +1232,10 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
 
     // 单腿离地之后轮子不能转，给关节加上kd阻尼
     if (chassis_move_control_loop->touchingGroung) {
-        // chassis_move_control_loop->right_leg.wheel_motor.give_current = I_cmd_r;
-        // chassis_move_control_loop->left_leg.wheel_motor.give_current  = I_cmd_l;
-        chassis_move_control_loop->right_leg.wheel_motor.give_current = limitted_motor_current(-(chassis_move_control_loop->wheel_tor + yaw_err_force) * LK9025_TOR_TO_CAN_DATA, 2000);
-        chassis_move_control_loop->left_leg.wheel_motor.give_current  = limitted_motor_current((chassis_move_control_loop->wheel_tor - yaw_err_force) * LK9025_TOR_TO_CAN_DATA, 2000);
+        chassis_move_control_loop->right_leg.wheel_motor.give_current = I_cmd_r;
+        chassis_move_control_loop->left_leg.wheel_motor.give_current  = I_cmd_l;
+        // chassis_move_control_loop->right_leg.wheel_motor.give_current = limitted_motor_current(-(chassis_move_control_loop->wheel_tor + yaw_err_force) * LK9025_TOR_TO_CAN_DATA, 2000);
+        // chassis_move_control_loop->left_leg.wheel_motor.give_current  = limitted_motor_current((chassis_move_control_loop->wheel_tor - yaw_err_force) * LK9025_TOR_TO_CAN_DATA, 2000);
 
         if (chassis_move_control_loop->now_tick - chassis_move_control_loop->last_out_ground_tick > 1000) {
             chassis_move_control_loop->right_leg.mit_kd = chassis_move_control_loop->mit_normal_kd;
@@ -1360,8 +1286,8 @@ void chassis_joint_tor_cal(chassis_move_t * chassis)
     chassis->tor_vector[3]=-tor_vector[0]+chassis->jump_state.jump_comtorque[3];
     // if (chassis_move_control_loop->jump_state.jump_stage==0)
     // {
-        chassis->right_leg.back_joint.tor_set = limitted_motor_current( chassis->tor_vector[2] , 12.0f);
-        chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3] , 12.0f);
+        chassis->right_leg.back_joint.tor_set = limitted_motor_current( chassis->tor_vector[2] , 18.0f);
+        chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3] , 18.0f);
     // }
     // else
     // {
@@ -1378,8 +1304,8 @@ void chassis_joint_tor_cal(chassis_move_t * chassis)
     chassis->tor_vector[1]=tor_vector[1]+chassis->jump_state.jump_comtorque[1];
     // if (chassis_move_control_loop->jump_state.jump_stage==0)
     // {
-        chassis->left_leg.back_joint.tor_set  = limitted_motor_current(chassis->tor_vector[1], 12.0f);
-        chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 12.0f);
+        chassis->left_leg.back_joint.tor_set  = limitted_motor_current(chassis->tor_vector[1], 18.0f);
+        chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 18.0f);
     // }
     // else
     // {
@@ -1427,10 +1353,9 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
         // LQR平衡,轮子力矩和推力Tp
         LQR_Balance_Turn(chassis_move_control_loop);
 
-    // SlipFlag slip_flag = SlipDetector_GetFlag(&slip_detector);
-    // adaptive_compensation_controller(chassis_move_control_loop, slip_flag);
 
-    chassis_joint_tor_cal(chassis_move_control_loop);
+
+        chassis_joint_tor_cal(chassis_move_control_loop);
 
 }
 
@@ -1442,7 +1367,7 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
     // 新增：状态切换计时和计数，用于过滤噪声
     static uint32_t offground_timer = 0;
     static uint32_t touchdown_timer = 0;
-//轮子总重1.33kg
+    //轮子总重1.33kg
     static const fp32 m_w = 0.367f+0.963f; // 轮毂的质量：0.300f->0.367f
     static const fp32 g   = 9.8f;   // 重力加速度
     // 对腿长速度、倾角速度做低通滤波（抑制高频噪声）
@@ -1580,7 +1505,50 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
     chassis_move_detect->touchingGroung = current_touching;
     return chassis_move_detect->touchingGroung;
 }
+void jump_test(chassis_move_t *chassis)
+{
+    float tor0=2.0f;
+    float tor1=4.0f;
+    float tor2=6.0f;
+    float tor3=7.0f;
+    float tor4=7.0f;
+    if (chassis->jump_state.jump_stage==0)
+    {
+        chassis->jump_state.jump_comtorque[0]=-tor0;
+        chassis->jump_state.jump_comtorque[1]= tor0;
+        chassis->jump_state.jump_comtorque[2]=-tor0;
+        chassis->jump_state.jump_comtorque[3]= tor0;
+    }
+    else if (chassis->jump_state.jump_stage==1)
+    {
+        chassis->jump_state.jump_comtorque[0]=-tor1;//左前电机
+        chassis->jump_state.jump_comtorque[1]= tor1;//左后电机
+        chassis->jump_state.jump_comtorque[2]=-tor1;//右后电机
+        chassis->jump_state.jump_comtorque[3]= tor1;//右前电机
+    }
+    else if (chassis->jump_state.jump_stage==2)
+    {
+        chassis->jump_state.jump_comtorque[0]= tor2;
+        chassis->jump_state.jump_comtorque[1]=-tor2;
+        chassis->jump_state.jump_comtorque[2]= tor2;
+        chassis->jump_state.jump_comtorque[3]=-tor2;
+    }
+    else if (chassis->jump_state.jump_stage==3)
+    {
+        chassis->jump_state.jump_comtorque[0]=-tor3;
+        chassis->jump_state.jump_comtorque[1]= tor3;
+        chassis->jump_state.jump_comtorque[2]=-tor3;
+        chassis->jump_state.jump_comtorque[3]= tor3;
+    }
+    else if (chassis->jump_state.jump_stage==4)
+    {
+        chassis->jump_state.jump_comtorque[0]= tor4;
+        chassis->jump_state.jump_comtorque[1]=-tor4;
+        chassis->jump_state.jump_comtorque[2]= tor4;
+        chassis->jump_state.jump_comtorque[3]=-tor4;
+    }
 
+}
 // 获取底盘结构体指针
 const chassis_move_t *get_chassis_control_point(void)
 {

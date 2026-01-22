@@ -2,7 +2,9 @@
 #include "chassis_task.h"
 #include "leg_angular_predictor.h"
 #include "slip_detector.h"
- SlipDetector_t slip_detector;
+#include "usart.h"
+#include "vofa.h"
+SlipDetector_t slip_detector;
 
 ///////////////////////////////////////////////////////////////
 /*------------------机体速度与加速度估计KF--------------------------*/
@@ -56,7 +58,7 @@ void ObserveTask(void const * argument)
     local_chassis_move = get_chassis_control_point();
 	SlipDetector_Init(&slip_detector);
 	xvEstimateKF_Init(&vaEstimateKF);
-	LegPredictor_Init(&leg_predictor, local_chassis_move, 20.0f);
+	LegPredictor_Init(&leg_predictor, local_chassis_move, 25.0f);
 	// 局部变量
 	static float wr,wl=0.0f;
 	static float vrb,vlb=0.0f;
@@ -66,7 +68,7 @@ void ObserveTask(void const * argument)
   TickType_t systick = 0;
   while(1)
 	{  
-		osDelayUntil(&systick,5);
+
   		// 1. 打滑检测数据同步与更新
   		SlipDetector_SyncData(&slip_detector,
 			local_chassis_move->left_leg.wheel_motor.wheel_motor_measure->speed/57.3f + local_chassis_move->left_leg.angle_dot,
@@ -74,8 +76,10 @@ void ObserveTask(void const * argument)
 			compensated_accel,
 			local_chassis_move->left_leg.wheel_motor.give_current,
 			local_chassis_move->right_leg.wheel_motor.give_current,
-			local_chassis_move->wz_set);;
+			local_chassis_move->wz_set);
 		SlipDetector_Update(&slip_detector);
+  	// uart_printf(&huart1,"left_conf:%.2f,right_conf:%.2f\r\n",slip_detector.left.confidence,slip_detector.right.confidence);
+
   		// SlipDetector_GetConfidence(&slip_detector,&slip_detector.left.confidence,&slip_detector.right.confidence);
 
   		// 2. 计算轮速和车体速度
@@ -109,7 +113,9 @@ void ObserveTask(void const * argument)
   	 LegPredictor_Update(&leg_predictor,local_chassis_move,local_chassis_move->leg_tor,
 	    local_chassis_move->wheel_tor,local_chassis_move->err_tor);
                 -local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
+  	osDelayUntil(&systick,5);
 	}
+
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*-------------------------------机体速度与加速度估计KF-------------------------------------------*/

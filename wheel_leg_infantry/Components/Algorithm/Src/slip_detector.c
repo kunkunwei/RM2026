@@ -219,19 +219,7 @@ void SlipDetector_Update(SlipDetector_t *detector) {
     } else {
         detector->slip_flag = SLIP_NONE;
     }
-    // if (detector->left.slip_counter >= SLIP_ENTER_COUNT) {
-    //     detector->slip_flag |= SLIP_LEFT;
-    // }
-    // if (detector->right.slip_counter >= SLIP_ENTER_COUNT) {
-    //     detector->slip_flag |= SLIP_RIGHT;
-    // }
-    // // 退出打滑判定
-    // if (detector->left.normal_counter >= SLIP_EXIT_COUNT) {
-    //     detector->slip_flag &= ~SLIP_LEFT;
-    // }
-    // if (detector->right.normal_counter >= SLIP_EXIT_COUNT) {
-    //     detector->slip_flag &= ~SLIP_RIGHT;
-    // }
+
 
     // 计算观测噪声缩放系数（取左右轮置信度最大值）
     float max_confidence = fmaxf(detector->left.confidence, detector->right.confidence);
