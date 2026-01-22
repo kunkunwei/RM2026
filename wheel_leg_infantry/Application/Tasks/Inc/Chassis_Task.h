@@ -74,7 +74,7 @@
 #define CHASSIS_VX_RC_SEN 0.0033
 // 遥控器的yaw遥杆（max 660）增加到车体角度的比例
 #define CHASSIS_WZ_RC_SEN 0.00001f
-#define CHASSIS_ROS_TO_WZ 0.00004f
+#define CHASSIS_ROS_TO_WZ 0.00003f
 
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_SPEED_NUM 0.05f
