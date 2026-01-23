@@ -275,6 +275,7 @@ typedef struct
 
 	float leg_length;    	   // 摆杆长度
 	float leg_length_set;
+	float leg_length_in_sky_set;
 	float leg_angle;    		   // 摆杆与竖直方向的夹角
 	float angle_dot;   		   // 腿部摆杆的旋转速度
 	float length_dot;   		   // 腿部摆杆的长度变化速度

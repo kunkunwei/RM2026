@@ -19,7 +19,7 @@
 // #include "main.h"
 
 
-#define VOFA_CHANNELS 11    // VOFA+通道数量
+#define VOFA_CHANNELS 12    // VOFA+通道数量
 #define VOFA_TAIL {0x00, 0x00, 0x80, 0x7F} // JustFloat协议尾部
 
 typedef  struct {

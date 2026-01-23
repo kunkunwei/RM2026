@@ -200,6 +200,7 @@ HAL_StatusTypeDef Vofa_Send_Tor(UART_HandleTypeDef *huart, const chassis_move_t*
             chassis->jump_state.jump_flag,
             chassis->left_leg.length_dot,
             chassis->jump_state.jump_stage,
+            chassis->touchingGroung,
             // chassis->right_leg.wheel_motor.give_current,
             // chassis->left_leg.wheel_motor.give_current,
 
