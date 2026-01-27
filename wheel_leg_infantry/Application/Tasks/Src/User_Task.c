@@ -93,8 +93,13 @@ void User_Task(void const * argument)
 
 
         }
+        uart_printf(&huart1,"ecd:%d,pos:%.3f,speed:%.2f,current:%d,set:%.2f\r\n",local_chassis->right_leg.front_joint.joint_motor_measure->ecd,
+        local_chassis->right_leg.front_joint.joint_motor_measure->pos,
+            local_chassis->right_leg.front_joint.joint_motor_measure->speed,
+            local_chassis->right_leg.front_joint.joint_motor_measure->current,
+              local_chassis->right_leg.front_joint.current_set);
         // Vofa_Send_joint_angle(&huart1,local_chassis);
-        Vofa_Send_Tor(&huart1,local_chassis);
+        // Vofa_Send_Tor(&huart1,local_chassis);
         // chassis_send_feedback(local_chassis);
 
         // Vofa_Send_Chassis_CMD(&huart1, &gimbal_chassis_comm,local_chassis);

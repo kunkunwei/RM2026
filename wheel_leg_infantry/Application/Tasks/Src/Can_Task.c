@@ -3,6 +3,7 @@
 #include "main.h"
 #include "can_task.h"
 #include "Chassis_Task.h"
+#include "MIT_mode.h"
 #include "usart.h"
 #include "User_Task.h"
 #include "vofa.h"
@@ -18,7 +19,7 @@
 
 /* CAN Manager Instance */
 CAN_TxManager_t can_manager;
-
+static void Damiao_Motor_ALL_CAN_Send(int16_t M1_Current,int16_t M2_Current,int16_t M3_Current,int16_t M4_Current);
 static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity, float KP, float KD, float Torque);
 static void LK9025_Motor_CAN_Send(int16_t right, int16_t left);
 static void Damiao_Motor_Enable(uint8_t Motor_ID);
@@ -30,7 +31,7 @@ const chassis_move_t* local_chassis ;
 
 
 
-// #define LEG_DEBUG
+#define LEG_DEBUG
 void Can_Task(void const * argument)
 {
   /* USER CODE BEGIN Can_Task */
@@ -38,19 +39,22 @@ void Can_Task(void const * argument)
   // extern CAN_TxFrameTypeDef JointTxFrame[4]; // Removed redundant extern
   // const chassis_move_t* local_chassis = get_chassis_control_point();
     local_chassis = get_chassis_control_point();
-	CAN_Manager_Init();
+	// CAN_Manager_Init();
     // static float time_send_joint = 0.0f;
     // static float time_send_wheel = 0.0f;
-
+    int16_t can_cmd;
   osDelay(1000);
+    TickType_t systick = 0;
+    TickType_t last_wheel_tick = osKernelSysTick();
+    Damiao_Motor_Enable(2);
+    osDelay(5);
+    Damiao_Motor_Enable(3);
+    osDelay(5);
   Damiao_Motor_Enable(0);
   osDelay(5);
   Damiao_Motor_Enable(1);
   osDelay(5);
-  Damiao_Motor_Enable(2);
-  osDelay(5);
-  Damiao_Motor_Enable(3);
-  osDelay(5);
+
 
     // tor[0]=-1.0f;
     // tor[1]=1.0f;
@@ -59,12 +63,8 @@ void Can_Task(void const * argument)
 	// float angle_set[4] = 0.0f;
   for(;;)
   {
-  	// current_time=DWT_GetTimeline_ms();
-
-    // Attempt to drain queue at start of loop
-    // CAN_Manager_Update();
-
-
+      systick = osKernelSysTick();
+      can_cmd=int16_constrain(local_chassis->right_leg.front_joint.give_current,-2000,2000);
     // 关节电机控制 (每2ms发送一次)
     // if ((current_time - time_send_joint) >= JOINT_SEND_INTERVAL_MS) {
         #ifndef LEG_DEBUG
@@ -73,55 +73,37 @@ void Can_Task(void const * argument)
       osDelay(1);
           Damiao_Motor_CAN_Send(0,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.front_joint.tor_set);
           Damiao_Motor_CAN_Send(1,0,0,0,local_chassis->left_leg.mit_kd,local_chassis->left_leg.back_joint.tor_set);
-      osDelay(1);
+      osDelay(2);
         #else
       if (switch_is_mid(local_chassis->chassis_RC->rc.s[0]))
       {
-          Damiao_Motor_CAN_Send(0,0,0,0,0.4, -2);
-          Damiao_Motor_CAN_Send(1,0,0,0,0.4, 2);
-          osDelay(1);
-          Damiao_Motor_CAN_Send(2,0,0,0,0.4, -2);
-          Damiao_Motor_CAN_Send(3,0,0,0,0.4, 2);
-          osDelay(1);
-          // Damiao_Motor_CAN_Send(0,0,0,0,0.4, local_chassis->jump_state.jump_comtorque[0]);
-          // Damiao_Motor_CAN_Send(1,0,0,0,0.4, local_chassis->jump_state.jump_comtorque[1]);
-          // osDelay(1);
-          // Damiao_Motor_CAN_Send(2,0,0,0,0.4, local_chassis->jump_state.jump_comtorque[2]);
-          // Damiao_Motor_CAN_Send(3,0,0,0,0.4, local_chassis->jump_state.jump_comtorque[3]);
-          // osDelay(1);
+
+      // Damiao_Motor_ALL_CAN_Send(0,0,0,0);
+      Damiao_Motor_ALL_CAN_Send(0,0,0,can_cmd);
       }
       else
       {
-          Damiao_Motor_CAN_Send(0,0,0,0,0,0);
-          Damiao_Motor_CAN_Send(1,0,0,0,0,0);
-          osDelay(1);
-          Damiao_Motor_CAN_Send(2,0,0,0,0,0);
-          Damiao_Motor_CAN_Send(3,0,0,0,0,0);
-          osDelay(1);
+          Damiao_Motor_ALL_CAN_Send(0,0,0,0);
       }
-      //     Damiao_Motor_CAN_Send(0,0,0,0,0,0);
-      //     Damiao_Motor_CAN_Send(1,0,0,0,0,0);
-      // osDelay(1);
-      //     Damiao_Motor_CAN_Send(2,0,0,0,0,0);
-      //     Damiao_Motor_CAN_Send(3,0,0,0,0,0);
-      // osDelay(1);
+
         #endif
         // time_send_joint = current_time;
     // }
 
     // 轮子电机控制 (每8ms发送一次)
-    // if ((current_time - time_send_wheel) >= WHEEL_SEND_INTERVAL_MS) {
+    // if ((systick - last_wheel_tick) >= 8) {
         #ifndef LEG_DEBUG
           LK9025_Motor_CAN_Send(local_chassis-> right_leg.wheel_motor.give_current,local_chassis->left_leg.wheel_motor.give_current);
         #else
           // LK9025_Motor_CAN_Send(1000,1000);
           LK9025_Motor_CAN_Send(0,0);
         #endif
-        // time_send_wheel = current_time;
+        // last_wheel_tick = osKernelSysTick();
     // }
 
 
-    osDelay(1);
+    // osDelay(2);
+      osDelayUntil(&systick, 2);
   }
   /* USER CODE END Can_Task */
 }
@@ -149,7 +131,18 @@ static void Damiao_Motor_CAN_Send(uint8_t Motor_ID,float Postion, float Velocity
 	JointTxFrame[Motor_ID].Data[6] = (uint8_t)((KD_Tmp&0x0F)<<4) | (uint8_t)(Torque_Tmp>>8);
 	JointTxFrame[Motor_ID].Data[7] = (uint8_t)(Torque_Tmp);
    USER_CAN_TxMessage(&JointTxFrame[Motor_ID]);
-   // CAN_Manager_Add(&JointTxFrame[Motor_ID]);
+}
+static void Damiao_Motor_ALL_CAN_Send(int16_t M1_Current,int16_t M2_Current,int16_t M3_Current,int16_t M4_Current){
+
+    dm8009_ALL_TxFrame.Data[0] = M1_Current & 0xFF;        // 低字节
+    dm8009_ALL_TxFrame.Data[1] = (M1_Current >> 8) & 0xFF; // 高字节
+    dm8009_ALL_TxFrame.Data[2] = M2_Current & 0xFF;
+    dm8009_ALL_TxFrame.Data[3] = (M2_Current >> 8) & 0xFF;
+    dm8009_ALL_TxFrame.Data[4] = M3_Current & 0xFF;
+    dm8009_ALL_TxFrame.Data[5] = (M3_Current >> 8) & 0xFF;
+    dm8009_ALL_TxFrame.Data[6] = M4_Current & 0xFF;
+    dm8009_ALL_TxFrame.Data[7] = (M4_Current >> 8) & 0xFF;
+   USER_CAN_TxMessage(&dm8009_ALL_TxFrame);
 }
 static void Damiao_Motor_Enable(uint8_t Motor_ID){
     //uint8_t Motor_ID = ID-1;

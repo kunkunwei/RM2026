@@ -67,6 +67,14 @@ CAN_TxFrameTypeDef JointTxFrame[4] = {
 	}, 
 };
 
+CAN_TxFrameTypeDef dm8009_ALL_TxFrame ={
+    .hcan = &hcan1,
+		.header.StdId=CAN_CHASSIS_ALL_ID,
+		.header.IDE=CAN_ID_STD,
+		.header.RTR=CAN_RTR_DATA,
+		.header.DLC=8,
+};
+
 CAN_TxFrameTypeDef RMD_L9025_Left_TxFrame ={
     .hcan = &hcan1,
 		.header.StdId=0x142,
@@ -89,13 +97,7 @@ CAN_TxFrameTypeDef RMD_L9025_ALL_TxFrame ={
 		.header.RTR=CAN_RTR_DATA,
 		.header.DLC=8,
 };
-CAN_TxFrameTypeDef Chassis_Feeback_TxFrame ={
-    .hcan = &hcan2,
-		.header.StdId=0x60,
-		.header.IDE=CAN_ID_STD,
-		.header.RTR=CAN_RTR_DATA,
-		.header.DLC=8,
-};
+
 /**
   * @brief  Configures the CAN Filter.
   * @param  None
@@ -191,26 +193,12 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 
 static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
-	// float time_now = DWT_GetTimeline_ms();
-	// if (*StdId==CAN1_Chassis_ID_1)
-	// {
-	// 	chassis_parse_control_frame1(&gimbal_chassis_comm.gimbal_cmd, data);
-	// 	gimbal_chassis_comm.last_frame1_time=time_now;
-	// 	gimbal_chassis_comm.frame1_received =1;
-	// }
-	// else if (*StdId==CAN1_Chassis_ID_2)
-	// {
-	// 	chassis_parse_control_frame2(&gimbal_chassis_comm.gimbal_cmd, data);
-	// 	gimbal_chassis_comm.last_frame2_time=time_now;
-	// 	gimbal_chassis_comm.frame2_received =1;
-	// }
-	// else
-		if(*StdId == 0x141){
-	  //RMD_Motor_Info_Update(StdId,data,&RMD_Motor[Right_Wheel]);
+	if(*StdId == 0x141){
+
     get_lk9025_motor_measure(&motor_right, data);
 	}
   else if(*StdId == 0x142){
-    get_lk9025_motor_measure(&motor_left, data);
+  get_lk9025_motor_measure(&motor_left, data);
   }
   else{
   	switch(*StdId)
@@ -220,14 +208,11 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
       case CAN_dm8009_M3_ID:
       case CAN_dm8009_M4_ID:  
         {
-          // static uint8_t i = 0;
-          // //处理电机ID号
-          // i = data[0]&0x0F -1 ;
+
           // //处理电机数据宏函数
-          get_dm8009_motor_measure(&motor_joint[*StdId -1 ], data);
-          //printf("%.2f\r\n",motor_joint[*StdId -1 ].pos);
-          //记录时间
-          //detect_hook(CHASSIS_MOTOR1_TOE + i);
+          // get_chassis_motor_measure(&motor_joint[*StdId], data);
+          // get_dm8009_motor_measure(&motor_joint[*StdId -1 ], data);
+
           //输出位置修正
           if( *StdId == CAN_dm8009_M1_ID ){
               motor_joint[0].pos += 3.0556903f; // 正确的零点补偿值
@@ -247,9 +232,10 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
           }
           else if(*StdId == CAN_dm8009_M4_ID)
           {
-              // motor_joint[3].pos += 2.11726f; // 正确的零点补偿值
-              motor_joint[3].pos += 2.158088f; // 正确的零点补偿值
-          	motor_joint[3].pos = 3.141593/2 - motor_joint[3].pos;
+          	get_chassis_motor_measure(&motor_joint[3], data);
+          	motor_joint[3].pos = motor_ecd_to_angle_change(motor_joint[3].ecd,7412);       // 编码器位置(0-8191)->rad
+              // motor_joint[3].pos += 2.158088f; // 正确的零点补偿值
+          	motor_joint[3].pos = 3.141593 + motor_joint[3].pos;
           }
           break;
         }
@@ -268,15 +254,31 @@ static void CAN1_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
   */
 static void CAN2_RxFifo0RxHandler(uint32_t *StdId,uint8_t data[8])
 {
-	//DJI_Motor_Info_Update(StdId,data,&DJI_Motor[Yaw]);
-//#if (!REMOTE_FRAME_USART_CAN)
-//	Remote_Info_Update(StdId,data,&remote_ctrl);
-//#endif
-	// float time_now = DWT_GetTimeline_ms();
-	// if (*StdId==CAN2_YAW_MOTOR_ID)
-	// {
-	// 	get_dji_motor_measure(&yaw_motor,data);
-	// }
+
+		// switch(*StdId)
+		// {
+		// case CAN_dm8009_M1_ID:
+		// case CAN_dm8009_M2_ID:
+		// 	{
+		//
+		// 		// //处理电机数据宏函数
+		// 		get_dm8009_motor_measure(&motor_joint[*StdId -1 ], data);
+		//
+		// 		//输出位置修正
+		// 		if( *StdId == CAN_dm8009_M1_ID ){
+		// 			motor_joint[0].pos += 3.0556903f; // 正确的零点补偿值
+		// 			// motor_joint[0].pos += 3.141593f;
+		//
+		// 		}
+		// 		else if( *StdId== CAN_dm8009_M2_ID)
+		// 		{
+		// 			motor_joint[1].pos += 0.3876503f; // 正确的零点补偿值
+		// 			// motor_joint[1].pos += 3.141593f/2;
+		//
+		// 			break;
+		// 		}
+		// 	}
+		// }
 
 }
 //------------------------------------------------------------------------------

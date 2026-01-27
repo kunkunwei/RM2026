@@ -99,7 +99,9 @@
 
 // 8009 力矩转换为can_data的比例
 //IMAX 41.044777
-#define DM8009_TOR_TO_CAN_DATA 243.445f 
+#define DM8009_TOR_TO_CAN_DATA 243.445f
+//电流转换成can_data的比例
+
 //9025 力矩转换为can_data的比例
 //IMAX 32A
 #define LK9025_TOR_TO_CAN_DATA 195.3125f
@@ -140,7 +142,7 @@
 #define LEG_LENGTH_PID_KI 2.0f
 // #define LEG_LENGTH_PID_KD 24.0f
 #define LEG_LENGTH_PID_KD 15.0f
-#define LEG_LENGTH_PID_MAX_OUT 150.0f
+#define LEG_LENGTH_PID_MAX_OUT 170.0f
 #define LEG_LENGTH_PID_MAX_IOUT 30.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
