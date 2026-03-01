@@ -5,32 +5,21 @@ dm8009_motor_measure_t motor_joint[4];
 // dji_motor_measure_t yaw_motor;  // Yaw电机
 
 static float uint_to_float(int X_int, float X_min, float X_max, int Bits);
-float motor_ecd_to_angle_change(uint16_t ecd, uint16_t offset_ecd);
-void get_chassis_motor_measure(dm8009_motor_measure_t* ptr, uint8_t *rx_message)
-{
-    /* 解析电机标准反馈数据 */
-    (ptr)->last_ecd= (ptr)->ecd;
-   (ptr)->ecd =(uint16_t) (rx_message[0] << 8 | rx_message[1]);// 编码器位置(0-8191)
-    (ptr)->speed_rpm = (int16_t)(rx_message[2] << 8 | rx_message[3]);        // 转速(rpm), 放大100倍
-    (ptr)->speed =((ptr)->speed_rpm/100)*2.0f*PI/60.0f;                    // 转速(rad/s)
-    (ptr)->current = (int16_t)(rx_message[4] << 8 | rx_message[5]);    // 电流(mA)
-    (ptr)->temperate = rx_message[6];                                        // 温度(°C)
-    (ptr)->err = rx_message[7];                                        // 错误状态
-}
+
 void get_dm8009_motor_measure(dm8009_motor_measure_t* ptr, uint8_t *rx_message)
 {
-    // ptr->err = rx_message[0]>>4;
-    // uint16_t tmp_pos = (int16_t) (((uint16_t)(rx_message[1]) <<8) | ((uint16_t)(rx_message[2])));
-    // ptr->pos = uint_to_float(tmp_pos,-12.5,12.5,16);
-    //
-    // uint16_t tmp_spd = (rx_message[3]<<4 | (rx_message[4]>>4) );
-    // ptr->speed = uint_to_float(tmp_spd,-45,45,12);
-    //
-    // uint16_t tmp_tor=((rx_message[4]&0xF)<<8)| rx_message[5];
-    // ptr->tor = uint_to_float(tmp_tor,-20,20,12);
-    //
-    // ptr->tmos_tmper = rx_message[6];
-    // ptr->coil_tmper = rx_message[7];
+    ptr->err = rx_message[0]>>4;
+    uint16_t tmp_pos = (int16_t) (((uint16_t)(rx_message[1]) <<8) | ((uint16_t)(rx_message[2])));
+    ptr->pos = uint_to_float(tmp_pos,-12.5,12.5,16);
+
+    uint16_t tmp_spd = (rx_message[3]<<4 | (rx_message[4]>>4) );
+    ptr->speed = uint_to_float(tmp_spd,-45,45,12);
+
+    uint16_t tmp_tor=((rx_message[4]&0xF)<<8)| rx_message[5];
+    ptr->tor = uint_to_float(tmp_tor,-20,20,12);
+
+    ptr->tmos_tmper = rx_message[6];
+    ptr->coil_tmper = rx_message[7];
 
 }
 
@@ -65,17 +54,17 @@ static float uint_to_float(int X_int, float X_min, float X_max, int Bits){
     return ((float)X_int)*span/((float)((1<<Bits)-1)) + offset;
 }
 // 计算相对角度
-float motor_ecd_to_angle_change(uint16_t ecd, uint16_t offset_ecd)
-{
-    int32_t relative_ecd = ecd - offset_ecd;
-    if (relative_ecd > Half_ecd_range) {
-        relative_ecd -= ecd_range;
-    } else if (relative_ecd < -Half_ecd_range) {
-        relative_ecd += ecd_range;
-    }
-
-    return relative_ecd * Motor_Ecd_to_Rad;
-}
+// float motor_ecd_to_angle_change(uint16_t ecd, uint16_t offset_ecd)
+// {
+//     int32_t relative_ecd = ecd - offset_ecd;
+//     if (relative_ecd > Half_ecd_range) {
+//         relative_ecd -= ecd_range;
+//     } else if (relative_ecd < -Half_ecd_range) {
+//         relative_ecd += ecd_range;
+//     }
+//
+//     return relative_ecd * Motor_Ecd_to_Rad;
+// }
 //返回yaw电机变量地址，通过指针方式获取原始数据
 const lk9025_motor_measure_t *get_Right_Wheel_Motor_Measure_Point(void)
 {

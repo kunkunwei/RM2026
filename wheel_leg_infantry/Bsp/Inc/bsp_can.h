@@ -24,6 +24,9 @@ extern "C" {
 #include "stdint.h"
 #include "stm32f4xx.h"
 #include "mymotor.h"
+// #include "can.h"
+#include <string.h> // for memcpy
+
 /* Exported types ------------------------------------------------------------*/
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -63,5 +66,23 @@ extern void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader);
 // extern const lk9025_motor_measure_t *get_Left_Wheel_Motor_Measure_Point(void);
 // //返回关节电机变量地址，通过指针方式获取原始数据,i的范围是0-3，对应0x201-0x204,
 // extern const dm8009_motor_measure_t *get_Joint_Motor_Measure_Point(uint8_t i);
+
+#define CAN_RX_FIFO_SIZE 128
+
+typedef struct {
+    CAN_RxHeaderTypeDef header;
+    uint8_t             data[8];
+} CAN_RxFrameNode;
+
+typedef struct {
+    CAN_RxFrameNode buffer[CAN_RX_FIFO_SIZE];
+    volatile uint16_t head;
+    volatile uint16_t tail;
+} CAN_RxFIFO_t;
+
+void CAN_Process_Data(void);
+
+// extern lk9025_motor_measure_t motor_right, motor_left;
+
 #endif //BSP_CAN_H
 

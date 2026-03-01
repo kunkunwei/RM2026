@@ -67,6 +67,7 @@ void User_Task(void const * argument)
         current_time=DWT_GetTimeline_ms();
         // Vofa_Send_System(&huart1,local_chassis);
 
+        Vofa_Send_joint_angle(&huart1,local_chassis);
         // Vofa_Send_1motor_Data(&huart1,local_chassis);
         // Vofa_Send_New_Chassis_Data(&huart1,local_chassis);
         // if (current_time-last_RC_time>10.0f)
@@ -93,11 +94,11 @@ void User_Task(void const * argument)
 
 
         }
-        uart_printf(&huart1,"ecd:%d,pos:%.3f,speed:%.2f,current:%d,set:%.2f\r\n",local_chassis->right_leg.front_joint.joint_motor_measure->ecd,
-        local_chassis->right_leg.front_joint.joint_motor_measure->pos,
-            local_chassis->right_leg.front_joint.joint_motor_measure->speed,
-            local_chassis->right_leg.front_joint.joint_motor_measure->current,
-              local_chassis->right_leg.front_joint.current_set);
+        // uart_printf(&huart1,"ecd:%d,pos:%.3f,speed:%.2f,current:%d,set:%.2f\r\n",local_chassis->right_leg.front_joint.joint_motor_measure->ecd,
+        // local_chassis->right_leg.front_joint.joint_motor_measure->pos,
+            // local_chassis->right_leg.front_joint.joint_motor_measure->speed,
+            // local_chassis->right_leg.front_joint.joint_motor_measure->current,
+              // local_chassis->right_leg.front_joint.current_set);
         // Vofa_Send_joint_angle(&huart1,local_chassis);
         // Vofa_Send_Tor(&huart1,local_chassis);
         // chassis_send_feedback(local_chassis);

@@ -64,8 +64,6 @@ void Chassis_Task(void const *argument)
     // float time=0.0f;
     for (;;) {
         systick = osKernelSysTick();
-        // time=DWT_GetTimeline_s();
-        // printf("%.2f,%.2f,%.2f,%.2f\r\n",chassis_move.right_leg.leg_angle)
         chassis_set_mode(&chassis_move);
         // 遥控器状态切换数据保存
         chassis_mode_change_control_transit(&chassis_move);
