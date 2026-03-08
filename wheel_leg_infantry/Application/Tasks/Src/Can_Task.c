@@ -30,7 +30,7 @@ const chassis_move_t* local_chassis ;
 
 
 
-#define LEG_DEBUG
+// #define LEG_DEBUG
 void Can_Task(void const * argument)
 {
   /* USER CODE BEGIN Can_Task */
@@ -48,7 +48,7 @@ void Can_Task(void const * argument)
   osDelay(5);
   for(;;)
   {
-      CAN_Process_Data(); // Process CAN Rx Buffer
+      // CAN_Process_Data(); // Process CAN Rx Buffer
       systick = osKernelSysTick();
 
 
@@ -65,14 +65,23 @@ void Can_Task(void const * argument)
           Damiao_Motor_CAN_Send(2,0,0,0,0,0);
           Damiao_Motor_CAN_Send(3,0,0,0,0,0);
         #endif
-  	// osDelay(0);
+  	osDelay(0);
   	// CAN_Process_Data();
     // 轮子电机控制
         #ifndef LEG_DEBUG
           LK9025_Motor_CAN_Send(local_chassis-> right_leg.wheel_motor.give_current,local_chassis->left_leg.wheel_motor.give_current);
         #else
-          LK9025_Motor_CAN_Send(0,0);
+  	// if (switch_is_down(remote_ctrl.rc.s[0]))
+  	// {
+  		LK9025_Motor_CAN_Send(0,0);
+  	// }else
+  	// {
+  		// LK9025_Motor_CAN_Send(100,100);
+  	// }
+          // LK9025_Motor_CAN_Send(0,0);
         #endif
+  	osDelay(0);
+  	CAN_Process_Data(); // Process CAN Rx Buffer
       osDelayUntil(&systick, 1);
   }
   /* USER CODE END Can_Task */

@@ -188,7 +188,7 @@ void LegPredictor_Update(LegPredictor_t *predictor,
     last_comp_right = predictor->comp_right;
 
     // 限幅保护
-    float max_comp = 2.5f;
+    float max_comp = 3.0f;
     predictor->comp_left = fminf(fmaxf(predictor->comp_left, -max_comp), max_comp);
     predictor->comp_right = fminf(fmaxf(predictor->comp_right, -max_comp), max_comp);
 }

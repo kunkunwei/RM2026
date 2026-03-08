@@ -23,6 +23,7 @@
 // #include "CAN_Receive.h"
 
 
+#include "pc_uart_ctrl.h"
 #include "slip_detector.h"
 #include "user_lib.h"
 // #include "observe_task.h"
@@ -131,22 +132,21 @@
 #define LEG_LENGTH_MIN 0.11f
 
 //
-// #define STOP_X_OFFSET -0.01f
+#define STOP_X_OFFSET -0.01f
 // #define STOP_X_OFFSET -0.282f
-#define STOP_X_OFFSET 0.1420f
 // #define STOP_X_OFFSET 0.1410f
 // 腿部长度控制PID
-// #define LEG_LENGTH_PID_KP 250.0f
-#define LEG_LENGTH_PID_KP 650.0f
-// #define LEG_LENGTH_PID_KI 3.0f
-#define LEG_LENGTH_PID_KI 2.0f
-// #define LEG_LENGTH_PID_KD 24.0f
-#define LEG_LENGTH_PID_KD 15.0f
-#define LEG_LENGTH_PID_MAX_OUT 170.0f
-#define LEG_LENGTH_PID_MAX_IOUT 30.0f
+// #define LEG_LENGTH_PID_KP 300.0f
+#define LEG_LENGTH_PID_KP 750.0f
+#define LEG_LENGTH_PID_KI 3.0f
+// #define LEG_LENGTH_PID_KI 2.0f
+#define LEG_LENGTH_PID_KD 27.0f
+// #define LEG_LENGTH_PID_KD 15.0f
+#define LEG_LENGTH_PID_MAX_OUT 150.0f
+#define LEG_LENGTH_PID_MAX_IOUT 20.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
-#define ANGLE_ERR_PID_KP 400.0f
+#define ANGLE_ERR_PID_KP 500.0f
 #define ANGLE_ERR_PID_KI 1.9f
 #define ANGLE_ERR_PID_KD 30.0f
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
@@ -163,7 +163,7 @@
 #define ROLL_CTRL_L_PID_KI 0.00006f
 #define ROLL_CTRL_L_PID_KD 0.233f
 #define ROLL_CTRL_L_PID_MAX_OUT 10.0f
-#define ROLL_CTRL_L_PID_MAX_IOUT 1.0f
+#define ROLL_CTRL_L_PID_MAX_IOUT 0.7f
 //roll控制pid (ROLL补偿腿的力度)
 #define ROLL_CTRL_F_PID_KP 0.0f
 #define ROLL_CTRL_F_PID_KI 0.00f
@@ -337,6 +337,7 @@ typedef struct chassis_task
 
 typedef struct
 {
+	const PC_Ctrl_Info_t *s_pc_ctrl;//图传遥控器指针
 	const Remote_Info_Typedef *chassis_RC;	  // 底盘使用的遥控器指针
 	const Chassis_RC_Info_t *chassis_can_rc_info; // 底盘使用的CAN1遥控器指针
 	const float *chassis_INS_angle;	  // 获取陀螺仪解算出的欧拉角指针

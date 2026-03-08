@@ -40,7 +40,7 @@ void User_Task(void const * argument)
     const chassis_move_t* local_chassis = get_chassis_control_point();
     const Quaternion_Info_Typedef* local_Quaternion_Info = get_quaternion_info_point();
     const LegPredictor_t *leg_predictor = get_leg_predictor_point();
-
+    const PC_Ctrl_Info_t *pc_ctrl_info = get_pc_uart_ctrl_point();
     //监测
     const SystemMonitor_t *monitor = SystemMonitor_Get();
 
@@ -66,10 +66,10 @@ void User_Task(void const * argument)
         systick = osKernelSysTick();
         current_time=DWT_GetTimeline_ms();
         // Vofa_Send_System(&huart1,local_chassis);
-
-        Vofa_Send_joint_angle(&huart1,local_chassis);
+        // Vofa_Send_PC_Ctrl_Info(&huart1,pc_ctrl_info);
+        // Vofa_Send_joint_angle(&huart1,local_chassis);
         // Vofa_Send_1motor_Data(&huart1,local_chassis);
-        // Vofa_Send_New_Chassis_Data(&huart1,local_chassis);
+        Vofa_Send_New_Chassis_Data(&huart1,local_chassis);
         // if (current_time-last_RC_time>10.0f)
         // {
         //     update_gimbal_comm_status(current_time);

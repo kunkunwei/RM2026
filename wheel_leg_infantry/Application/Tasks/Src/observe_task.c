@@ -58,7 +58,7 @@ void ObserveTask(void const * argument)
     local_chassis_move = get_chassis_control_point();
 	SlipDetector_Init(&slip_detector);
 	xvEstimateKF_Init(&vaEstimateKF);
-	LegPredictor_Init(&leg_predictor, local_chassis_move, 25.0f);
+	LegPredictor_Init(&leg_predictor, local_chassis_move, 22.0f);
 	// 局部变量
 	static float wr,wl=0.0f;
 	static float vrb,vlb=0.0f;

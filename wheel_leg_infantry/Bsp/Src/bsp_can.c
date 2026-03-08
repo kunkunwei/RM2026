@@ -263,16 +263,16 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 void CAN_Process_Data(void) {
     CAN_RxHeaderTypeDef header;
     uint8_t data[8];
-    static uint32_t can1_pop_count = 0;
-    static uint32_t can2_pop_count = 0;
-    static uint32_t can2_m1_count = 0;
-    static uint32_t can2_m2_count = 0;
+    // static uint32_t can1_pop_count = 0;
+    // static uint32_t can2_pop_count = 0;
+    // static uint32_t can2_m1_count = 0;
+    // static uint32_t can2_m2_count = 0;
     // Process CAN1 FIFO
     while (CAN_FIFO_Pop(&can1_rx_fifo, &header, data)) {
-        can1_pop_count++;
-        if (header.StdId == 0x141) {
+        // can1_pop_count++;
+        if (header.StdId == CAN_RIGHT_MOTOR_ID) {
             get_lk9025_motor_measure(&motor_right, data);
-        } else if (header.StdId == 0x142) {
+        } else if (header.StdId == CAN_LEFT_MOTOR_ID) {
             get_lk9025_motor_measure(&motor_left, data);
         } else {
              // Handle DM8009 motors on CAN1 if any (e.g. M3, M4)
@@ -283,7 +283,7 @@ void CAN_Process_Data(void) {
                 {
                     get_dm8009_motor_measure(&motor_joint[header.StdId - 1], data);
                     if (header.StdId == CAN_dm8009_M3_ID) {
-                        motor_joint[2].pos += 3.057657f;
+                        motor_joint[2].pos += 3.007557f;
                         motor_joint[2].pos = 3.141593f - motor_joint[2].pos;
                     } else if (header.StdId == CAN_dm8009_M4_ID) {
                         motor_joint[3].pos += 2.158088f;
@@ -297,23 +297,23 @@ void CAN_Process_Data(void) {
 
     // Process CAN2 FIFO
     while (CAN_FIFO_Pop(&can2_rx_fifo, &header, data)) {
-        can2_pop_count++;
+        // can2_pop_count++;
         switch(header.StdId) {
         case CAN_dm8009_M1_ID:
-            can2_m1_count++;
+            // can2_m1_count++;
             get_dm8009_motor_measure(&motor_joint[0], data);
             motor_joint[0].pos += 3.0556903f;
             break;
 
         case CAN_dm8009_M2_ID:
-            can2_m2_count++;
+            // can2_m2_count++;
             get_dm8009_motor_measure(&motor_joint[1], data);
             motor_joint[1].pos += 0.3876503f;
             break;
         }
     }
 
-    // 每1000次打印统计
+    // // 每1000次打印统计
     // static uint32_t debug_count = 0;
     // if (++debug_count >= 1000) {
     //     uart_printf(&huart1,"\n=== CAN Statistics (per 1000 cycles) ===\n");
@@ -329,10 +329,10 @@ void CAN_Process_Data(void) {
     //     uart_printf(&huart1,"SW FIFO - CAN1: %d, CAN2: %d\n", can1_used, can2_used);
     //
     //     // 打印电机数据
-    //     uart_printf(&huart1,"Motor[0](CAN2): pos=%.3f\n",
-    //            motor_joint[0].pos);
-    //     uart_printf(&huart1,"Motor[1](CAN2): pos=%.3f\n",
-    //            motor_joint[1].pos);
+    //     // uart_printf(&huart1,"Motor[0](CAN2): pos=%.3f\n",
+    //     //        motor_joint[0].pos);
+    //     // uart_printf(&huart1,"Motor[1](CAN2): pos=%.3f\n",
+    //     //        motor_joint[1].pos);
     //     // uart_printf(&huart1,"Motor[2](CAN1): pos=%.3f\n",
     //            // motor_joint[2].pos);
     //     // uart_printf(&huart1,"Motor[3](CAN1): pos=%.3f\n",

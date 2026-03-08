@@ -20,6 +20,7 @@
 extern INS_Info_Typedef INS_Info;
 extern ist8310_real_data_t ist8310_Info;
 extern dm8009_motor_measure_t motor_joint[4];
+extern lk9025_motor_measure_t motor_right, motor_left;
 Vofa_Frame_t vofa_tx;
 
 HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info,dm8009_motor_measure_t motor_joint[], chassis_move_t* chassis)
@@ -96,6 +97,10 @@ HAL_StatusTypeDef Vofa_Send_joint_angle(UART_HandleTypeDef *huart, const chassis
             motor_joint[1].pos,
             motor_joint[2].pos,
             motor_joint[3].pos,
+            chassis->left_leg.wheel_motor.speed_set,
+            chassis->right_leg.wheel_motor.speed_set,
+           motor_left.speed,
+            motor_right.speed,
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
         };
@@ -172,6 +177,42 @@ HAL_StatusTypeDef Vofa_Send_System(UART_HandleTypeDef *huart, const chassis_move
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+HAL_StatusTypeDef Vofa_Send_PC_Ctrl_Info(UART_HandleTypeDef *huart, const PC_Ctrl_Info_t *pc_ctrl_info)
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+            // pc_ctrl_info->rc.ch[0],
+            // pc_ctrl_info->rc.ch[1],
+            // pc_ctrl_info->rc.ch[2],
+            // pc_ctrl_info->rc.ch[3],
+            // pc_ctrl_info->rc.mode_sw,
+            // pc_ctrl_info->rc.pause,
+            // pc_ctrl_info->rc.fn_1,
+            // pc_ctrl_info->rc.fn_2,
+            // pc_ctrl_info->rc.wheel,
+            // pc_ctrl_info->rc.trigger,
+            pc_ctrl_info->mouse.x,
+            pc_ctrl_info->mouse.y,
+            pc_ctrl_info->mouse.z,
+            pc_ctrl_info->mouse.press_l,
+            pc_ctrl_info->mouse.press_r,
+            pc_ctrl_info->mouse.press_m,
+            pc_ctrl_info->key.v,
+
+
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
 HAL_StatusTypeDef Vofa_Send_Tor(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
 {
 
@@ -236,37 +277,39 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
     Vofa_Frame_t frame={
 
         .data = {
-             chassis->is_conversely,
+             // chassis->is_conversely,
         // chassis->left_leg.touching_ground,
         // chassis->right_leg.touching_ground,
        //  chassis->left_leg.front_joint.angle,
        // chassis->left_leg.back_joint.angle,
-        chassis->touchingGroung,
+        // chassis->touchingGroung,
         //力控制变量 (分析失控原因)
-        chassis->l_force,
-        chassis->r_force,
-        chassis->left_support_force,  //腿支持力
-        chassis->right_support_force,
-        chassis->leg_tor,
-        chassis->wheel_tor,
+        // chassis->l_force,
+        // chassis->r_force,
+        // chassis->left_support_force,  //腿支持力
+        // chassis->right_support_force,
+            chassis->left_leg.leg_angle,
+            chassis->right_leg.leg_angle,
+        // chassis->leg_tor,
+        // chassis->wheel_tor,
 
         //腿部状态变量 (分析动作细节)
         // chassis->right_leg.leg_angle,
         // chassis->left_leg.leg_angle,
         chassis->left_leg.leg_length,
         chassis->right_leg.leg_length, //腿长度
-        chassis->left_leg.length_dot,
-        chassis->right_leg.length_dot,
+        // chassis->left_leg.length_dot,
+        // chassis->right_leg.length_dot,
         chassis->left_leg_real_support,
         chassis->right_leg_real_support,
         // chassis->left_leg.leg_angle,
         // chassis->right_leg.leg_angle,
        //  chassis->right_leg.back_joint.angle,
        // chassis->right_leg.front_joint.angle,
-        chassis->state_ref.x_dot,
-        chassis->jump_state.jump_stage,
+        // chassis->state_ref.x_dot,
+        // chassis->jump_state.jump_stage,
 
-        chassis->leg_length_in_sky,
+        // chassis->leg_length_in_sky,
         // chassis->chassis_imu_accel[]
         // chassis->left_leg.front_joint.tor_set,
         // chassis->left_leg.back_joint.tor_set,
@@ -283,11 +326,11 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->right_leg.leg_length_set,
 
         // chassis->state_set.phi,
-        chassis->state_ref.phi,
+        // chassis->state_ref.phi,
         // chassis->state_set.theta,
-        chassis->state_ref.theta,
+        // chassis->state_ref.theta,
 
-        chassis->state_ref.x_dot,
+        // chassis->state_ref.x_dot,
             // chassis->slip_detector->left.confidence,
         // chassis->slip_detector->right.confidence,
         // chassis->state_set.x,

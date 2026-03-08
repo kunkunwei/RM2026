@@ -19,6 +19,7 @@
 #include "usart.h"
 #include "remote_control.h"
 #include "referee_info.h"
+#include "pc_uart_ctrl.h"
 
 /* Private variables ---------------------------------------------------------*/
 /*云台-底盘通信*/
@@ -49,12 +50,19 @@ void BSP_USART_Init(void)
 	  /* Starts the Referee multi_buffer DMA Transfer with interrupt enabled. */
 	USART_RxDMA_MultiBufferStart(&huart1,(uint32_t *)&(huart1.Instance->DR),(uint32_t *)REFEREE_MultiRx_Buf[0],(uint32_t *)REFEREE_MultiRx_Buf[1],REFEREE_RXFRAME_LENGTH);
 
-	/* 初始化云台-底盘通信DMA双缓冲接收 */
-	USART_RxDMA_MultiBufferStart(&huart6,
-								 (uint32_t *)&(huart6.Instance->DR),
-								 (uint32_t *)UART6_Rx_Buf[0],
-								 (uint32_t *)UART6_Rx_Buf[1],
-								 FRAME_SIZE);
+	/* 初始化云台-底盘通信DMA双缓冲接收（已被 PC 串口控制模块占用 USART6，暂时注释） */
+	/* 如需恢复底盘通信，请注释下方 pc_uart_ctrl_init，并取消本段注释，
+	 * 同时将 PC_CTRL_DEFAULT_HUART 修改为其他可用串口。              */
+	// USART_RxDMA_MultiBufferStart(&huart6,
+	// 								 (uint32_t *)&(huart6.Instance->DR),
+	// 								 (uint32_t *)UART6_Rx_Buf[0],
+	// 								 (uint32_t *)UART6_Rx_Buf[1],
+	// 								 FRAME_SIZE);
+
+	/* PC 串口控制模块初始化（默认使用 USART6，修改 PC_CTRL_DEFAULT_HUART 可切换串口）
+	 * 若切换到 USART6 以外的串口，需在下方 HAL_UARTEx_RxEventCallback 中
+	 * 为新串口添加 else-if 分支并调用 PC_Ctrl_RxHandler。               */
+	pc_uart_ctrl_init(PC_CTRL_DEFAULT_HUART);
 }
 //------------------------------------------------------------------------------
 
@@ -228,8 +236,15 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
 	}
 	else if(huart->Instance == USART6)
 	{
-		USER_USART6_RxHandler(huart,Size);
+		/* PC 串口控制（当前默认路由至此分支）
+		 * 若将 PC_CTRL_DEFAULT_HUART 改为其他串口：
+		 *   1. 将本行改回 USER_USART6_RxHandler(huart, Size) 以恢复底盘通信
+		 *   2. 在下方新增 else-if 分支处理新串口并调用 PC_Ctrl_RxHandler   */
+		PC_Ctrl_RxHandler(huart, Size);
+		// USER_USART6_RxHandler(huart, Size);  /* 底盘通信（已被 PC 控制替换）*/
 	}
+	/* 若 PC_CTRL_DEFAULT_HUART 被修改为 USART6 以外的串口，在此新增分支，例如：*/
+	// else if(huart->Instance == USART2) { PC_Ctrl_RxHandler(huart, Size); }
   /* reset the Reception Type */
 	huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;
 	

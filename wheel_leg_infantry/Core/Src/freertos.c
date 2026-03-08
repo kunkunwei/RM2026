@@ -117,19 +117,19 @@ void MX_FREERTOS_Init(void) {
   StartINSTaskHandle = osThreadCreate(osThread(StartINSTask), NULL);
 
   /* definition and creation of StartUserTask */
-  osThreadDef(StartUserTask, User_Task, osPriorityRealtime, 0, 256);
+  osThreadDef(StartUserTask, User_Task, osPriorityIdle, 0, 256);
   StartUserTaskHandle = osThreadCreate(osThread(StartUserTask), NULL);
 
   /* definition and creation of StartCanTask */
-  osThreadDef(StartCanTask, Can_Task, osPriorityIdle, 0, 256);
+  osThreadDef(StartCanTask, Can_Task, osPriorityAboveNormal, 0, 256);
   StartCanTaskHandle = osThreadCreate(osThread(StartCanTask), NULL);
 
   /* definition and creation of StartChassisTas */
-  osThreadDef(StartChassisTas, Chassis_Task, osPriorityIdle, 0, 512);
+  osThreadDef(StartChassisTas, Chassis_Task, osPriorityHigh, 0, 512);
   StartChassisTasHandle = osThreadCreate(osThread(StartChassisTas), NULL);
 
   /* definition and creation of StartObserveTas */
-  osThreadDef(StartObserveTas, ObserveTask, osPriorityIdle, 0, 256);
+  osThreadDef(StartObserveTas, ObserveTask, osPriorityHigh, 0, 256);
   StartObserveTasHandle = osThreadCreate(osThread(StartObserveTas), NULL);
 
   /* definition and creation of StartRosTask */

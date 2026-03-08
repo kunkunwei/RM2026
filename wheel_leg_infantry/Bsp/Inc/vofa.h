@@ -19,7 +19,7 @@
 // #include "main.h"
 
 
-#define VOFA_CHANNELS 4    // VOFA+通道数量
+#define VOFA_CHANNELS 10    // VOFA+通道数量
 #define VOFA_TAIL {0x00, 0x00, 0x80, 0x7F} // JustFloat协议尾部
 
 typedef  struct {
@@ -29,6 +29,7 @@ typedef  struct {
 
 void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...);
 /* JustFloat协议发送遥控器通道值 */
+HAL_StatusTypeDef Vofa_Send_PC_Ctrl_Info(UART_HandleTypeDef *huart, const PC_Ctrl_Info_t *pc_ctrl_info);
 HAL_StatusTypeDef Vofa_Send_System(UART_HandleTypeDef *huart, const chassis_move_t* chassis);
 HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const chassis_move_t* chassis);
 HAL_StatusTypeDef Vofa_Send_joint_angle(UART_HandleTypeDef *huart, const chassis_move_t* chassis);
