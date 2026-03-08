@@ -137,8 +137,8 @@
 // #define STOP_X_OFFSET 0.1410f
 // 腿部长度控制PID
 // #define LEG_LENGTH_PID_KP 300.0f
-#define LEG_LENGTH_PID_KP 750.0f
-#define LEG_LENGTH_PID_KI 3.0f
+#define LEG_LENGTH_PID_KP 780.0f
+#define LEG_LENGTH_PID_KI 2.5f
 // #define LEG_LENGTH_PID_KI 2.0f
 #define LEG_LENGTH_PID_KD 27.0f
 // #define LEG_LENGTH_PID_KD 15.0f
@@ -146,7 +146,7 @@
 #define LEG_LENGTH_PID_MAX_IOUT 20.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
-#define ANGLE_ERR_PID_KP 500.0f
+#define ANGLE_ERR_PID_KP 600.0f
 #define ANGLE_ERR_PID_KI 1.9f
 #define ANGLE_ERR_PID_KD 30.0f
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
@@ -164,6 +164,16 @@
 #define ROLL_CTRL_L_PID_KD 0.233f
 #define ROLL_CTRL_L_PID_MAX_OUT 10.0f
 #define ROLL_CTRL_L_PID_MAX_IOUT 0.7f
+
+// 跳跃双腿腿长协调 PID（被控量：左右腿长差 err_L = L_left - L_right，单位 m）
+// Kd 项等效于原速度 P 控制：Kd * err_v * dt = Kd * err_v * 0.002
+// 当 Kd=1000 时：1000 * err_v * 0.002 = 2.0 * err_v（与原 2.0f 增益一致）
+// Kp 项新增长度差比例修正，Ki 项消除持续性不对称
+#define JUMP_LEG_SYNC_PID_KP       50.0f   // 1cm 长度差 → 0.5 Nm
+#define JUMP_LEG_SYNC_PID_KI        2.0f   // 保守积分，防止空中 windup
+#define JUMP_LEG_SYNC_PID_KD     1000.0f   // 等效原 Kp_v=2.0 的速度阻尼
+#define JUMP_LEG_SYNC_PID_MAX_OUT   2.5f   // 与原 abs_limit 上限一致
+#define JUMP_LEG_SYNC_PID_MAX_IOUT  0.8f   // 积分限幅，防止过调
 //roll控制pid (ROLL补偿腿的力度)
 #define ROLL_CTRL_F_PID_KP 0.0f
 #define ROLL_CTRL_F_PID_KI 0.00f
@@ -319,6 +329,7 @@ typedef struct chassis_task
 
 	//
 	float takeoff_velocity_x;
+	float takeoff_pitch;       // 起跳瞬间机体俯仰角（rad），用于带速跳跃的方向保持与落地恢复
 
 	float last_jump_finish_time;
 	float current_time;
