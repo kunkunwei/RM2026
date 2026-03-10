@@ -288,18 +288,24 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->r_force,
         // chassis->left_support_force,  //腿支持力
         // chassis->right_support_force,
-            chassis->left_leg.leg_angle,
-            chassis->right_leg.leg_angle,
+            // chassis->left_leg.leg_angle,
+            // chassis->right_leg.leg_angle,
         // chassis->leg_tor,
         // chassis->wheel_tor,
 
         //腿部状态变量 (分析动作细节)
         // chassis->right_leg.leg_angle,
         // chassis->left_leg.leg_angle,
+            // chassis->left_leg_real_support,
+            // chassis->right_leg_real_support,
+            chassis->left_support_force,  //腿支持力
+     chassis->right_support_force,
         chassis->left_leg.leg_length,
         chassis->right_leg.leg_length, //腿长度
-        chassis->left_leg.length_dot,
-        chassis->right_leg.length_dot,
+            // chassis->left_leg.touching_ground,
+       // chassis->right_leg.touching_ground,
+        // chassis->left_leg.length_dot,
+        // chassis->right_leg.length_dot,
         // chassis->left_leg_real_support,
         // chassis->right_leg_real_support,
         // chassis->left_leg.leg_angle,
@@ -316,7 +322,8 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->right_leg.front_joint.tor_set,
         // chassis->right_leg.back_joint.tor_set,
 
-        chassis->jump_state.jump_stage,
+            chassis->touchingGroung,
+        // chassis->jump_state.jump_stage,
         // chassis->jump_state.current_time,
         // chassis->jump_state.takeoff_start_time,
         // chassis->jump_state.takeoff_time,
@@ -341,10 +348,14 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->jump_state.right_target_comp,
         // chassis->jump_state.jump_height[0],
         // chassis->jump_state.jump_height[1],
+       //      chassis->left_support_force,  //腿支持力
+       // chassis->right_support_force,
        chassis->left_leg.front_joint.tor_set,
-       // chassis->left_leg.back_joint.tor_set,
+       chassis->left_leg.back_joint.tor_set,
        chassis->right_leg.front_joint.tor_set,
        // chassis->right_leg.back_joint.tor_set,
+            chassis->chassis_imu_accel[2],
+            chassis->state_ref.phi,
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
         };

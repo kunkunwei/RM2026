@@ -165,15 +165,6 @@
 #define ROLL_CTRL_L_PID_MAX_OUT 10.0f
 #define ROLL_CTRL_L_PID_MAX_IOUT 0.7f
 
-// 跳跃双腿腿长协调 PID（被控量：左右腿长差 err_L = L_left - L_right，单位 m）
-// Kd 项等效于原速度 P 控制：Kd * err_v * dt = Kd * err_v * 0.002
-// 当 Kd=1000 时：1000 * err_v * 0.002 = 2.0 * err_v（与原 2.0f 增益一致）
-// Kp 项新增长度差比例修正，Ki 项消除持续性不对称
-#define JUMP_LEG_SYNC_PID_KP       50.0f   // 1cm 长度差 → 0.5 Nm
-#define JUMP_LEG_SYNC_PID_KI        2.0f   // 保守积分，防止空中 windup
-#define JUMP_LEG_SYNC_PID_KD     1000.0f   // 等效原 Kp_v=2.0 的速度阻尼
-#define JUMP_LEG_SYNC_PID_MAX_OUT   2.5f   // 与原 abs_limit 上限一致
-#define JUMP_LEG_SYNC_PID_MAX_IOUT  0.8f   // 积分限幅，防止过调
 //roll控制pid (ROLL补偿腿的力度)
 #define ROLL_CTRL_F_PID_KP 0.0f
 #define ROLL_CTRL_F_PID_KI 0.00f
@@ -193,6 +184,13 @@
 #define YAW_SPEED_PID_KD 0.188f
 #define YAW_SPEED_PID_MAX_OUT 10.0f
 #define YAW_SPEED_PID_MAX_IOUT 0.5f
+
+// 上下小陀螺（腿长随yaw角震荡）
+// leg = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sin(SPIN_BOB_N * chassis_yaw)
+// N=2：每旋转一圈上下两次；当前转速~0.64 rev/s → 震荡频率~1.3 Hz
+#define SPIN_BOB_AMPLITUDE  0.04f   // 腿长震荡幅度（m），±40mm
+#define SPIN_BOB_CENTER     0.20f   // 震荡中心腿长（m），略高于 INIT
+#define SPIN_BOB_N          2.0f    // 每圈震荡次数（可调：1=慢晃，2=节奏感，3=快抖）
 
 //单独的角速度环
 #define ROS_WZ_PID_KP 2.0f
@@ -228,29 +226,6 @@
 // ============ 跳跃参数（建议放在头文件） ============
 #define JUMP_COOLDOWN_MS     2000.0f   // 跳跃冷却时间（2秒)
 
-#define JUMP_LANDING_DAMPING 1.2f        // 落地阻尼系数
-#define JUMP_LANDING_STIFFNESS 1078.0f    // 落地刚度系数:k = (总重量*9.8)/伸缩量
-#define JUMP_PREPARE_PITCH_COMP 0.1f     // 准备阶段pitch补偿系数
-//空中收腿PID
-#define JUMP_LEFT_LEG_KP 700.0f
-#define JUMP_LEFT_LEG_KI 0.0f
-#define JUMP_LEFT_LEG_KD 10.0f
-#define JUMP_LEFT_LEG_MAX_IOUT 20.0f
-#define JUMP_LEFT_LEG_MAX_OUT 120.0f
-
-#define JUMP_RIGHT_LEG_KP 710.0f
-#define JUMP_RIGHT_LEG_KI 0.0f
-#define JUMP_RIGHT_LEG_KD 10.0f
-#define JUMP_RIGHT_LEG_MAX_IOUT 20.0f
-#define JUMP_RIGHT_LEG_MAX_OUT 120.0f
-
-//空中姿态控制PID 补偿力
-#define JUMP_ROLL_KP 100.00f	//57.295780
-#define JUMP_ROLL_KI 0.0f
-#define JUMP_ROLL_KD 0.5f
-#define JUMP_ROLL_MAX_OUT 65.0f
-#define JUMP_ROLL_MAX_IOUT 1.0f
-///
 
 typedef enum
 {
@@ -318,7 +293,6 @@ typedef struct chassis_task
 	bool jump_flag;
 	bool last_jump_flag;
 	uint8_t jump_stage;
-	float jump_comtorque[4];
 
 	//
 	float F0;

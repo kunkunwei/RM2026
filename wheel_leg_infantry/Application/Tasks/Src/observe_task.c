@@ -5,7 +5,7 @@
 #include "usart.h"
 #include "vofa.h"
 SlipDetector_t slip_detector;
-
+#define OBERVE_TASK_PERIOD_MS 5
 ///////////////////////////////////////////////////////////////
 /*------------------机体速度与加速度估计KF--------------------------*/
 KalmanFilter_Info_TypeDef vaEstimateKF;
@@ -113,7 +113,7 @@ void ObserveTask(void const * argument)
   	 LegPredictor_Update(&leg_predictor,local_chassis_move,local_chassis_move->leg_tor,
 	    local_chassis_move->wheel_tor,local_chassis_move->err_tor);
                 -local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
-  	osDelayUntil(&systick,5);
+  	osDelayUntil(&systick,OBERVE_TASK_PERIOD_MS);
 	}
 
 }
@@ -184,40 +184,7 @@ void xvEstimateKF_Update(KalmanFilter_Info_TypeDef *EstimateKF ,float acc,float 
       vel_acc[i] = EstimateKF->Output[i];
     }
 }
-////////////////////////////////////////////////////////////////////////////////////////
-// 基于简化WBR模型的腿摆杆角速度预测函数
-// /**
-//  * @brief 重置滤波器（使用当前实际状态初始化）
-//  */
-// void LegPredictor_Reset(chassis_move_t *chassis)
-// {
-// 	if ( chassis == NULL) return;
-//
-// 	// 获取当前实际状态
-// 	float theta_left = chassis->left_leg.leg_angle - PI/2 - chassis->chassis_pitch;
-// 	float theta_right = chassis->right_leg.leg_angle - PI/2 - chassis->chassis_pitch;
-//
-// 	float omega_left = chassis->left_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
-// 	float omega_right = chassis->right_leg.angle_dot - *(chassis->chassis_imu_gyro + INS_GYRO_X_ADDRESS_OFFSET);
-// 	//
-// 	// // 初始化左腿KF
-// 	// SingleLegKF_Init(&predictor->left_leg,
-// 	// 				predictor->dt,
-// 	// 				chassis->left_leg.leg_length,
-// 	// 				2.8f,  // 默认等效质量，需要辨识
-// 	// 				theta_left,
-// 	// 				omega_left);
-// 	//
-// 	// // 初始化右腿KF
-// 	// SingleLegKF_Init(&predictor->right_leg,
-// 	// 				predictor->dt,
-// 	// 				chassis->right_leg.leg_length,
-// 	// 				2.8f,
-// 	// 				theta_right,
-// 	// 				omega_right);
-// }
 
-////////////////////////////////////////////////////////////////////////////////////////
 fp32 get_KF_Spd(void)
 {   	
     return v_real;
