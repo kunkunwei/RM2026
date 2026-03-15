@@ -20,7 +20,6 @@ void User_Task(void const * argument)
   /* Infinite loop */
 
     osDelay(800);
-    // uint16_t buzzer=1;
     TickType_t systick = 0;
 
     static float last_refresh_dog_time = 0.0f;
@@ -44,27 +43,19 @@ void User_Task(void const * argument)
     //监测
     const SystemMonitor_t *monitor = SystemMonitor_Get();
 
-    // extern LegPredictor_t leg_predictor;
-    // float q0 = Quaternion_Info.quat[0], q1 = Quaternion_Info.quat[1], q2 = Quaternion_Info.quat[2], q3 = Quaternion_Info.quat[3];
-    // float e0 = Quaternion_Info.EulerAngle[0], e1 = Quaternion_Info.EulerAngle[1], e2 = Quaternion_Info.EulerAngle[2];
-    // float gx = BMI088_Info.gyro[0], gy = BMI088_Info.gyro[1], gz = BMI088_Info.gyro[2];
-		//float leg_cal[2];
-    //Usb_send_data_t Usb_send_data_t;
-    //Usb_dpkg_data_t* cnm = getUsbDpkgData();
-    float cpu_d=0.0f;
-    // update_gimbal_comm_status(current_time);
-    // get_safe_gimbal_cmd(&gimbal_chassis_comm.gimbal_cmd,current_time);
-    // float wz,wz_fliter;
-    // const float num = 0.2f;
-    // first_order_filter_type_t filter_t = {.input = wz, .frame_period=0.05f, .out=wz_fliter, .num=num};
-    // first_order_filter_init(&filter_t,0.05f,&num);
-    // boot_play_music();
-    chassis_comm_init();
 
+    chassis_comm_init();
+    const gimbal_ctrl_frame_t *gimbal_ctl_point = chassis_get_ctl();
     for(;;)
     {
         systick = osKernelSysTick();
         current_time=DWT_GetTimeline_ms();
+        // uart_printf(&huart1,"ctl: %d %d %d %d \r\n",
+        //     gimbal_ctl_point->ctrl_flags,
+        //     gimbal_ctl_point->gimbal_yaw,
+        //     gimbal_ctl_point->target_speed_x,
+        //     gimbal_ctl_point->target_speed_wz);
+
         // Vofa_Send_System(&huart1,local_chassis);
         // Vofa_Send_PC_Ctrl_Info(&huart1,pc_ctrl_info);
         // Vofa_Send_joint_angle(&huart1,local_chassis);
@@ -152,21 +143,8 @@ void User_Task(void const * argument)
             HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
         }
-        // printf("%.2f,%.2f\r\n",local_chassis->right_leg.leg_angle,local_chassis->left_leg.leg_angle);
-        // osDelay(5);
-        osDelayUntil(&systick, 10); // 10ms周期控制
+
+        osDelayUntil(&systick, 50); // 50ms周期控制
     }
 }
 
-// void Test_MagYaw(ist8310_real_data_t *ist8310_Info,INS_Info_Typedef *INS_Info)
-// {
-//     // 测试数据：IMU水平指向北
-//
-//     float yaw = ComputeMagYaw(ist8310_Info->calibrated_mag, INS_Info->rol_angle, INS_Info->pit_angle);
-//     uart_printf(&huart6, "期望:0°, 实际:%.1f°\r\n", yaw*57.3f);
-//
-//     // // 测试绕Z轴旋转90度（应该指向东）
-//     // float mag_east[3] = {0.0f, -0.2f, 0.4f};  // 假设
-//     // float yaw_east = ComputeMagYaw(mag_east, roll, pitch);
-//     // uart_printf(&huart6, "水平指向东 - 期望:90°, 实际:%.1f°\n", yaw_east*57.3f);
-// }

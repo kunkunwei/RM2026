@@ -673,6 +673,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
 void cacul_support(chassis_move_t *chassis_move_control_loop)
 {
     fp32 l_force = 0.0f, r_force = 0.0f;
+    static const fp32 mech_safe_min = LEG_LENGTH_MIN + 0.003f;
     // 使用双腿长度的平均值，离地修改目标腿长
 
     if (chassis_move_control_loop->touchingGroung) // 正常触地状态
@@ -714,7 +715,8 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
          */
         chassis_move_control_loop->l_force = l_force;
         chassis_move_control_loop->r_force = r_force;
-        static const fp32 gravity_comp = 50.9f; // 补偿机体重力
+        // 机体增重到约20kg后提高重力补偿，避免触地阶段整体下沉。
+        static const fp32 gravity_comp = 92.0f;
         // static const fp32 gravity_comp                 = 64.9f; // 补偿机体重力
         // static const fp32 gravity_comp                 = 40.0f; // 补偿机体重力
         chassis_move_control_loop->left_support_force = l_force + gravity_comp;
@@ -730,6 +732,20 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->left_support_force = l_force + wheel_gravity_comp;
         chassis_move_control_loop->right_support_force = r_force + wheel_gravity_comp;
     }
+
+    // 机械防撞软限位：靠近腿长下限且仍在压缩时，追加伸腿力，避免打到硬限位。
+    if (chassis_move_control_loop->left_leg.leg_length < mech_safe_min)
+    {
+        fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->left_leg.leg_length) / 0.02f, 0.0f, 1.0f);
+        fp32 compress_v = fp32_constrain(-chassis_move_control_loop->left_leg.length_dot, 0.0f, 2.5f);
+        chassis_move_control_loop->left_support_force += (55.0f * depth + 22.0f * compress_v);
+    }
+    if (chassis_move_control_loop->right_leg.leg_length < mech_safe_min)
+    {
+        fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->right_leg.leg_length) / 0.02f, 0.0f, 1.0f);
+        fp32 compress_v = fp32_constrain(-chassis_move_control_loop->right_leg.length_dot, 0.0f, 2.5f);
+        chassis_move_control_loop->right_support_force += (55.0f * depth + 22.0f * compress_v);
+    }
 }
 /**
  * @brief          ROll 补偿
@@ -740,6 +756,7 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
 void roll_compensate(chassis_move_t *chassis_move_control_loop)
 {
     fp32 feed = 0.0f;
+    static const fp32 grounded_leg_diff_max = 0.006f; // 触地阶段左右腿长差上限(6mm)
 
     fp32 roll_err = 0.0f;
     // PID补偿横滚角roll，这里作为腿长控制的外环，而不是直接补偿支持力
@@ -752,6 +769,21 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
     // 计算左右腿目标腿长
     fp32 left_target = chassis_move_control_loop->leg_length_set + roll_err;
     fp32 right_target = chassis_move_control_loop->leg_length_set - roll_err;
+
+    // 触地且非跳跃时，强制限制左右腿目标差值，避免roll环偏置把双腿拉开导致机体倾斜。
+    if (chassis_move_control_loop->touchingGroung == true && chassis_move_control_loop->jump_state.jump_stage == 0)
+    {
+        fp32 diff_target = left_target - right_target;
+        fp32 diff_limited = fp32_constrain(diff_target, -grounded_leg_diff_max, grounded_leg_diff_max);
+        if (diff_limited != diff_target)
+        {
+            chassis_move_control_loop->roll_ctrl_l_pid.Iout = 0.0f;
+            chassis_move_control_loop->tmp = diff_limited * 0.5f;
+        }
+
+        left_target = chassis_move_control_loop->leg_length_set + 0.5f * diff_limited;
+        right_target = chassis_move_control_loop->leg_length_set - 0.5f * diff_limited;
+    }
 
     // 限幅检查:如果任意一腿超出物理限制,则限制roll_err并清除积分
     if (left_target < LEG_LENGTH_MIN || left_target > LEG_LENGTH_MAX ||
@@ -820,7 +852,7 @@ static void Jump_stage_force_comp(chassis_move_t *c, uint8_t stage)
         kd = 20.0f;
         k_sync = 80.0f;
         kd_sync = 7.0f;
-        f_lim = 170.0f;
+        f_lim = 260.0f;
         break;
     default:
         c->jump_state.Fee[0] = 0.0f;
@@ -1089,7 +1121,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             float ll_dot = chassis_move_control_loop->left_leg.length_dot;
             bool_t need_hold = (ll_dot < -1.7f) ||
                                ((ll < 0.18f) && (ll_dot < 0.0f)) ||
-                               ((ll < 0.12f) && (ll_dot < 0.0f));
+                               ((ll < 0.14f) && (ll_dot < 0.0f));
             if (need_hold)
             {
                 chassis_move_control_loop->left_leg.leg_length_in_sky_set = ll;
@@ -1102,7 +1134,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             float rl_dot = chassis_move_control_loop->right_leg.length_dot;
             bool_t need_hold = (rl_dot < -1.7f) ||
                                ((rl < 0.18f) && (rl_dot < 0.0f)) ||
-                               ((rl < 0.12f) && (rl_dot < 0.0f));
+                               ((rl < 0.14f) && (rl_dot < 0.0f));
             if (need_hold)
             {
                 chassis_move_control_loop->right_leg.leg_length_in_sky_set = rl;
@@ -1112,7 +1144,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
         Jump_stage_force_comp(chassis_move_control_loop, 3);
 
-        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length < 0.12 && chassis_move_control_loop->right_leg.leg_length < 0.12); // 完成收腿;
+        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length < 0.13 && chassis_move_control_loop->right_leg.leg_length < 0.13); // 完成收腿;
         bool_t time_out_sky = (time_in_sky > 350);                                                                                                   // 超时保护
         if (compelete_shrink || time_out_sky)
         {
@@ -1133,8 +1165,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     if (chassis_move_control_loop->jump_state.jump_stage == 4)
     {
         uint32_t time_since_landing = DWT_GetTimeline_ms() - chassis_move_control_loop->jump_state.landing_time;
-        chassis_move_control_loop->left_leg.leg_length_set = 0.20f;
-        chassis_move_control_loop->right_leg.leg_length_set = 0.20f;
+        chassis_move_control_loop->left_leg.leg_length_set = 0.22f;
+        chassis_move_control_loop->right_leg.leg_length_set = 0.22f;
         chassis_move_control_loop->left_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
         chassis_move_control_loop->right_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
 
@@ -1261,12 +1293,23 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     // 状态变量x=[theata, theta_dot, x, x_dot, phi, phi_dot]T
     // u=[T,Tp]^T
 
-    // 反馈矩阵乘以一定系数用于调整
-    fp32 coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-                              {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
+    // 反馈矩阵乘以一定系数用于调整,全部0.5会高频震荡
+
+    fp32 coefficient[2][6] = {{2.0f, 1.5f, 2.0f, 1.6f, 2.0f, 1.8f},
+                              {2.0f, 1.5f, 2.0f, 1.5f, 2.0f, 1.8f}};
+    // fp32 coefficient[2][6] = {{35.0f,3.0f,25.0f,2.0f,35.0f, 2.15f}, //新矩阵系数
+    //                           {35.0f,3.0f,25.0f,2.0f,35.0f, 2.15f}};
+    // fp32 coefficient[2][6] = {{0.3f, 0.3f, 0.5f, -0.5f, 0.5f, 0.4f},
+    //                           {0.3f, 0.3f,-0.5f,  0.5f, 0.6f,  0.6f}};
+    // fp32 coefficient[2][6] = {{0.6f, 0.6f, 0.5f, -1.0f, 0.5f, 0.4f},
+    //                           {0.6f, 0.6f,-0.5f,  1.0f, 0.6f,  0.6f}};
+    // fp32 coefficient[2][6] = {{0.6f, 0.3f, 0.4f, 0.3f, 0.5f, 0.3f},
+    //                           {0.6f, 0.3f, 0.4f, 0.3f, 0.5f, 0.3f}};
     fp32 new_158_coefficient[2][6] = {{1.3f, 1.2f, 1.1f, 1.1f, 1.2f, 1.1f},
                                       {1.2f, 1.15f, 1.0f, 1.1f, 1.1f, 1.1f}};
-    fp32 jump_4_coefficient[2][6] = {{1.4f, 1.3f, 1.0f, 1.0f, 1.0f, 1.0f},
+    fp32 new_208_coefficient[2][6] = {{1.57f, 1.8f, 1.25f, 1.1f, 1.5f, 1.4f},
+                                      {1.3f, 1.8f, 1.2f, 1.1f, 1.27f, 1.4f}};
+    fp32 jump_4_coefficient[2][6] = {{1.4f, 1.3f, 1.0f, 1.0f, 1.1f, 1.0f},
                                      {1.5f, 1.2f, 1.0f, 1.0f, 1.3f, 1.3f}};
     // fp32 jump_4_coefficient[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 0.9f, 0.8f},
     //                                  {1.4f, 1.2f, 1.0f, 1.0f, 1.5f, 1.3f}};
@@ -1279,9 +1322,9 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     lqr_k(chassis_move_control_loop->leg_length, kRes);
     //[0    2    4   ..              ]
     //[1    3    5   ..              ]
-    for (int i = 0; i < 6; i++)
-        for (int j = 0; j < 2; j++)
-            k[j][i] = kRes[i * 2 + j] * new_158_coefficient[j][i];
+    // for (int i = 0; i < 6; i++)
+    //     for (int j = 0; j < 2; j++)
+    //         k[j][i] = kRes[i * 2 + j] * new_208_coefficient[j][i];
     if (chassis_move_control_loop->touchingGroung && (chassis_move_control_loop->jump_state.jump_stage == 0 || chassis_move_control_loop->jump_state.jump_stage == 1)) // 正常触地、不跳跃状态
     {
         for (int i = 0; i < 6; i++)
@@ -1459,8 +1502,8 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[2] = -tor_vector[1];
     chassis->tor_vector[3] = -tor_vector[0];
 
-    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2], 20.0f);
-    chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3], 20.0f);
+    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2], 12.0f);
+    chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3], 12.0f);
 
     leg_conv(-(chassis->left_support_force + f_bias_left), chassis->leg_tor + comp_left - err_tor,
              chassis->left_leg.back_joint.angle, chassis->left_leg.front_joint.angle,
@@ -1468,8 +1511,8 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[0] = tor_vector[0];
     chassis->tor_vector[1] = tor_vector[1];
 
-    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1], 20.0f);
-    chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 20.0f);
+    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1], 12.0f);
+    chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 12.0f);
     // chassis->right_leg.front_joint.give_current=Joint_Torque_To_CAN(&joint_ctrl[3], 3,chassis->right_leg.front_joint.joint_motor_measure->speed,&chassis->right_leg.front_joint.current_set);
     // Joint_Torque_To_CAN(&joint_ctrl[3], chassis->right_leg.front_joint.tor_set,chassis->right_leg.front_joint.joint_motor_measure->speed);
 }

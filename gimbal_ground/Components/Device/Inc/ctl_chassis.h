@@ -44,13 +44,19 @@ typedef struct {
     uint32_t tx_count;        // 发送计数
 } gimbal_comm_t;
 
-extern gimbal_comm_t gimbal_comm;
+/* gimbal_comm 已在 ctl_chassis.c 中声明为 static，外部通过 gimbal_get_feedback() 只读访问 */
 
 /* 函数声明 */
 void gimbal_comm_init(void);
 void gimbal_send_ctrl_cmd(const gimbal_t *gimbal);
 void gimbal_parse_feedback(uint8_t *data);
 uint8_t gimbal_check_comm_status(float current_time);
-chassis_feedback_frame_t* gimbal_get_feedback(void);
+const chassis_feedback_frame_t* gimbal_get_feedback(void);
+/**
+ * @brief 根据云台当前模式和遥控器输入，填充底盘控制指令并通过USART6发送
+ * @param gimbal 云台控制结构体指针
+ * @note  封装了原先在 Gimbal_task.c 中的发送逻辑，统一归属于底盘通信设备模块
+ */
+void gimbal_ctl_chassis_cmd(gimbal_t *gimbal);
 
 #endif

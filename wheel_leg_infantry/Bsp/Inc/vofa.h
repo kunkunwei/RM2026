@@ -15,11 +15,11 @@
 #include "ist8310.h"
 #include "leg_angular_predictor.h"
 #include "slip_detector.h"
-#include "User_Task.h"
+// #include "User_Task.h"
 // #include "main.h"
 
 
-#define VOFA_CHANNELS 10    // VOFA+通道数量
+#define VOFA_CHANNELS 14    // VOFA+通道数量
 #define VOFA_TAIL {0x00, 0x00, 0x80, 0x7F} // JustFloat协议尾部
 
 typedef  struct {

@@ -3,10 +3,10 @@
 #include "chassis_behaviour.h"
 #include "crc.h"
 #include "usart.h"
-#include "vofa.h"
+
 
 /* 全局通信结构体 */
-chassis_comm_t chassis_comm = {0};
+static chassis_comm_t chassis_comm = {0};
 
 /* 初始化通信 */
 void chassis_comm_init(void)
@@ -187,4 +187,9 @@ gimbal_ctrl_frame_t* chassis_get_ctrl_cmd(void)
         safe_cmd.roll_angle = chassis_comm.ctrl_cmd.roll_angle;
         return &safe_cmd;
     }
+}
+/* 获取当前控制数据（只读） */
+const gimbal_ctrl_frame_t* chassis_get_ctl(void)
+{
+    return &chassis_comm.ctrl_cmd;
 }

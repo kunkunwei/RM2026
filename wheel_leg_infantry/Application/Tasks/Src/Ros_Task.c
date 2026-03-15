@@ -15,7 +15,6 @@ void Ros_Task(void const * argument)
   /* Infinite loop */
   TickType_t systick = 0;
   extern INS_Info_Typedef INS_Info;
-  extern chassis_comm_t chassis_comm;
   const chassis_move_t* local_chassis = get_chassis_control_point();
 
   Usb_receive_data = getUsbDpkgData();

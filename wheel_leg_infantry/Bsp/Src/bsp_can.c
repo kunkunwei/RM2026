@@ -16,6 +16,7 @@
 #include "bsp_can.h"
 #include "can.h"
 #include "remote_control.h"
+#include "super_power.h"
 #include "usart.h"
 #include "User_Task.h"
 #include "vofa.h"
@@ -175,7 +176,7 @@ void BSP_CAN_Init(void)
     CAN_FilterConfig.FilterMaskIdHigh = 0x0000;
     CAN_FilterConfig.FilterMaskIdLow = 0x0000;
     CAN_FilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-    // ⚠️ 注意：不要再设置 SlaveStartFilterBank！
+    // 注意：不要再设置 SlaveStartFilterBank！
 
     /* 配置CAN2滤波器 */
     if(HAL_CAN_ConfigFilter(&hcan2, &CAN_FilterConfig) != HAL_OK) {
@@ -221,8 +222,7 @@ void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader)
 	
 	static uint32_t TxMailbox = 0;
 
-//   while( HAL_CAN_GetTxMailboxesFreeLevel( &hcan1 ) == 0 );
-	//???????CAN??
+
 	HAL_CAN_AddTxMessage(TxHeader->hcan, &TxHeader->header, TxHeader->Data, &TxMailbox);
 }
 
@@ -284,10 +284,10 @@ void CAN_Process_Data(void) {
                     get_dm8009_motor_measure(&motor_joint[header.StdId - 1], data);
                     if (header.StdId == CAN_dm8009_M3_ID) {
                         motor_joint[2].pos += 3.007557f;
-                        motor_joint[2].pos = 3.141593f - motor_joint[2].pos;
+                        motor_joint[2].pos = 3.141593f - motor_joint[2].pos-0.11f;
                     } else if (header.StdId == CAN_dm8009_M4_ID) {
                         motor_joint[3].pos += 2.158088f;
-                        motor_joint[3].pos = 3.141593f / 2.0f - motor_joint[3].pos;
+                        motor_joint[3].pos = 3.141593f / 2.0f - motor_joint[3].pos+0.07f;
                     }
                     break;
                 }
@@ -300,16 +300,30 @@ void CAN_Process_Data(void) {
         // can2_pop_count++;
         switch(header.StdId) {
         case CAN_dm8009_M1_ID:
-            // can2_m1_count++;
-            get_dm8009_motor_measure(&motor_joint[0], data);
-            motor_joint[0].pos += 3.0556903f;
-            break;
+            {
+                // can2_m1_count++;
+                get_dm8009_motor_measure(&motor_joint[0], data);
+                motor_joint[0].pos -= 3.1556903f;
+                // motor_joint[0].pos -= 3.0556903f-0.299587;
+                break;
+            }
 
         case CAN_dm8009_M2_ID:
-            // can2_m2_count++;
-            get_dm8009_motor_measure(&motor_joint[1], data);
-            motor_joint[1].pos += 0.3876503f;
-            break;
+            {
+                // can2_m2_count++;
+                get_dm8009_motor_measure(&motor_joint[1], data);
+                motor_joint[1].pos += 0.2676503f;
+                break;
+            }
+        case CAN_CHASSIS_POWER_ID:
+            {
+                get_power_measure(&chassis_super_power,data);
+                break;
+            }
+        default:
+            {
+                break;
+            }
         }
     }
 

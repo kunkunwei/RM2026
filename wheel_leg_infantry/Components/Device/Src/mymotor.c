@@ -2,7 +2,6 @@
 
 lk9025_motor_measure_t motor_right, motor_left;
 dm8009_motor_measure_t motor_joint[4];
-// dji_motor_measure_t yaw_motor;  // Yaw电机
 
 static float uint_to_float(int X_int, float X_min, float X_max, int Bits);
 
@@ -53,18 +52,7 @@ static float uint_to_float(int X_int, float X_min, float X_max, int Bits){
     float offset = X_min;
     return ((float)X_int)*span/((float)((1<<Bits)-1)) + offset;
 }
-// 计算相对角度
-// float motor_ecd_to_angle_change(uint16_t ecd, uint16_t offset_ecd)
-// {
-//     int32_t relative_ecd = ecd - offset_ecd;
-//     if (relative_ecd > Half_ecd_range) {
-//         relative_ecd -= ecd_range;
-//     } else if (relative_ecd < -Half_ecd_range) {
-//         relative_ecd += ecd_range;
-//     }
-//
-//     return relative_ecd * Motor_Ecd_to_Rad;
-// }
+
 //返回yaw电机变量地址，通过指针方式获取原始数据
 const lk9025_motor_measure_t *get_Right_Wheel_Motor_Measure_Point(void)
 {
@@ -80,10 +68,3 @@ const dm8009_motor_measure_t *get_Joint_Motor_Measure_Point(uint8_t i)
 {
     return &motor_joint[(i & 0x03)];
 }
-// /**
-//  * @brief  获取Yaw轴达妙电机数据指针
-//  * @retval dm_motor_measure_t* Yaw轴达妙电机数据结构体指针
-//  */
-// dji_motor_measure_t* get_yaw_motor(){
-//     return &yaw_motor;
-// }

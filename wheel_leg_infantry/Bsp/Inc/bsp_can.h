@@ -22,10 +22,8 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
-#include "stm32f4xx.h"
 #include "mymotor.h"
-// #include "can.h"
-#include <string.h> // for memcpy
+
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -42,11 +40,7 @@ typedef struct {
     uint8_t				Data[8];
 }CAN_TxFrameTypeDef;
 
-
-// extern lk9025_motor_measure_t motor_right, motor_left;
-// extern dm8009_motor_measure_t motor_joint[4];
-
-extern CAN_TxFrameTypeDef JointTxFrame[4],dm8009_ALL_TxFrame;
+extern CAN_TxFrameTypeDef JointTxFrame[4];
 extern CAN_TxFrameTypeDef  RMD_L9025_Left_TxFrame,RMD_L9025_Right_TxFrame,RMD_L9025_ALL_TxFrame;
 
 /**
@@ -60,13 +54,6 @@ extern void USER_CAN_TxMessage(CAN_TxFrameTypeDef *TxHeader);
 /**
   * @brief  get
   */
-// //返回右驱动轮电机变量地址，通过指针方式获取原始数据
-// extern const lk9025_motor_measure_t *get_Right_Wheel_Motor_Measure_Point(void);
-// //返回左驱动轮电机变量地址，通过指针方式获取原始数据
-// extern const lk9025_motor_measure_t *get_Left_Wheel_Motor_Measure_Point(void);
-// //返回关节电机变量地址，通过指针方式获取原始数据,i的范围是0-3，对应0x201-0x204,
-// extern const dm8009_motor_measure_t *get_Joint_Motor_Measure_Point(uint8_t i);
-
 #define CAN_RX_FIFO_SIZE 128
 
 typedef struct {

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ctl_chassis.h"
 #include "leg_angular_predictor.h"
 #include "slip_detector.h"
 #include "User_Task.h"
@@ -213,6 +214,26 @@ HAL_StatusTypeDef Vofa_Send_PC_Ctrl_Info(UART_HandleTypeDef *huart, const PC_Ctr
     status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
     return status;
 }
+HAL_StatusTypeDef Vofa_Send_gimbal_Ctrl(UART_HandleTypeDef *huart, const gimbal_ctrl_frame_t* *ctrl_info)
+{
+
+
+    Vofa_Frame_t frame={
+
+        .data = {
+            // ctrl_info
+
+
+        }, // 1初始化数据数组
+            .tail = VOFA_TAIL // 设置JustFloat协议尾部
+        };
+    HAL_StatusTypeDef status;
+
+
+    // 发送整个帧（避免逐字节发送，提高效率）
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
 HAL_StatusTypeDef Vofa_Send_Tor(UART_HandleTypeDef *huart, const chassis_move_t* chassis)
 {
 
@@ -298,10 +319,10 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->left_leg.leg_angle,
             // chassis->left_leg_real_support,
             // chassis->right_leg_real_support,
-            chassis->left_support_force,  //腿支持力
-     chassis->right_support_force,
-        chassis->left_leg.leg_length,
-        chassis->right_leg.leg_length, //腿长度
+            // chassis->left_support_force,  //腿支持力
+     // chassis->right_support_force,
+        // chassis->left_leg.leg_length,
+        // chassis->right_leg.leg_length, //腿长度
             // chassis->left_leg.touching_ground,
        // chassis->right_leg.touching_ground,
         // chassis->left_leg.length_dot,
@@ -322,7 +343,7 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
         // chassis->right_leg.front_joint.tor_set,
         // chassis->right_leg.back_joint.tor_set,
 
-            chassis->touchingGroung,
+            // chassis->touchingGroung,
         // chassis->jump_state.jump_stage,
         // chassis->jump_state.current_time,
         // chassis->jump_state.takeoff_start_time,
@@ -352,10 +373,25 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
        // chassis->right_support_force,
        chassis->left_leg.front_joint.tor_set,
        chassis->left_leg.back_joint.tor_set,
-       chassis->right_leg.front_joint.tor_set,
+       // chassis->right_leg.front_joint.tor_set,
        // chassis->right_leg.back_joint.tor_set,
-            chassis->chassis_imu_accel[2],
+            // chassis->chassis_imu_accel[2],
+            // chassis->state_set.theta,
+            // chassis->state_set.x,
+            chassis->state_set.x_dot,
+            chassis->state_set.phi,
+            chassis->left_leg.leg_length_set,
+            chassis->right_leg.leg_length_set,
+            chassis->state_ref.theta,
+            chassis->state_ref.theta_dot,
+            chassis->state_ref.x,
+            chassis->state_ref.x_dot,
             chassis->state_ref.phi,
+            chassis->state_ref.phi_dot,
+            chassis->left_leg.leg_length,
+            chassis->right_leg.leg_length, //腿长度
+            // chassis->left_leg_real_support,
+       // chassis->right_leg_real_support,
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
         };

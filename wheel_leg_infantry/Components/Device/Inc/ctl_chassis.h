@@ -63,7 +63,6 @@ typedef struct {
     uint32_t tx_count;        // 发送计数
 } chassis_comm_t;
 
-extern chassis_comm_t chassis_comm;
 
 /* 函数声明 */
 void chassis_comm_init(void);
@@ -71,5 +70,5 @@ void chassis_send_feedback(const chassis_move_t* chassis);
 void chassis_parse_ctrl_cmd(uint8_t *data);
 uint8_t chassis_check_comm_status(float current_time);
 gimbal_ctrl_frame_t* chassis_get_ctrl_cmd(void);
-
+const gimbal_ctrl_frame_t* chassis_get_ctl(void);
 #endif

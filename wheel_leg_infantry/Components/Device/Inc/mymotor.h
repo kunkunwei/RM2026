@@ -16,6 +16,8 @@ typedef enum
     CAN_RIGHT_MOTOR_ID = 0x141,
     CAN_LEFT_MOTOR_ID = 0x142,
     CAN_WHEEL_ALL_ID = 0x280,
+
+    CAN_CHASSIS_POWER_ID = 0x123
 } can_msg_id_e;
 
 //dm8009电机统一数据结构体
@@ -62,8 +64,7 @@ void get_lk9025_motor_measure(lk9025_motor_measure_t* ptr, uint8_t *rx_message);
 /* DJI电机数据解析函数声明 */
 void get_dji_motor_measure(dji_motor_measure_t* ptr, uint8_t *rx_message);
 
-// lk9025_motor_measure_t motor_right, motor_left;
-// static dm8009_motor_measure_t motor_joint[4];
+
 extern dji_motor_measure_t yaw_motor;  // Yaw轴GM6020电机
 //返回右驱动轮电机变量地址，通过指针方式获取原始数据
 extern const lk9025_motor_measure_t *get_Right_Wheel_Motor_Measure_Point(void);

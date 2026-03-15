@@ -21,7 +21,7 @@
 #include "vofa.h"
 
 /* 外部 IWDG 句柄 (如果不可用，注释掉 Refresh 调用) */
-extern IWDG_HandleTypeDef hiwdg;
+// extern IWDG_HandleTypeDef hiwdg;
 
 /* Private defines -----------------------------------------------------------*/
 #define WATCHDOG_TIMEOUT_MS   1500  // 看门狗超时阈值 (1500ms)
@@ -95,7 +95,7 @@ void Monitor_Heartbeat_Beat(void)
 void Monitor_Watchdog_Refresh(void)
 {
     // 刷新 IWDG 以防止超时
-    HAL_IWDG_Refresh(&hiwdg);
+    // HAL_IWDG_Refresh(&hiwdg);
 }
 
 Monitor_Heartbeat_t *Monitor_GetHeartbeat(void)
