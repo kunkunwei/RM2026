@@ -134,11 +134,11 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     //遥控器设置行为模式
     if (switch_is_up(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
     {
-        chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
+        chassis_behaviour_mode = CHASSIS_FOLLOW_YAW;
     }
     else if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
     {
-        chassis_behaviour_mode = CHASSIS_NO_MOVE;
+        chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
     }
     else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
     {
@@ -156,13 +156,13 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     {
         chassis_move_mode->chassis_mode = CHASSIS_FORCE_RAW; //当行为是站立时，则设置底盘状态机为 raw，原生状态机。
     }
-    else if (chassis_behaviour_mode == CHASSIS_NO_MOVE)
-    {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; //当行为是底盘不移动，则设置底盘状态机为 底盘不跟随角度 状态机。
-    }
+    // else if (chassis_behaviour_mode == CHASSIS_NO_MOVE)
+    // {
+    //     // chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; //当行为是底盘不移动，则设置底盘状态机为 底盘不跟随角度 状态机。
+    // }
     else if (chassis_behaviour_mode == CHASSIS_NO_FOLLOW_YAW)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; //当行为是底盘不跟随角度，则设置底盘状态机为 底盘不跟随角度 状态机。
+        // chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; //当行为是底盘不跟随角度，则设置底盘状态机为 底盘不跟随角度 状态机。
     }
     else if (chassis_behaviour_mode == CHASSIS_FOLLOW_YAW)
     {
@@ -188,10 +188,10 @@ void chassis_behaviour_control_set(float *vx_set, float *l_set, float *angle_set
     {
         chassis_stand_up_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);
     }
-    else if (chassis_behaviour_mode == CHASSIS_NO_MOVE)
-    {
-        chassis_no_move_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);
-    }
+    // else if (chassis_behaviour_mode == CHASSIS_NO_MOVE)
+    // {
+    //     chassis_no_move_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);
+    // }
     else if (chassis_behaviour_mode == CHASSIS_NO_FOLLOW_YAW)
     {
         chassis_no_follow_yaw_control(vx_set, l_set, angle_set, chassis_move_rc_to_vector);

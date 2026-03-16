@@ -32,7 +32,7 @@ typedef enum
 {
 	CHASSIS_ZERO_FORCE    =0,	   // 底盘无力
 	CHASSIS_STAND_UP      =1,	     // 机器人起立，中间过渡状态，由程序自动判断切换
-	CHASSIS_NO_MOVE		  =2,	     // 底盘保持不动，如果机器人还未站起，则先进入机器人起立状态机，等待站起后自动切换到此状态机
+	// CHASSIS_NO_MOVE		  =2,	     // 底盘保持不动，如果机器人还未站起，则先进入机器人起立状态机，等待站起后自动切换到此状态机
 	CHASSIS_NO_FOLLOW_YAW =3, // 底盘不跟随云台，旋转直接由遥控器设定
 	CHASSIS_FOLLOW_YAW    =4// 底盘跟随云台，旋转跟随云台角度
 } chassis_behaviour_e;

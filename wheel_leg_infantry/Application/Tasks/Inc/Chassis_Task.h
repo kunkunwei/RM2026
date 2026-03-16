@@ -115,7 +115,7 @@
 // 底盘电机最大速度
 #define MAX_WHEEL_SPEED 4.0f
 // 底盘运动过程最大前进速度
-#define NORMAL_MAX_CHASSIS_SPEED_X 1.0f
+#define NORMAL_MAX_CHASSIS_SPEED_X 2.0f
 // 底盘设置旋转速度
 #define CHASSIS_WZ_SET_SCALE 0.0f
 
@@ -232,38 +232,20 @@
 #define INS_ACCEL_Y_ADDRESS_OFFSET 0
 #define INS_ACCEL_Z_ADDRESS_OFFSET 2
 
+// ============ 控制模式切换宏 ============
+// 定义USE_GIMBAL_CTRL来切换遥控器与云台串口控制指令
+// #define USE_GIMBAL_CTRL  // 注释掉使用遥控器，取消注释使用云台串口控制
+
 // ============ 跳跃参数（建议放在头文件） ============
 #define JUMP_COOLDOWN_MS     2000.0f   // 跳跃冷却时间（2秒)
-
-// #define JUMP_LANDING_DAMPING 1.2f        // 落地阻尼系数
-// #define JUMP_LANDING_STIFFNESS 1078.0f    // 落地刚度系数:k = (总重量*9.8)/伸缩量
-// #define JUMP_PREPARE_PITCH_COMP 0.1f     // 准备阶段pitch补偿系数
-// //空中收腿PID
-// #define JUMP_LEFT_LEG_KP 700.0f
-// #define JUMP_LEFT_LEG_KI 0.0f
-// #define JUMP_LEFT_LEG_KD 10.0f
-// #define JUMP_LEFT_LEG_MAX_IOUT 20.0f
-// #define JUMP_LEFT_LEG_MAX_OUT 120.0f
-//
-// #define JUMP_RIGHT_LEG_KP 710.0f
-// #define JUMP_RIGHT_LEG_KI 0.0f
-// #define JUMP_RIGHT_LEG_KD 10.0f
-// #define JUMP_RIGHT_LEG_MAX_IOUT 20.0f
-// #define JUMP_RIGHT_LEG_MAX_OUT 120.0f
-
-// //空中姿态控制PID 补偿力
-// #define JUMP_ROLL_KP 100.00f	//57.295780
-// #define JUMP_ROLL_KI 0.0f
-// #define JUMP_ROLL_KD 0.5f
-// #define JUMP_ROLL_MAX_OUT 65.0f
-// #define JUMP_ROLL_MAX_IOUT 1.0f
-///
 
 typedef enum
 {
 	CHASSIS_FORCE_RAW=0,				  // 底盘开环控制
-	CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW=1, // 底盘跟随云台
-	CHASSIS_VECTOR_NO_FOLLOW_YAW=2,	  // 底盘不跟随云台
+	CHASSIS_TRANSITION_STAND_UP=1,		  // 过渡状态：从无力模式站起
+	CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW=2,  // 底盘跟随云台（云台正方向为机器人正方向）
+	CHASSIS_GIMBAL_FOLLOW_CHASSIS=3,	  // 云台跟随底盘（底盘正方向为机器人正方向）
+	CHASSIS_SPINNING_MODE=4,			  // 小陀螺模式（功能，不是状态机）
 } chassis_mode_e;
 
 typedef struct
