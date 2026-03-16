@@ -408,6 +408,7 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
         chassis_move_transit->left_support_force = 0.0f;
         chassis_move_transit->right_support_force = 0.0f;
         chassis_move_transit->leg_length_set = LEG_LENGTH_INIT;
+        chassis_move_transit->jump_state.jump_stage = 0;
     }
 
     chassis_move_transit->last_chassis_mode = chassis_move_transit->chassis_mode;
@@ -688,9 +689,9 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
             fp32 original_kd_l = chassis_move_control_loop->left_leg_length_pid.Kd;
 
             // 临时使用软PID参数（KP降低70%，KD增加300%增强阻尼）
-            chassis_move_control_loop->right_leg_length_pid.Kp = 300.0f; // 原650->200
+            chassis_move_control_loop->right_leg_length_pid.Kp = 600.0f; // 原650->200
             chassis_move_control_loop->right_leg_length_pid.Kd = 40.0f;  // 原15->50，强阻尼
-            chassis_move_control_loop->left_leg_length_pid.Kp = 300.0f;
+            chassis_move_control_loop->left_leg_length_pid.Kp = 600.0f;
             chassis_move_control_loop->left_leg_length_pid.Kd = 40.0f;
 
             r_force = old_PID_Calc(&chassis_move_control_loop->right_leg_length_pid, chassis_move_control_loop->right_leg.leg_length, chassis_move_control_loop->right_leg.leg_length_set);
@@ -716,7 +717,7 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->l_force = l_force;
         chassis_move_control_loop->r_force = r_force;
         // 机体增重到约20kg后提高重力补偿，避免触地阶段整体下沉。
-        static const fp32 gravity_comp = 92.0f;
+        static const fp32 gravity_comp = 72.0f;
         // static const fp32 gravity_comp                 = 64.9f; // 补偿机体重力
         // static const fp32 gravity_comp                 = 40.0f; // 补偿机体重力
         chassis_move_control_loop->left_support_force = l_force + gravity_comp;
@@ -747,6 +748,7 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->right_support_force += (55.0f * depth + 22.0f * compress_v);
     }
 }
+
 /**
  * @brief          ROll 补偿
  * @author         pxx
@@ -755,30 +757,34 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
  */
 void roll_compensate(chassis_move_t *chassis_move_control_loop)
 {
-    fp32 feed = 0.0f;
+    // BUG 1修复：跳跃阶段不执行Roll补偿，避免覆盖跳跃腿长目标
+    if (chassis_move_control_loop->jump_state.jump_stage >= 1 && 
+        chassis_move_control_loop->jump_state.jump_stage <= 4) {
+        return;
+    }
+    
     static const fp32 grounded_leg_diff_max = 0.006f; // 触地阶段左右腿长差上限(6mm)
 
+    // PID补偿横滚角roll
     fp32 roll_err = 0.0f;
-    // PID补偿横滚角roll，这里作为腿长控制的外环，而不是直接补偿支持力
     if (chassis_move_control_loop->touchingGroung == true)
-        roll_err = old_PID_Calc(&chassis_move_control_loop->roll_ctrl_l_pid, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
-
-    // 腿长设置
-    chassis_move_control_loop->tmp = roll_err;
+        roll_err = old_PID_Calc(&chassis_move_control_loop->roll_ctrl_l_pid, 
+                               chassis_move_control_loop->chassis_roll, 
+                               chassis_move_control_loop->chassis_roll_set);
 
     // 计算左右腿目标腿长
     fp32 left_target = chassis_move_control_loop->leg_length_set + roll_err;
     fp32 right_target = chassis_move_control_loop->leg_length_set - roll_err;
 
-    // 触地且非跳跃时，强制限制左右腿目标差值，避免roll环偏置把双腿拉开导致机体倾斜。
+    // 触地且非跳跃时，强制限制左右腿目标差值
     if (chassis_move_control_loop->touchingGroung == true && chassis_move_control_loop->jump_state.jump_stage == 0)
     {
         fp32 diff_target = left_target - right_target;
         fp32 diff_limited = fp32_constrain(diff_target, -grounded_leg_diff_max, grounded_leg_diff_max);
+        
         if (diff_limited != diff_target)
         {
             chassis_move_control_loop->roll_ctrl_l_pid.Iout = 0.0f;
-            chassis_move_control_loop->tmp = diff_limited * 0.5f;
         }
 
         left_target = chassis_move_control_loop->leg_length_set + 0.5f * diff_limited;
@@ -789,18 +795,20 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
     if (left_target < LEG_LENGTH_MIN || left_target > LEG_LENGTH_MAX ||
         right_target < LEG_LENGTH_MIN || right_target > LEG_LENGTH_MAX)
     {
-
         // 计算允许的最大roll_err
-        fp32 max_roll_err_left = (left_target < LEG_LENGTH_MIN) ? (LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : (LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
-        fp32 max_roll_err_right = (right_target < LEG_LENGTH_MIN) ? -(LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : -(LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
+        fp32 max_roll_err_left = (left_target < LEG_LENGTH_MIN) ? 
+            (LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : 
+            (LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
+        fp32 max_roll_err_right = (right_target < LEG_LENGTH_MIN) ? 
+            -(LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : 
+            -(LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
 
         // 取较小的限制
-        fp32 max_roll_err = (fabsf(max_roll_err_left) < fabsf(max_roll_err_right)) ? max_roll_err_left : max_roll_err_right;
+        fp32 max_roll_err = (fabsf(max_roll_err_left) < fabsf(max_roll_err_right)) ? 
+                           max_roll_err_left : max_roll_err_right;
 
-        // 限制roll_err
+        // 限制roll_err并清除积分
         roll_err = max_roll_err;
-
-        // 清除PID积分项,防止继续累积
         chassis_move_control_loop->roll_ctrl_l_pid.Iout = 0.0f;
 
         // 重新计算目标腿长
@@ -808,22 +816,9 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
         right_target = chassis_move_control_loop->leg_length_set - roll_err;
     }
 
-    chassis_move_control_loop->left_leg.leg_length_set = left_target;
-    chassis_move_control_loop->right_leg.leg_length_set = right_target;
-
-    // 最终限幅保护
-    if (chassis_move_control_loop->left_leg.leg_length_set < LEG_LENGTH_MIN)
-        chassis_move_control_loop->left_leg.leg_length_set = LEG_LENGTH_MIN;
-    if (chassis_move_control_loop->left_leg.leg_length_set > LEG_LENGTH_MAX)
-        chassis_move_control_loop->left_leg.leg_length_set = LEG_LENGTH_MAX;
-    if (chassis_move_control_loop->right_leg.leg_length_set < LEG_LENGTH_MIN)
-        chassis_move_control_loop->right_leg.leg_length_set = LEG_LENGTH_MIN;
-    if (chassis_move_control_loop->right_leg.leg_length_set > LEG_LENGTH_MAX)
-        chassis_move_control_loop->right_leg.leg_length_set = LEG_LENGTH_MAX;
-
-    // 原有的支持力补偿逻辑(保持不变)
-    // chassis_move_control_loop->left_support_force -= feed;
-    // chassis_move_control_loop->right_support_force += feed;
+    // 设置目标腿长并进行最终限幅保护
+    chassis_move_control_loop->left_leg.leg_length_set = fp32_constrain(left_target, LEG_LENGTH_MIN, LEG_LENGTH_MAX);
+    chassis_move_control_loop->right_leg.leg_length_set = fp32_constrain(right_target, LEG_LENGTH_MIN, LEG_LENGTH_MAX);
 }
 
 // 按跳跃阶段计算支持力主补偿（单位近似 N）。
@@ -860,8 +855,30 @@ static void Jump_stage_force_comp(chassis_move_t *c, uint8_t stage)
         return;
     }
 
-    float e_l = c->left_leg.leg_length_set - c->left_leg.leg_length;
-    float e_r = c->right_leg.leg_length_set - c->right_leg.leg_length;
+    // 修复BUG 3：使用独立的跳跃目标，而不是被Roll补偿修改过的leg_length_set
+    float target_left, target_right;
+    switch (stage)
+    {
+    case 2:
+        target_left = 0.37f;
+        target_right = 0.37f;
+        break;
+    case 3:
+        target_left = 0.15f;
+        target_right = 0.15f;
+        break;
+    case 4:
+        target_left = LEG_LENGTH_BUFFER;
+        target_right = LEG_LENGTH_BUFFER;
+        break;
+    default:
+        target_left = c->left_leg.leg_length_set;
+        target_right = c->right_leg.leg_length_set;
+        break;
+    }
+
+    float e_l = target_left - c->left_leg.leg_length;
+    float e_r = target_right - c->right_leg.leg_length;
     float v_l = -c->left_leg.length_dot;
     float v_r = -c->right_leg.length_dot;
 
@@ -902,23 +919,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     chassis_move_control_loop->jump_state.current_time = DWT_GetTimeline_ms();   // 当前时间（DWT高精度计时）
     uint8_t current_jump_flag = chassis_move_control_loop->jump_state.jump_flag; // 当前周期指令
 
-    // 基本补偿力矩
-    float tor1 = 0.0f;
-
-    /*计算跳跃高度的参数*/
-    float L0[2] = {0.0f, 0.0f};      // 初始时的腿部高度
-    float L1[2] = {0.0f, 0.0f};      // 伸腿后的腿部高度
-    float h1[2] = {0.0f, 0.0f};      // 伸腿高度
-    float h2[2] = {0.0f, 0.0f};      // 由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-    float h3[2] = {0.0f, 0.0f};      // 缩腿时间算出来的高度，h3=1/2*g*t3^2
-    float h_total[2] = {0.0f, 0.0f}; // 总高度
-    float jump_2_laste_time = 0.0f;
-    float jump_2_dlta_time = 0.0f;
-    float left_shrink_leg_time = 0.0f;  // 缩腿时间
-    float right_shrink_leg_time = 0.0f; // 缩腿时间
-    bool left_cal_flag = true;
-    bool right_cal_flag = true;
-    //    // ########## 核心：基于 last_jump_flag 的“边沿触发”判断 ##########
+    // ########## 核心：基于 last_jump_flag 的"边沿触发"判断 ##########
     // 1. 正在跳跃中（stage≠0）→ 忽略指令变化，不中断
     if (chassis_move_control_loop->jump_state.jump_stage != 0)
     {
@@ -928,7 +929,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->jump_state.jump_flag = 0;
         }
     }
-    // 2. 未跳跃（stage=0）→ 仅响应“0→1”的上升沿（拨杆刚拨到跳跃位置）
+    // 2. 未跳跃（stage=0）→ 仅响应"0→1"的上升沿（拨杆刚拨到跳跃位置）
     else
     {
         // 触发条件：当前=1，上一周期=0（刚按下拨杆）
@@ -947,7 +948,6 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
                 // 禁用位置介入控制，避免刹车
                 chassis_move_control_loop->position_control_intervention = false;
 
-                // chassis_move_control_loop->jump_state.takeoff_velocity = chassis_move_control_loop->state_ref.x_dot;
                 chassis_move_control_loop->jump_state.takeoff_pitch = chassis_move_control_loop->chassis_pitch; // 记录起跳俯仰角
                 chassis_move_control_loop->jump_state.takeoff_leg_length = 0.5f * (chassis_move_control_loop->left_leg.leg_length +
                                                                                    chassis_move_control_loop->right_leg.leg_length);
@@ -956,7 +956,6 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             chassis_move_control_loop->jump_state.jump_flag = 0;
         }
         // 未触发时，空中目标腿长设为缓冲值（0.20m），使意外离地/手提落地时有伸腿缓冲。
-        // 不使用 LEG_LENGTH_INIT（0.166m），否则落地时腿已缩到最短无法吸收冲击。
         chassis_move_control_loop->left_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
         chassis_move_control_loop->right_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
         chassis_move_control_loop->jump_state.Fee[0] = 0.0f;
@@ -979,17 +978,20 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
         chassis_move_control_loop->jump_state.Fee[0] = 0.0f;
         chassis_move_control_loop->jump_state.Fee[1] = 0.0f;
-        // if (chassis_move_control_loop->right_leg.leg_length < 0.125f && chassis_move_control_loop->left_leg.leg_length < 0.125f) {
-        if (chassis_move_control_loop->left_leg.leg_length < 0.125f)
+        
+        // BUG 2修复：检查双腿都缩到足够短，避免单腿缩到位就进入下一阶段
+        const float leg_retract_threshold = 0.125f; // 缩腿完成阈值
+        bool left_leg_ready = chassis_move_control_loop->left_leg.leg_length < leg_retract_threshold;
+        bool right_leg_ready = chassis_move_control_loop->right_leg.leg_length < leg_retract_threshold;
+        
+        if (left_leg_ready && right_leg_ready)
         {
             chassis_move_control_loop->jump_state.jump_stage = 2;
             chassis_move_control_loop->jump_state.takeoff_start_time = DWT_GetTimeline_ms();
 
             // 记录起跳时的水平初速度
             chassis_move_control_loop->jump_state.takeoff_velocity_x = chassis_move_control_loop->state_ref.x_dot;
-            //
-            L0[0] = chassis_move_control_loop->left_leg.leg_length;
-            L0[1] = chassis_move_control_loop->right_leg.leg_length;
+            
             chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
             chassis_move_control_loop->right_leg_length_pid.Iout = 0.0f;
         }
@@ -997,55 +999,23 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     // 起跳
     if (chassis_move_control_loop->jump_state.jump_stage == 2)
     {
-        // chassis_move_control_loop->leg_length_in_sky = 0.35f;
-
         chassis_move_control_loop->left_leg.leg_length_in_sky_set = 0.37f;
         chassis_move_control_loop->right_leg.leg_length_in_sky_set = 0.37f;
         chassis_move_control_loop->left_leg.leg_length_set = 0.37f;
         chassis_move_control_loop->right_leg.leg_length_set = 0.37f;
 
-        // 起跳方向管理：允许机器人保持起跳时的自然前倾，LQR 不应在此阶段强制归零
-        // chassis_set_contorl() 每周期写 theta=0；在此覆盖为 takeoff_pitch，
-        // 使 LQR 沿机体当前倾角方向输出推力，带速起跳的合力方向更合理
+        // 起跳方向管理：允许机器人保持起跳时的自然前倾
         chassis_move_control_loop->state_set.theta = chassis_move_control_loop->jump_state.takeoff_pitch;
         chassis_move_control_loop->state_set.theta_dot = 0.0f;
-        // 维持起跳时的前进速度，防止蹲腿期间速度损失后起跳速度不一致
+        // 维持起跳时的前进速度
         chassis_move_control_loop->state_set.x_dot = chassis_move_control_loop->jump_state.takeoff_velocity_x;
-
-        // /*计算上升高度*/
-        jump_2_dlta_time = chassis_move_control_loop->jump_state.current_time - jump_2_laste_time; // 当前时间（DWT高精度计时）
-        jump_2_laste_time = chassis_move_control_loop->jump_state.current_time;
-        float left_theata = chassis_move_control_loop->left_leg.leg_angle - PI / 2 - chassis_move_control_loop->chassis_pitch;
-        float right_theata = chassis_move_control_loop->right_leg.leg_angle - PI / 2 - chassis_move_control_loop->chassis_pitch;
-        // h2[0]+=(chassis_move_control_loop->left_leg.length_dot*cosf(left_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        // h2[1]+=(chassis_move_control_loop->right_leg.length_dot*cosf(right_theata)*jump_2_dlta_time*0.001f);;//由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        if (chassis_move_control_loop->left_leg.length_dot > 0.0f)
-        {
-            h2[0] += (chassis_move_control_loop->left_leg.length_dot * cosf(left_theata) * jump_2_dlta_time * 0.001f);
-            ; // 由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        }
-        if (chassis_move_control_loop->right_leg.length_dot > 0.0f)
-        {
-            h2[1] += (chassis_move_control_loop->right_leg.length_dot * cosf(right_theata) * jump_2_dlta_time * 0.001f);
-            ; // 由于向上的速度带来的上升高度,h2=∑-V_L0*cos(theata)*▲t
-        }
 
         Jump_stage_force_comp(chassis_move_control_loop, 2);
         if (chassis_move_control_loop->right_leg.leg_length > 0.37f && chassis_move_control_loop->left_leg.leg_length > 0.37f)
         {
-            // if ( chassis_move_control_loop->left_leg.leg_length > 0.34f) {
             chassis_move_control_loop->jump_state.jump_stage = 3;
             chassis_move_control_loop->jump_state.takeoff_time = DWT_GetTimeline_ms();
-            // chassis_move_control_loop->leg_length_in_sky=0.15f;
-            // 清零PID积分：避免起跳阶段积分积累，导致空中收腿延迟
-            // chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
-            // chassis_move_control_loop->right_leg_length_pid.Iout = 0.0f;
-            //
-            left_cal_flag = true;
-            right_cal_flag = true;
-            L1[0] = chassis_move_control_loop->left_leg.leg_length;
-            L1[1] = chassis_move_control_loop->right_leg.leg_length;
-
+            
             chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
             chassis_move_control_loop->right_leg_length_pid.Iout = 0.0f;
         }
@@ -1053,7 +1023,6 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     // 收腿（空中阶段）
     if (chassis_move_control_loop->jump_state.jump_stage == 3)
     {
-
         uint32_t time_in_sky = DWT_GetTimeline_ms() - chassis_move_control_loop->jump_state.takeoff_time;
         chassis_move_control_loop->left_leg.leg_length_in_sky_set = 0.15f;
         chassis_move_control_loop->right_leg.leg_length_in_sky_set = 0.15f;
@@ -1077,45 +1046,9 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
             }
         }
 
-        /*计算h1*/
-        h1[0] = L1[0] - L0[0]; // 伸腿后的腿部高度
-        h1[1] = L1[1] - L0[1]; // 伸腿后的腿部高度
-        /*计算上升高度*/
-
-        // jump_2_dlta_time=chassis_move_control_loop->jump_state.current_time-jump_2_laste_time;// 当前时间（DWT高精度计时）
-        // jump_2_laste_time=chassis_move_control_loop->jump_state.current_time;
-        // float left_theata=chassis_move_control_loop->left_leg.leg_angle - PI / 2 - chassis_move_control_loop->chassis_pitch;
-        // float right_theata=chassis_move_control_loop->right_leg.leg_angle - PI / 2 - chassis_move_control_loop->chassis_pitch;
-
-        /*计算h3*/
-        if (chassis_move_control_loop->left_leg.leg_length < 0.12f && left_cal_flag)
-        {
-            left_shrink_leg_time = (chassis_move_control_loop->jump_state.current_time - chassis_move_control_loop->jump_state.takeoff_time) * 0.001f;
-            ; // 缩腿时间
-            h3[0] = 0.5f * 9.8f * left_shrink_leg_time * left_shrink_leg_time;
-            ; // 缩腿时间算出来的高度，h3=1/2*g*t3^2
-            // h_total[0]=h1[0]+h3[0];//总高度
-            h_total[0] = h1[0] + h2[0] + h3[0]; // 总高度
-            left_cal_flag = false;
-        }
-        if (chassis_move_control_loop->right_leg.leg_length < 0.12f && right_cal_flag)
-        {
-            right_shrink_leg_time = (chassis_move_control_loop->jump_state.current_time - chassis_move_control_loop->jump_state.takeoff_time) * 0.001f;
-            ; // 缩腿时间
-            h3[1] = 0.5f * 9.8f * right_shrink_leg_time * right_shrink_leg_time;
-            ; // 缩腿时间算出来的高度，h3=1/2*g*t3^2
-            // h_total[1]=h1[1]+h3[1];//总高度
-            h_total[1] = h1[1] + h2[1] + h3[1]; // 总高度
-            right_cal_flag = false;
-        }
-        if (h_total[0] > (L0[0] + WHEEL_R) || h_total[1] > (L0[1] + WHEEL_R))
-        {
-            chassis_move_control_loop->jump_state.jump_height[0] = h_total[0] - L0[0] - WHEEL_R; //
-            chassis_move_control_loop->jump_state.jump_height[1] = h_total[1] - L0[1] - WHEEL_R; //
-        }
         // 空中收腿防机械限位碰撞：
-        // 1) Jump_stage_force_comp 内部做“软保护”（增大伸腿支持力）；
-        // 2) 这里做“硬保护”（冻结腿长目标），两者叠加避免打底。
+        // 1) Jump_stage_force_comp 内部做"软保护"（增大伸腿支持力）；
+        // 2) 这里做"硬保护"（冻结腿长目标），两者叠加避免打底。
         {
             float ll = chassis_move_control_loop->left_leg.leg_length;
             float ll_dot = chassis_move_control_loop->left_leg.length_dot;
@@ -1148,13 +1081,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         bool_t time_out_sky = (time_in_sky > 350);                                                                                                   // 超时保护
         if (compelete_shrink || time_out_sky)
         {
-            // if (chassis_move_control_loop->left_leg.leg_length<0.15) {
             chassis_move_control_loop->jump_state.jump_stage = 4;
             chassis_move_control_loop->jump_state.landing_time = DWT_GetTimeline_ms();
-            // chassis_move_control_loop->state_set.theta= 0.0f; // 落地后摆杆回正
-            // 记录落地瞬间收腿力，用于缓冲阶段力衔接
-            // chassis_move_control_loop->jump_state.landing_left_force = chassis_move_control_loop->left_support_force;
-            // chassis_move_control_loop->jump_state.landing_right_force = chassis_move_control_loop->right_support_force;
 
             // 清零腿长PID积分，避免落地力突变
             chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
@@ -1165,10 +1093,13 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     if (chassis_move_control_loop->jump_state.jump_stage == 4)
     {
         uint32_t time_since_landing = DWT_GetTimeline_ms() - chassis_move_control_loop->jump_state.landing_time;
-        chassis_move_control_loop->left_leg.leg_length_set = 0.22f;
-        chassis_move_control_loop->right_leg.leg_length_set = 0.22f;
-        chassis_move_control_loop->left_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
-        chassis_move_control_loop->right_leg.leg_length_in_sky_set = LEG_LENGTH_BUFFER;
+        
+        // BUG 4修复：确保左右腿目标一致，使用明确的常量定义
+        const float landing_buffer_length = LEG_LENGTH_BUFFER; // 0.22f
+        chassis_move_control_loop->left_leg.leg_length_set = landing_buffer_length;
+        chassis_move_control_loop->right_leg.leg_length_set = landing_buffer_length;
+        chassis_move_control_loop->left_leg.leg_length_in_sky_set = landing_buffer_length;
+        chassis_move_control_loop->right_leg.leg_length_in_sky_set = landing_buffer_length;
 
         float vx_abs_land = fabsf(chassis_move_control_loop->jump_state.takeoff_velocity_x);
         if (vx_abs_land > 0.8f && chassis_move_control_loop->touchingGroung == false)
@@ -1207,8 +1138,8 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         // bool_t time_enough = (time_since_landing > 600);
         bool_t leg_stable = (fabsf(chassis_move_control_loop->left_leg.length_dot) < 0.02f) &&
                             (fabsf(chassis_move_control_loop->right_leg.length_dot) < 0.02f);
-        bool_t force_stable = (fabsf(chassis_move_control_loop->left_support_force - 65.0f) < 15.0f) &&
-                              (fabsf(chassis_move_control_loop->right_support_force - 65.0f) < 15.0f);
+        bool_t force_stable = (fabsf(chassis_move_control_loop->left_support_force - 70.0f) < 15.0f) &&
+                              (fabsf(chassis_move_control_loop->right_support_force - 70.0f) < 15.0f);
         // bool_t attitude_stable = (fabsf(chassis_move_control_loop->chassis_pitch) < 0.05f); // 姿态稳定（<2.9°）
         // if (time_enough && leg_stable && force_stable && attitude_stable) {
         if (leg_stable && force_stable)
@@ -1502,8 +1433,8 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[2] = -tor_vector[1];
     chassis->tor_vector[3] = -tor_vector[0];
 
-    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2], 12.0f);
-    chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3], 12.0f);
+    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2],  20.0f);
+    chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3], 20.0f);
 
     leg_conv(-(chassis->left_support_force + f_bias_left), chassis->leg_tor + comp_left - err_tor,
              chassis->left_leg.back_joint.angle, chassis->left_leg.front_joint.angle,
@@ -1511,8 +1442,8 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[0] = tor_vector[0];
     chassis->tor_vector[1] = tor_vector[1];
 
-    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1], 12.0f);
-    chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 12.0f);
+    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1],  20.0f);
+    chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 20.0f);
     // chassis->right_leg.front_joint.give_current=Joint_Torque_To_CAN(&joint_ctrl[3], 3,chassis->right_leg.front_joint.joint_motor_measure->speed,&chassis->right_leg.front_joint.current_set);
     // Joint_Torque_To_CAN(&joint_ctrl[3], chassis->right_leg.front_joint.tor_set,chassis->right_leg.front_joint.joint_motor_measure->speed);
 }
@@ -1544,11 +1475,13 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
         return;
     }
 
-    // 获取沿杆的推力F,给出左右leg_force
-    cacul_support(chassis_move_control_loop);
-
+    // 修复执行顺序：先执行Roll补偿，设置正确的左右腿长目标
     // 通过ROLL轴补偿腿长以及推力F，离地则不补偿,给出leg_force和补偿过的leg_set
     roll_compensate(chassis_move_control_loop);
+
+    // 再用补偿后的腿长目标计算支持力
+    // 获取沿杆的推力F,给出左右leg_force
+    cacul_support(chassis_move_control_loop);
 
     // 跳跃
     Jump_control(chassis_move_control_loop); //

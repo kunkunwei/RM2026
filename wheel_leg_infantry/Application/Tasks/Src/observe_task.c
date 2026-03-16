@@ -112,7 +112,7 @@ void ObserveTask(void const * argument)
 
   	 LegPredictor_Update(&leg_predictor,local_chassis_move,local_chassis_move->leg_tor,
 	    local_chassis_move->wheel_tor,local_chassis_move->err_tor);
-                -local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
+                // -local_chassis_move->leg_length*arm_sin_f32(local_chassis_move->state_ref.theta);//
   	osDelayUntil(&systick,OBERVE_TASK_PERIOD_MS);
 	}
 

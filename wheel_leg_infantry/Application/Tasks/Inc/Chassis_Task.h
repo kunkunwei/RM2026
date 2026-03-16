@@ -124,7 +124,7 @@
 // 腿部初始长度
 #define LEG_LENGTH_INIT 0.166f
 // 腿部离地时便于缓冲需要的长度
-#define LEG_LENGTH_BUFFER 0.22f
+#define LEG_LENGTH_BUFFER 0.25f
 //跳跃时在空中收腿
 #define LEG_LENGTH_JUMPPING 0.15f
 
@@ -137,12 +137,12 @@
 // #define STOP_X_OFFSET 0.1410f
 // 腿部长度控制PID
 // #define LEG_LENGTH_PID_KP 300.0f
-#define LEG_LENGTH_PID_KP 780.0f
+#define LEG_LENGTH_PID_KP 850.0f
 #define LEG_LENGTH_PID_KI 2.5f
 // #define LEG_LENGTH_PID_KI 2.0f
-#define LEG_LENGTH_PID_KD 27.0f
+#define LEG_LENGTH_PID_KD 30.0f
 // #define LEG_LENGTH_PID_KD 15.0f
-#define LEG_LENGTH_PID_MAX_OUT 150.0f
+#define LEG_LENGTH_PID_MAX_OUT 300.0f
 #define LEG_LENGTH_PID_MAX_IOUT 20.0f
 
 // 腿部误差控制PID  位置 (双腿协调)
@@ -152,7 +152,7 @@
 #define ANGLE_ERR_PID_MAX_OUT 75.0f
 #define ANGLE_ERR_PID_MAX_IOUT 3.0f
 // 腿部角度控制PID  速度 (双腿协调)
-#define ANGLE_DOT_PID_KP 0.085f
+#define ANGLE_DOT_PID_KP 0.105f
 #define ANGLE_DOT_PID_KI 0.0f
 #define ANGLE_DOT_PID_KD 0.03f
 #define ANGLE_DOT_PID_MAX_OUT 5.0f
