@@ -34,7 +34,7 @@ void User_Task(void const * argument)
         // Vofa_Send_INS(&huart1,INS_Info,ist8310_Info);
         // Vofa_Send_Gimbal(&huart1,gimbal);
         //usbDebug_float(6.89);
-        Vofa_Send_shoot_Info(&huart6,locaal_gimbal);
+        // Vofa_Send_shoot_Info(&huart6,locaal_gimbal);
 #ifdef USE_SBUS_PROTOCOL
         if ((sbus_remote_ctrl.rc.s[0]==-1)&&(remote_ctrl.rc.s[1]==-1))
         {
