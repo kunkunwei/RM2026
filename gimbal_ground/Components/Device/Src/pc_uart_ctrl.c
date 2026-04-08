@@ -223,7 +223,7 @@ static void pc_frame_parse(const uint8_t *buf, PC_Ctrl_Info_t *ctrl)
 
   /* ---- CRC16 校验（覆盖字节 0~18，初始值 0xFFFF）---- */
   uint16_t recv_crc = (uint16_t)buf[PC_CTRL_FRAME_LENGTH - 2] | (uint16_t)buf[PC_CTRL_FRAME_LENGTH - 1] << 8;
-  uint16_t calc_crc = Get_CRC16_Check_Sum((uint8_t *)buf,
+  uint16_t calc_crc = get_CRC16_check_sum((uint8_t *)buf,
                                           PC_CTRL_FRAME_LENGTH - 2,
                                           0xFFFFu);
   if (recv_crc != calc_crc)

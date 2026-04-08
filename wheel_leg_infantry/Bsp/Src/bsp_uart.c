@@ -20,6 +20,7 @@
 #include "remote_control.h"
 #include "referee_info.h"
 #include "pc_uart_ctrl.h"
+#include "vofa.h"
 
 /* Private variables ---------------------------------------------------------*/
 /*云台-底盘通信*/
@@ -28,7 +29,7 @@ __attribute__((section(".AXI_SRAM"))) uint8_t Mode_Buf[2][1];
 uint8_t Usart_Mode = 0;
 
 __attribute__((section(".AXI_SRAM")))
-uint8_t UART6_Rx_Buf[2][FRAME_SIZE];
+uint8_t UART6_Rx_Buf[2][50];  // 32字节缓冲区，确保能接收完整帧
 
 /* Private function prototypes -----------------------------------------------*/
 /**
@@ -53,6 +54,10 @@ void BSP_USART_Init(void)
   /* 初始化云台-底盘通信DMA双缓冲接收（已被 PC 串口控制模块占用 USART6，暂时注释） */
   /* 如需恢复底盘通信，请注释下方 pc_uart_ctrl_init，并取消本段注释，
    * 同时将 PC_CTRL_DEFAULT_HUART 修改为其他可用串口。              */
+  // USART_RxDMA_MultiBufferStart(&huart6,(uint32_t *)&(huart6.Instance->DR),
+  // 								 (uint32_t *)UART6_Rx_Buf[0],
+  // 								 (uint32_t *)UART6_Rx_Buf[1],
+  // 								 FRAME_SIZE);
   USART6_RxDMA_MultiBufferStart(&huart6,
   								 (uint32_t *)&(huart6.Instance->DR),
   								 (uint32_t *)UART6_Rx_Buf[0],
@@ -250,6 +255,10 @@ static void USER_USART1_RxHandler(UART_HandleTypeDef *huart, uint16_t Size)
     }
   }
 }
+/* UART6 Rx Cache Buffer for incomplete frames */
+static uint8_t u6_rx_cache[50];
+static uint16_t u6_rx_len = 0;
+
 static void USER_USART6_RxHandler(UART_HandleTypeDef *huart, uint16_t Size)
 {
   uint8_t *rx_buf = NULL;
@@ -277,10 +286,56 @@ static void USER_USART6_RxHandler(UART_HandleTypeDef *huart, uint16_t Size)
     __HAL_DMA_SET_COUNTER(huart->hdmarx, FRAME_SIZE);
   }
 
-  /* 支持粘包：按完整帧长度解析，丢弃不足一帧的尾部 */
-  for (uint16_t offset = 0; (offset + FRAME_SIZE) <= Size; offset += FRAME_SIZE)
-  {
-    chassis_parse_ctrl_cmd(&rx_buf[offset]);
+  /* Append new data to cache */
+  // Simple overflow protection
+  if (u6_rx_len + Size > sizeof(u6_rx_cache)) {
+       u6_rx_len = 0; // Clear buffer on overflow
+  }
+
+  if (u6_rx_len + Size <= sizeof(u6_rx_cache)) {
+       memcpy(u6_rx_cache + u6_rx_len, rx_buf, Size);
+       u6_rx_len += Size;
+  }
+
+  /* Process cached data */
+  int start_idx = 0;
+  while (start_idx < u6_rx_len) {
+       // Check enough bytes for header check (need 2)
+       if (start_idx + 1 >= u6_rx_len) {
+            // Only 1 byte left. If it is AA, keep it (break loop and shift later).
+            // If not, discard (increment start_idx).
+            if (u6_rx_cache[start_idx] == UART_FRAME_HEADER1) {
+                break;
+            } else {
+                start_idx++;
+                continue;
+            }
+       }
+
+       // Check header
+       if (u6_rx_cache[start_idx] == UART_FRAME_HEADER1 &&
+           u6_rx_cache[start_idx+1] == UART_FRAME_HEADER2)
+       {
+            if (start_idx + FRAME_SIZE <= u6_rx_len) {
+                 chassis_parse_ctrl_cmd(&u6_rx_cache[start_idx]);
+                 start_idx += FRAME_SIZE;
+                 continue;
+            } else {
+                 // Waiting for rest of frame
+                 break;
+            }
+       }
+
+       start_idx++;
+  }
+
+  /* Shift remaining data to start of buffer */
+  if (start_idx > 0) {
+       uint16_t remaining = u6_rx_len > start_idx ? u6_rx_len - start_idx : 0;
+       if (remaining > 0) {
+            memmove(u6_rx_cache, &u6_rx_cache[start_idx], remaining);
+       }
+       u6_rx_len = remaining;
   }
 }
 
@@ -303,15 +358,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
   }
   else if (huart->Instance == USART6)
   {
-    /* PC 串口控制（当前默认路由至此分支）
-     * 若将 PC_CTRL_DEFAULT_HUART 改为其他串口：
-     *   1. 将本行改回 USER_USART6_RxHandler(huart, Size) 以恢复底盘通信
-     *   2. 在下方新增 else-if 分支处理新串口并调用 PC_Ctrl_RxHandler   */
-    PC_Ctrl_RxHandler(huart, Size);
-    // USER_USART6_RxHandler(huart, Size);  /* 底盘通信（已被 PC 控制替换）*/
+    /* 恢复USART6用于底盘通信 */
+    USER_USART6_RxHandler(huart, Size);
   }
   /* 若 PC_CTRL_DEFAULT_HUART 被修改为 USART6 以外的串口，在此新增分支，例如：*/
-  // else if(huart->Instance == USART2) { PC_Ctrl_RxHandler(huart, Size); }
+  // else if(huart->Instance == USART6) { PC_Ctrl_RxHandler(huart, Size); }
   /* reset the Reception Type */
   huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;
 

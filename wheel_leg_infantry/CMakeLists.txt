@@ -19,7 +19,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
 #Uncomment for hardware floating point
-add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
+#add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
+
+add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING;__FPU_PRESENT=1)
 add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
@@ -50,15 +52,15 @@ else ()
 endif ()
 
 include_directories(Core/Inc USB_DEVICE/App USB_DEVICE/Target Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include Middlewares/ST/ARM/DSP/Inc
-        Application/API/Inc Application/power_control Application/Tasks/Inc Bsp/Inc
+        Application/API/Inc Application/power_control Application/Tasks/Inc Bsp/Inc Application/Client_ui Application/referee_task
         Components/Algorithm/Inc Components/Controller/Inc Matlab_lib/inc Middlewares/ST/ARM/DSP/Inc
         Components/Device/Inc)
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "Middlewares/*.*" "USB_DEVICE/*.*" "Drivers/*.*"
-        "Application/API/*.*" "Application/power_control/*.*" "Application/shoot/*.*"
-        "Application/Tasks/*.*" "Bsp/*.*" "Components/Algorithm/*.*" "Components/Controller/*.*"
+        "Application/API/*.*" "Application/power_control/*.*" "Application/shoot/*.*" "Application/Client_ui/*.*"
+        "Application/Tasks/*.*" "Bsp/*.*" "Components/Algorithm/*.*" "Components/Controller/*.*" "Application/referee_task/*.*"
         "Components/Device/*.*" "Matlab_lib/src/*.*" )
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407IGHX_FLASH.ld)

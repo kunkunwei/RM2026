@@ -7,7 +7,7 @@
 /* 通信协议定义 */
 #define UART_FRAME_HEADER1     0xAA
 #define UART_FRAME_HEADER2     0x55
-#define FRAME_SIZE             16      // 2帧头 + 12数据 + 2CRC
+#define FRAME_SIZE             20      // 2帧头 + 16数据 + 2CRC
 
 /* 全部使用int16压缩，精度0.001 */
 
@@ -17,12 +17,13 @@ typedef struct {
     uint16_t ctrl_flags;       // bit0-3:模式, bit4:小陀螺, bit5:跳跃
     
     // 全部int16压缩 (*1000)
-    int16_t gimbal_yaw;        // 云台YAW角度 *1000 (rad)
-    int16_t yaw_rate;          // 云台YAW角速度 *1000 (rad/s)
+    int16_t gimbal_relate_yaw;        // 云台YAW角度 *1000 (rad)
     int16_t target_speed_x;    // 前进速度 *1000 (m/s)
     int16_t target_speed_wz;   // 旋转速度 *1000 (rad/s)
     int16_t target_length;     // 目标腿长 *1000 (m)
     int16_t roll_angle;        // Roll角度 *1000 (rad)
+    int16_t gimbal_yaw_absolute_pos;          // 保留字段，用于对齐
+    int16_t gimbal_yaw_gyro;          // 保留字段，用于对齐
 } gimbal_ctrl_frame_t;
 #pragma pack(pop)
 
@@ -71,4 +72,5 @@ void chassis_parse_ctrl_cmd(uint8_t *data);
 uint8_t chassis_check_comm_status(float current_time);
 gimbal_ctrl_frame_t* chassis_get_ctrl_cmd(void);
 const gimbal_ctrl_frame_t* chassis_get_ctl(void);
+uint8_t chassis_get_comm_status(void);
 #endif

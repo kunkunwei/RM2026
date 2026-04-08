@@ -3,8 +3,6 @@
 
 
 
-
-
 void User_Task(void const * argument);
 
 #endif 

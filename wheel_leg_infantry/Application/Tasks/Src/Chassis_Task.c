@@ -5,14 +5,14 @@
 // ============================================================
 // 新增算法模块头文件
 #include "bsp_dwt.h"
+#include "ctl_chassis.h"
 
 #include "leg_angular_predictor.h"
-#include "MIT_mode.h"
+
 
 #include "monitor.h"
 #include "slip_detector.h"
 
-#include "mpc_controller.h"
 #include "usart.h"
 #include "vofa.h"
 
@@ -31,7 +31,8 @@
     }
 // 底盘运动数据
 static chassis_move_t chassis_move;
-
+// 从云台通信获取控制命令
+const gimbal_ctrl_frame_t *gimbal_cmd;
 // ============================================================
 
 // ============================================================
@@ -64,6 +65,7 @@ void Chassis_Task(void const *argument)
     osDelay(100);
     TickType_t systick = 0;
     chassis_init(&chassis_move);
+    gimbal_cmd = chassis_get_ctl();
     for (;;)
     {
         systick = osKernelSysTick();
@@ -335,7 +337,7 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
     chassis_move_update->touchingGroung = Robot_Offground_detect(chassis_move_update);
 }
 /**
- * @brief          ͨ设置遥控器设置状态
+ * @brief          设置底盘模式（支持云台控制和遥控器控制双模式）
  * @author         pxx
  * @param          chassis_move_mode   底盘结构体指针
  * @retval         void
@@ -350,60 +352,118 @@ void chassis_set_mode(chassis_move_t *chassis_move_mode)
 #ifdef USE_GIMBAL_CTRL
     // 使用云台串口控制指令设置模式
     // 从云台通信获取控制命令
-    const gimbal_ctrl_frame_t *gimbal_cmd = chassis_get_ctl();
-    
-    // 获取云台发送的模式标志
-    uint16_t mode_flags = gimbal_cmd->ctrl_flags & CTRL_MODE_MASK;
-    
-    // 根据云台指令设置底盘模式
-    switch (mode_flags)
+    // 检查云台通信状态
+    static uint32_t gimbal_comm_fail_count = 0;
+    static bool_t gimbal_comm_ok = false;
+
+    // 检查云台通信是否正常（通过通信模块的状态）
+    gimbal_comm_ok = (chassis_get_comm_status() == 1);
+
+    if (gimbal_comm_ok)
     {
-    case CHASSIS_ZERO_FORCE:
-        // 云台发送无力模式指令
-        chassis_move_mode->chassis_mode = CHASSIS_FORCE_RAW;
-        break;
-        
-    case CHASSIS_FOLLOW_YAW:
-        // 云台发送跟随云台模式指令
-        // 如果当前是无力模式，需要先进入过渡状态
-        if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+        gimbal_comm_fail_count = 0; // 通信正常，重置失败计数
+
+        // 获取云台发送的模式标志
+        uint16_t mode_flags = gimbal_cmd->ctrl_flags & CTRL_MODE_MASK;
+
+        // 根据云台指令设置底盘模式（使用云台控制底盘的枚举值）
+        switch (mode_flags)
         {
-            chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+        case 0: // CHASSIS_FORCE_RAW = 0
+            // 云台发送无力模式指令
+            chassis_move_mode->chassis_mode = CHASSIS_FORCE_RAW;
+            break;
+
+        case 1: // CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW = 1
+            // 云台发送跟随云台模式指令
+            // 如果当前是无力模式，需要先进入过渡状态
+            if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+            {
+                chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+            }
+            else
+            {
+                chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW;
+            }
+            break;
+
+        case 2: // CHASSIS_VECTOR_NO_FOLLOW_YAW = 2
+            // 云台发送云台跟随底盘模式指令
+            // 如果当前是无力模式，需要先进入过渡状态
+            if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+            {
+                chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+            }
+            else
+            {
+                chassis_move_mode->chassis_mode = CHASSIS_GIMBAL_FOLLOW_CHASSIS;
+            }
+            break;
+
+        default:
+            // 未知模式，保持当前模式
+            break;
         }
-        else
+
+        // 检查小陀螺标志
+        if (gimbal_cmd->ctrl_flags & CTRL_SPINNING_MASK)
         {
-            chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW;
+            chassis_move_mode->chassis_mode = CHASSIS_SPINNING_MODE;
         }
-        break;
-        
-    case CHASSIS_NO_FOLLOW_YAW:
-        // 云台发送云台跟随底盘模式指令
-        // 如果当前是无力模式，需要先进入过渡状态
-        if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+
+        // 检查跳跃标志
+        if (gimbal_cmd->ctrl_flags & CTRL_JUMP_MASK)
         {
-            chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+            chassis_move_mode->jump_state.jump_flag = true;
         }
-        else
-        {
-            chassis_move_mode->chassis_mode = CHASSIS_GIMBAL_FOLLOW_CHASSIS;
-        }
-        break;
-        
-    default:
-        // 未知模式，保持当前模式
-        break;
     }
-    
-    // 检查小陀螺标志
-    if (gimbal_cmd->ctrl_flags & CTRL_SPINNING_MASK)
+    else
     {
-        chassis_move_mode->chassis_mode = CHASSIS_SPINNING_MODE;
-    }
-    
-    // 检查跳跃标志
-    if (gimbal_cmd->ctrl_flags & CTRL_JUMP_MASK)
-    {
-        chassis_move_mode->jump_state.jump_flag = true;
+        // 云台通信失败，切换到遥控器控制
+        gimbal_comm_fail_count++;
+
+        // 如果连续失败超过阈值，使用遥控器控制
+        if (gimbal_comm_fail_count > 50) // 约100ms (50 * 2ms)
+        {
+            // 使用遥控器设置行为模式
+            // 使用遥控器拨杆设置模式：
+            // 右上：底盘跟随云台模式（云台正方向为机器人正方向）
+            // 右中：云台跟随底盘模式（底盘正方向为机器人正方向）
+            // 右下：底盘无力模式（安全模式，输出力矩置零）
+
+            if (switch_is_up(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
+            {
+                // 右上：底盘跟随云台模式（云台正方向为机器人正方向）
+                // 如果当前是无力模式，需要先进入过渡状态
+                if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+                {
+                    chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+                }
+                else
+                {
+                    chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW;
+                }
+            }
+            else if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
+            {
+                // 右中：云台跟随底盘模式（底盘正方向为机器人正方向）
+                // 如果当前是无力模式，需要先进入过渡状态
+                if (chassis_move_mode->chassis_mode == CHASSIS_FORCE_RAW)
+                {
+                    chassis_move_mode->chassis_mode = CHASSIS_TRANSITION_STAND_UP;
+                }
+                else
+                {
+                    chassis_move_mode->chassis_mode = CHASSIS_GIMBAL_FOLLOW_CHASSIS;
+                }
+            }
+            else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
+            {
+                // 右下：底盘无力模式（安全模式）
+                chassis_move_mode->chassis_mode = CHASSIS_FORCE_RAW;
+            }
+        }
+        // 如果失败次数较少，保持当前模式不变
     }
 #else
     // 使用遥控器设置行为模式
@@ -411,7 +471,7 @@ void chassis_set_mode(chassis_move_t *chassis_move_mode)
     // 右上：底盘跟随云台模式（云台正方向为机器人正方向）
     // 右中：云台跟随底盘模式（底盘正方向为机器人正方向）
     // 右下：底盘无力模式（安全模式，输出力矩置零）
-    
+
     if (switch_is_up(chassis_move_mode->chassis_RC->rc.s[MODE_CHANNEL]))
     {
         // 右上：底盘跟随云台模式（云台正方向为机器人正方向）
@@ -464,17 +524,20 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
     }
 
     // 切入跟随云台模式（云台正方向为机器人正方向）
-    if ((chassis_move_transit->last_chassis_mode != CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW) && 
+    if ((chassis_move_transit->last_chassis_mode != CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW) &&
         chassis_move_transit->chassis_mode == CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW)
     {
         // 底盘按照转动最小的角度转到云台YAW角度为0，做到双方的正方向重合
         // 计算最小转动角度：将底盘当前yaw角度调整到0度（云台正方向）
-        chassis_move_transit->chassis_yaw_set = 0.0f;
+        // chassis_move_transit->chassis_yaw_set = 0.0f;
+        // chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
+        fp32 gimbal_yaw_rad = gimbal_cmd->gimbal_relate_yaw / 1000.0f;
+        chassis_move_transit->chassis_yaw_set = rad_format(chassis_move_transit->chassis_yaw - gimbal_yaw_rad);
         chassis_move_transit->state_set.x = 0;
         chassis_move_transit->state_ref.x = STOP_X_OFFSET;
     }
     // 切入云台跟随底盘模式（底盘正方向为机器人正方向）
-    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_GIMBAL_FOLLOW_CHASSIS) && 
+    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_GIMBAL_FOLLOW_CHASSIS) &&
              chassis_move_transit->chassis_mode == CHASSIS_GIMBAL_FOLLOW_CHASSIS)
     {
         // 云台需要按照转动最小的角度转到底盘当前YAW角度，做到双方的正方向重合
@@ -490,7 +553,7 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
     //     chassis_move_transit->state_set.x = 0;
     // }
     // 切入过渡状态（从无力模式站起）
-    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_TRANSITION_STAND_UP) && 
+    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_TRANSITION_STAND_UP) &&
              chassis_move_transit->chassis_mode == CHASSIS_TRANSITION_STAND_UP)
     {
         // 过渡状态：保持当前朝向，不允许移动和旋转
@@ -499,7 +562,7 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
         chassis_move_transit->position_control_intervention = true; // 进行位置控制，保持位置
     }
     // 切入小陀螺模式（云台正方向为机器人正方向）
-    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_SPINNING_MODE) && 
+    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_SPINNING_MODE) &&
              chassis_move_transit->chassis_mode == CHASSIS_SPINNING_MODE)
     {
         // 小陀螺模式：云台正方向作为机器人正方向，底盘会持续旋转
@@ -509,7 +572,7 @@ void chassis_mode_change_control_transit(chassis_move_t *chassis_move_transit)
         chassis_move_transit->spining_flag = true;
     }
     // 切入无力模式，清空里程计
-    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_FORCE_RAW) && 
+    else if ((chassis_move_transit->last_chassis_mode != CHASSIS_FORCE_RAW) &&
              chassis_move_transit->chassis_mode == CHASSIS_FORCE_RAW)
     {
         chassis_move_transit->left_support_force = 0.0f;
@@ -548,12 +611,33 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *add_yaw_set, chassis_move_
 
 #ifdef USE_GIMBAL_CTRL
     // 使用云台串口控制指令
-    // 从云台通信获取控制命令
-    const gimbal_ctrl_frame_t *gimbal_cmd = chassis_get_ctl();
-    
-    // 云台发送的速度指令（int16压缩，需要除以1000）
-    vx_set_channel = (float)gimbal_cmd->target_speed_x / 1000.0f;
-    add_yaw_channel = (float)gimbal_cmd->target_speed_wz / 1000.0f;
+    // 检查云台通信状态
+    bool_t gimbal_comm_ok = (chassis_get_comm_status() == 1);
+
+    if (gimbal_comm_ok)
+    {
+        // 云台通信正常，直接使用云台发送的原始RC数值
+        vx_set_channel = (float)gimbal_cmd->target_speed_x;
+        add_yaw_channel = (float)gimbal_cmd->target_speed_wz;
+        rc_deadline_limit(vx_set_channel, vx_channel, CHASSIS_RC_DEADLINE);
+        rc_deadline_limit(add_yaw_channel, wz_channel, CHASSIS_RC_DEADLINE);
+        vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
+        add_yaw_channel = -wz_channel * CHASSIS_WZ_RC_SEN;
+    }
+    else
+    {
+        // 云台通信失败，切换到遥控器控制
+        // 使用遥控器控制
+        if (wz_channel != 0)
+            add_yaw_channel = wz_channel * -CHASSIS_WZ_RC_SEN;
+        // else
+        //     add_yaw_channel = chassis_move_rc_to_vector->wz_from_ros * CHASSIS_ROS_TO_WZ;
+
+        if (vx_channel != 0)
+            vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
+        // else
+        //     vx_set_channel = chassis_move_rc_to_vector->vx_from_ros;
+    }
 #else
     // 使用遥控器控制
     ///////////////////////ROS////////////////////////////////////////////
@@ -623,13 +707,20 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *add_yaw_set, chassis_move_
 void chassis_rc_to_control_euler(fp32 *l_set, fp32 *roll_set, chassis_move_t *chassis_move_rc_to_euler)
 {
     fp32 add_l, add_l_channel;
+    fp32 roll_channel;
+#ifdef USE_GIMBAL_CTRL
+    rc_deadline_limit(gimbal_cmd->target_length, add_l_channel, CHASSIS_RC_DEADLINE);
+    add_l = add_l_channel * 0.0000006f;
+    *l_set += add_l;
+    rc_deadline_limit(gimbal_cmd->roll_angle, roll_channel, CHASSIS_RC_DEADLINE);
+    *roll_set = -roll_channel * 0.000264f;
+#else
     rc_deadline_limit(chassis_move_rc_to_euler->chassis_RC->rc.ch[CHASSIS_L_CHANNEL], add_l_channel, CHASSIS_RC_DEADLINE);
     add_l = add_l_channel * 0.0000006f;
     *l_set += add_l;
-
-    fp32 roll_channel;
     rc_deadline_limit(chassis_move_rc_to_euler->chassis_RC->rc.ch[CHASSIS_ROLL_CHANNEL], roll_channel, CHASSIS_RC_DEADLINE);
     *roll_set = -roll_channel * 0.000264f;
+#endif
 }
 
 // 腿长限制
@@ -668,11 +759,236 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
 
     // 设置速度
     fp32 vx_set = 0.0f, l_set = 0.0f, angle_set = 0.0f, roll_set = 0.0f;
+    // chassis_move_control->jump_state.jump_flag=false;
     // chassis_behaviour_control_set(&vx_set, &l_set, &angle_set, chassis_move_control);
     // 当前腿长
     l_set = chassis_move_control->leg_length_set;
     //
     chassis_move_control->jump_state.jump_flag = false;
+#ifdef USE_GIMBAL_CTRL
+    if ((gimbal_cmd->ctrl_flags & CTRL_MODE_MASK) == 0) // 云台发送无力模式指令
+    {
+        // 其余情况不设置速度和腿长
+        chassis_move_control->mit_normal_kd = MIT_KD_NORMAL;
+        vx_set = 0.0f;
+        angle_set = 0.0f;
+        roll_set = 0.0f;
+
+        //
+        old_PID_clear(&chassis_move_control->left_leg_length_pid);
+        old_PID_clear(&chassis_move_control->right_leg_length_pid);
+        old_PID_clear(&chassis_move_control->roll_ctrl_f_pid);
+        old_PID_clear(&chassis_move_control->roll_ctrl_l_pid);
+        old_PID_clear(&chassis_move_control->angle_err_pid);
+        old_PID_clear(&chassis_move_control->chassis_angle_pid);
+        return;
+    }
+
+    chassis_move_control->mit_normal_kd = MIT_KD_NORMAL;
+    chassis_rc_to_control_vector(&vx_set, &angle_set, chassis_move_control);
+    chassis_rc_to_control_euler(&l_set, &roll_set, chassis_move_control);
+    if (roll_set != 0.0f)
+    {
+        chassis_move_control->mit_normal_kd = MIT_KD_CXK;
+    }
+    // } else
+    //     if (switch_is_up(chassis_move_control->chassis_RC->rc.s[1])) // 跳跃，左边最上档
+    // {
+    //     chassis_move_control->jump_state.jump_flag = true;
+    // }
+
+    // 过渡状态：从无力模式站起
+    if (chassis_move_control->chassis_mode == CHASSIS_TRANSITION_STAND_UP)
+    {
+        // 过渡状态：让机器人站起来保持平衡
+        // 判定条件：腿长达到要求（接近初始腿长）并且phi角度接近0度
+        bool_t leg_length_ready = (fabsf(chassis_move_control->leg_length - LEG_LENGTH_INIT) < 0.02f);
+        bool_t phi_angle_ready = (fabsf(chassis_move_control->chassis_pitch) < 0.05f); // 约2.9度
+
+        if (leg_length_ready && phi_angle_ready)
+        {
+            // 达到站立条件，切换到跟随云台模式
+            chassis_move_control->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW;
+            chassis_move_control->chassis_yaw_set = 0.0f; // 云台正方向
+        }
+        else
+        {
+            // 站立过程中：保持腿长接近初始值，角度接近0
+            chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
+            chassis_move_control->state_set.phi = 0.0f;
+            chassis_move_control->state_set.phi_dot = 0.0f;
+            chassis_move_control->state_set.theta = 0.0f;
+            chassis_move_control->state_set.theta_dot = 0.0f;
+            chassis_move_control->state_set.x_dot = 0.0f;
+            chassis_move_control->state_set.x = 0.0f;
+
+            // 不允许移动和旋转
+            chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw;
+            chassis_move_control->chassis_roll_set = 0.0f;
+            chassis_move_control->position_control_intervention = true;
+        }
+        return; // 过渡状态不处理遥控器输入
+    }
+    else if (chassis_move_control->chassis_mode == CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW)
+    {
+        // 底盘跟随云台模式（云台正方向为机器人正方向）
+        // 云台顺时针转动10度，那么底盘需要快速响应顺时针转动10度，保持云台和底盘的相对角度是0
+        if ((gimbal_cmd->ctrl_flags & CTRL_SPINNING_MASK))
+        {
+            // 小陀螺模式：底盘持续旋转，云台保持相对世界坐标系角度不变
+            chassis_move_control->chassis_yaw_set += 0.008f; // ~4 rad/s ≈ 0.64 rev/s
+            chassis_move_control->spining_state = true;
+            chassis_move_control->chassis_mode = CHASSIS_SPINNING_MODE; // 切换到小陀螺模式
+
+            // 上下小陀螺：腿长随机体实际yaw角正弦震荡
+            // float bob = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sinf(SPIN_BOB_N * chassis_move_control->chassis_yaw);
+            // chassis_move_control->leg_length_set =
+            // fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
+        }
+        else if ((gimbal_cmd->ctrl_flags & CTRL_JUMP_MASK)) // 跳跃
+        {
+            chassis_move_control->jump_state.jump_flag = true;
+        }
+        else
+        {
+            chassis_move_control->spining_state = false;
+            chassis_move_control->jump_state.jump_flag = false;
+            // 底盘跟随云台：底盘yaw_set保持为0（云台正方向）
+            // chassis_move_control->chassis_yaw_set = 0.0f;
+            // chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
+        }
+
+        // 无论是否有前进速度输入，都应该处理旋转、ROLL和腿长控制
+        if (vx_set != 0) // 有前进速度输入
+        {
+            chassis_move_control->position_control_intervention = false;
+            chassis_move_control->state_set.x_dot = fp32_constrain(vx_set, chassis_move_control->vx_min_speed, chassis_move_control->vx_max_speed);
+            chassis_move_control->state_set.x = 0.0f;
+        }
+        else
+        {
+            chassis_move_control->state_set.x_dot = 0.0f;
+            chassis_move_control->state_set.x = 0.0f;
+        }
+
+        // 始终处理旋转、ROLL和腿长控制（即使没有前进速度）
+        // 底盘跟随云台模式：底盘旋转使云台YAW轴相对机器人前方的角度为0
+        // gimbal_yaw是云台YAW轴相对机器人前方的角度（弧度*1000）
+        // 我们需要底盘旋转：底盘角度 = 当前底盘角度 - gimbal_yaw
+        // 这样底盘旋转后，云台相对于机器人前方的角度就会变为0
+        fp32 gimbal_yaw_rad = gimbal_cmd->gimbal_relate_yaw / 1000.0f;
+        chassis_move_control->chassis_yaw_set = rad_format(chassis_move_control->chassis_yaw - gimbal_yaw_rad);
+        chassis_move_control->chassis_roll_set = roll_set;
+        chassis_leg_limit(chassis_move_control, l_set);
+        chassis_move_control->leg_length_set = l_set;
+    }
+    else if (chassis_move_control->chassis_mode == CHASSIS_GIMBAL_FOLLOW_CHASSIS)
+    {
+        // 云台跟随底盘模式（底盘正方向为机器人正方向）
+        // 底盘转动某个角度，云台要快速响应，按照同样的方向转动相同角度
+        // 底盘保持当前朝向，云台会跟随底盘
+        if ((gimbal_cmd->ctrl_flags & CTRL_SPINNING_MASK))
+        {
+            // 小陀螺模式：底盘持续旋转，云台不跟随底盘旋转
+            chassis_move_control->chassis_yaw_set += 0.008f;
+            chassis_move_control->spining_state = true;
+            chassis_move_control->chassis_mode = CHASSIS_SPINNING_MODE;
+
+            // float bob = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sinf(SPIN_BOB_N * chassis_move_control->chassis_yaw);
+            // chassis_move_control->leg_length_set =
+            // fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
+        }
+        else if ((gimbal_cmd->ctrl_flags & CTRL_JUMP_MASK))
+        {
+            chassis_move_control->jump_state.jump_flag = true;
+        }
+        else
+        {
+            chassis_move_control->spining_state = false;
+            // 云台跟随底盘模式：底盘保持当前朝向，云台会跟随底盘
+            // 底盘yaw_set保持为当前底盘角度，而不是0
+            // chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw;
+            // 注意：这里不重置leg_length_set，让云台可以控制腿长
+            // chassis_move_control->leg_length_set = LEG_LENGTH_INIT; // 注释掉，让云台控制腿长
+        }
+
+        // 无论是否有前进速度输入，都应该处理旋转、ROLL和腿长控制
+        if (vx_set != 0) // 有前进速度输入
+        {
+            chassis_move_control->position_control_intervention = false;
+            chassis_move_control->state_set.x_dot = fp32_constrain(vx_set, chassis_move_control->vx_min_speed, chassis_move_control->vx_max_speed);
+            chassis_move_control->state_set.x = 0.0f;
+        }
+        else
+        {
+            chassis_move_control->state_set.x_dot = 0.0f;
+            chassis_move_control->state_set.x = 0.0f;
+        }
+
+        // 始终处理旋转、ROLL和腿长控制（即使没有前进速度）
+        chassis_move_control->chassis_yaw_set = rad_format(chassis_move_control->chassis_yaw_set + angle_set);
+        chassis_move_control->chassis_roll_set = roll_set;
+        chassis_leg_limit(chassis_move_control, l_set);
+        chassis_move_control->leg_length_set = l_set;
+    }
+    else if (chassis_move_control->chassis_mode == CHASSIS_SPINNING_MODE)
+    {
+        // 小陀螺模式：底盘原地持续旋转，同时沿着云台的绝对方向前进/后退
+        //
+        // 【小陀螺模式】直接轮子差速控制
+        // 原理：固定角速度0.45 rad/s + 沿云台方向的可控线速度
+        // 1. 轮子差速直接产生0.45 rad/s的角速度（NOT通过PID）
+        // 2. 云台方向差补偿使线性运动方向对齐云台朝向
+        // 3. 不使用chassis_yaw_set+PID的控制方式
+
+        static float spinning_rotation_angle = 0.0f; // 保留以支持模式退出
+
+        // 云台的绝对yaw角度（世界坐标系，单位：弧度）
+        fp32 gimbal_absolute_yaw = gimbal_cmd->gimbal_yaw_absolute_pos / 1000.0f;
+
+        // 【关键】计算当前的方向偏差，用于轮子差速补偿
+        // delta_yaw = 云台目标方向 - 底盘当前方向
+        // 这是小陀螺模式中"需要向哪边偏离"的指示
+        fp32 direction_delta = rad_format(gimbal_absolute_yaw - chassis_move_control->chassis_yaw);
+
+        // 保存到结构体中，让chassis_control_loop在生成轮子命令时使用
+        // （会在1904-1930行的轮子电流生成时被使用）
+        chassis_move_control->spinning_direction_delta = direction_delta;
+
+        // 小陀螺模式下，不设置chassis_yaw_set来驱动PID
+        // 而是在轮子补偿阶段直接计算固定的0.45 rad/s角速度对应的轮子差速力矩
+
+        chassis_move_control->spining_state = true;
+        chassis_move_control->chassis_roll_set = roll_set;
+        chassis_leg_limit(chassis_move_control, l_set);
+        chassis_move_control->leg_length_set = l_set;
+
+        // 小陀螺模式退出检测
+        if ((gimbal_cmd->ctrl_flags & CTRL_SPINNING_MASK) == 0)
+        {
+            // 小陀螺模式退出：回到底盘跟随云台模式
+            chassis_move_control->spining_state = false;
+            spinning_rotation_angle = 0.0f;
+            chassis_move_control->spinning_direction_delta = 0.0f;
+            chassis_move_control->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW;
+            chassis_move_control->chassis_yaw_set = 0.0f;
+            chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
+        }
+
+        // 处理前进/后退速度
+        if (vx_set != 0)
+        {
+            chassis_move_control->position_control_intervention = false;
+            chassis_move_control->state_set.x_dot = fp32_constrain(vx_set, chassis_move_control->vx_min_speed, chassis_move_control->vx_max_speed);
+            chassis_move_control->state_set.x = 0.0f;
+        }
+        else
+        {
+            chassis_move_control->state_set.x_dot = 0.0f;
+            chassis_move_control->state_set.x = 0.0f;
+        }
+    }
+#else
     if (switch_is_down(chassis_move_control->chassis_RC->rc.s[0]))
     {
         // 其余情况不设置速度和腿长
@@ -712,7 +1028,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
         // 判定条件：腿长达到要求（接近初始腿长）并且phi角度接近0度
         bool_t leg_length_ready = (fabsf(chassis_move_control->leg_length - LEG_LENGTH_INIT) < 0.02f);
         bool_t phi_angle_ready = (fabsf(chassis_move_control->chassis_pitch) < 0.05f); // 约2.9度
-        
+
         if (leg_length_ready && phi_angle_ready)
         {
             // 达到站立条件，切换到跟随云台模式
@@ -729,7 +1045,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->state_set.theta_dot = 0.0f;
             chassis_move_control->state_set.x_dot = 0.0f;
             chassis_move_control->state_set.x = 0.0f;
-            
+
             // 不允许移动和旋转
             chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw;
             chassis_move_control->chassis_roll_set = 0.0f;
@@ -751,7 +1067,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             // 上下小陀螺：腿长随机体实际yaw角正弦震荡
             // float bob = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sinf(SPIN_BOB_N * chassis_move_control->chassis_yaw);
             // chassis_move_control->leg_length_set =
-                // fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
+            // fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
         }
         else if (switch_is_up(chassis_move_control->chassis_RC->rc.s[1])) // 跳跃，左边最上档
         {
@@ -764,22 +1080,24 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->chassis_yaw_set = 0.0f;
             chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
         }
-        
-        if (vx_set != 0) // 遥控器有输入
+
+        // 无论是否有前进速度输入，都应该处理旋转、ROLL和腿长控制
+        if (vx_set != 0) // 有前进速度输入
         {
             chassis_move_control->position_control_intervention = false;
             chassis_move_control->state_set.x_dot = fp32_constrain(vx_set, chassis_move_control->vx_min_speed, chassis_move_control->vx_max_speed);
             chassis_move_control->state_set.x = 0.0f;
-
-            chassis_move_control->chassis_yaw_set = rad_format(chassis_move_control->chassis_yaw_set + angle_set);
-            chassis_move_control->chassis_roll_set = roll_set;
-            chassis_leg_limit(chassis_move_control, l_set);
         }
         else
         {
             chassis_move_control->state_set.x_dot = 0.0f;
             chassis_move_control->state_set.x = 0.0f;
         }
+
+        // 始终处理旋转、ROLL和腿长控制（即使没有前进速度）
+        chassis_move_control->chassis_yaw_set = rad_format(chassis_move_control->chassis_yaw_set + angle_set);
+        chassis_move_control->chassis_roll_set = roll_set;
+        chassis_leg_limit(chassis_move_control, l_set);
     }
     else if (chassis_move_control->chassis_mode == CHASSIS_GIMBAL_FOLLOW_CHASSIS)
     {
@@ -792,7 +1110,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->chassis_yaw_set += 0.008f;
             chassis_move_control->spining_state = true;
             chassis_move_control->chassis_mode = CHASSIS_SPINNING_MODE;
-            
+
             float bob = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sinf(SPIN_BOB_N * chassis_move_control->chassis_yaw);
             chassis_move_control->leg_length_set =
                 fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
@@ -806,9 +1124,9 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->spining_state = false;
             // 云台跟随底盘：底盘保持当前朝向，云台会跟随
             chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw;
-            chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
+            // chassis_move_control->leg_length_set = LEG_LENGTH_INIT; // 注释掉，让云台控制腿长
         }
-        
+
         if (vx_set != 0)
         {
 
@@ -832,11 +1150,11 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
         // 除非遥控器控制云台转动（绝对角度转动）
         chassis_move_control->chassis_yaw_set += 0.008f;
         chassis_move_control->spining_state = true;
-        
+
         float bob = SPIN_BOB_CENTER + SPIN_BOB_AMPLITUDE * sinf(SPIN_BOB_N * chassis_move_control->chassis_yaw);
         chassis_move_control->leg_length_set =
             fp32_constrain(bob, LEG_LENGTH_MIN + 0.01f, LEG_LENGTH_MAX - 0.01f);
-        
+
         // 小陀螺模式退出检测：功能键抬起
         if (!switch_is_down(chassis_move_control->chassis_RC->rc.s[1]))
         {
@@ -847,7 +1165,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->chassis_yaw_set = 0.0f; // 转到云台正方向
             chassis_move_control->leg_length_set = LEG_LENGTH_INIT;
         }
-        
+
         if (vx_set != 0)
         {
             chassis_move_control->position_control_intervention = false;
@@ -860,6 +1178,7 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control)
             chassis_move_control->state_set.x = 0.0f;
         }
     }
+#endif
 }
 /**
  * @brief          支持力结算
@@ -871,7 +1190,21 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
 {
     fp32 l_force = 0.0f, r_force = 0.0f;
     static const fp32 mech_safe_min = LEG_LENGTH_MIN + 0.003f;
+    static uint32_t touchdown_boost_until = 0;
+    static bool_t last_touching_state = true;
+    uint32_t now_ms = DWT_GetTimeline_ms();
     // 使用双腿长度的平均值，离地修改目标腿长
+
+    // 非跳跃落阶/落地硬化窗口：离地->触地后短时增强抗压，防止底盘拍地。
+    if (chassis_move_control_loop->jump_state.jump_stage == 0)
+    {
+        bool_t touchdown_edge = (!last_touching_state && chassis_move_control_loop->touchingGroung);
+        if (touchdown_edge)
+        {
+            touchdown_boost_until = now_ms + 180; // 180ms 抗冲击窗口
+        }
+    }
+    last_touching_state = chassis_move_control_loop->touchingGroung;
 
     if (chassis_move_control_loop->touchingGroung) // 正常触地状态
     {
@@ -885,10 +1218,10 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
             fp32 original_kd_l = chassis_move_control_loop->left_leg_length_pid.Kd;
 
             // 临时使用软PID参数（KP降低70%，KD增加300%增强阻尼）
-            chassis_move_control_loop->right_leg_length_pid.Kp = 600.0f; // 原650->200
-            chassis_move_control_loop->right_leg_length_pid.Kd = 40.0f;  // 原15->50，强阻尼
-            chassis_move_control_loop->left_leg_length_pid.Kp = 600.0f;
-            chassis_move_control_loop->left_leg_length_pid.Kd = 40.0f;
+            chassis_move_control_loop->right_leg_length_pid.Kp = 850.0f; // 原650->200
+            chassis_move_control_loop->right_leg_length_pid.Kd = 160.0f; // 原15->50，强阻尼
+            chassis_move_control_loop->left_leg_length_pid.Kp = 850.0f;
+            chassis_move_control_loop->left_leg_length_pid.Kd = 160.0f;
 
             r_force = old_PID_Calc(&chassis_move_control_loop->right_leg_length_pid, chassis_move_control_loop->right_leg.leg_length, chassis_move_control_loop->right_leg.leg_length_set);
             l_force = old_PID_Calc(&chassis_move_control_loop->left_leg_length_pid, chassis_move_control_loop->left_leg.leg_length, chassis_move_control_loop->left_leg.leg_length_set);
@@ -930,18 +1263,57 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->right_support_force = r_force + wheel_gravity_comp;
     }
 
-    // 机械防撞软限位：靠近腿长下限且仍在压缩时，追加伸腿力，避免打到硬限位。
-    if (chassis_move_control_loop->left_leg.leg_length < mech_safe_min)
+    // 机械防撞软限位：仅非跳跃阶段启用，避免干扰跳跃控制。
+    if (chassis_move_control_loop->jump_state.jump_stage == 0)
     {
-        fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->left_leg.leg_length) / 0.02f, 0.0f, 1.0f);
-        fp32 compress_v = fp32_constrain(-chassis_move_control_loop->left_leg.length_dot, 0.0f, 2.5f);
-        chassis_move_control_loop->left_support_force += (55.0f * depth + 22.0f * compress_v);
+        if (chassis_move_control_loop->left_leg.leg_length < mech_safe_min)
+        {
+            fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->left_leg.leg_length) / 0.02f, 0.0f, 1.0f);
+            fp32 compress_v = fp32_constrain(-chassis_move_control_loop->left_leg.length_dot, 0.0f, 2.5f);
+            chassis_move_control_loop->left_support_force += (55.0f * depth + 22.0f * compress_v);
+        }
+        if (chassis_move_control_loop->right_leg.leg_length < mech_safe_min)
+        {
+            fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->right_leg.leg_length) / 0.02f, 0.0f, 1.0f);
+            fp32 compress_v = fp32_constrain(-chassis_move_control_loop->right_leg.length_dot, 0.0f, 2.5f);
+            chassis_move_control_loop->right_support_force += (55.0f * depth + 22.0f * compress_v);
+        }
     }
-    if (chassis_move_control_loop->right_leg.leg_length < mech_safe_min)
+
+    // 提前抗压保护：在接近下限前（约0.15m）就开始反压，避免高速压缩穿透到机械限位。
+    if (chassis_move_control_loop->jump_state.jump_stage == 0)
     {
-        fp32 depth = fp32_constrain((mech_safe_min - chassis_move_control_loop->right_leg.leg_length) / 0.02f, 0.0f, 1.0f);
-        fp32 compress_v = fp32_constrain(-chassis_move_control_loop->right_leg.length_dot, 0.0f, 2.5f);
-        chassis_move_control_loop->right_support_force += (55.0f * depth + 22.0f * compress_v);
+        const fp32 anti_bottom_start = LEG_LENGTH_MIN + 0.035f; // 约0.15m提前介入
+        const fp32 anti_bottom_hard = LEG_LENGTH_MIN + 0.010f;  // 强保护区
+
+        fp32 l_depth_pre = fp32_constrain((anti_bottom_start - chassis_move_control_loop->left_leg.leg_length) / 0.04f, 0.0f, 1.0f);
+        fp32 r_depth_pre = fp32_constrain((anti_bottom_start - chassis_move_control_loop->right_leg.leg_length) / 0.04f, 0.0f, 1.0f);
+        fp32 l_vc = fp32_constrain(-chassis_move_control_loop->left_leg.length_dot, 0.0f, 3.0f);
+        fp32 r_vc = fp32_constrain(-chassis_move_control_loop->right_leg.length_dot, 0.0f, 3.0f);
+
+        fp32 l_boost = 70.0f * l_depth_pre + 24.0f * l_vc;
+        fp32 r_boost = 70.0f * r_depth_pre + 24.0f * r_vc;
+
+        if (chassis_move_control_loop->left_leg.leg_length < anti_bottom_hard)
+        {
+            fp32 hard = fp32_constrain((anti_bottom_hard - chassis_move_control_loop->left_leg.leg_length) / 0.01f, 0.0f, 1.0f);
+            l_boost += 95.0f * hard;
+        }
+        if (chassis_move_control_loop->right_leg.leg_length < anti_bottom_hard)
+        {
+            fp32 hard = fp32_constrain((anti_bottom_hard - chassis_move_control_loop->right_leg.leg_length) / 0.01f, 0.0f, 1.0f);
+            r_boost += 95.0f * hard;
+        }
+
+        // 触地瞬时进一步硬化，专门应对下台阶第一拍。
+        if (chassis_move_control_loop->touchingGroung && now_ms < touchdown_boost_until)
+        {
+            l_boost *= 1.35f;
+            r_boost *= 1.35f;
+        }
+
+        chassis_move_control_loop->left_support_force += l_boost;
+        chassis_move_control_loop->right_support_force += r_boost;
     }
 }
 
@@ -954,19 +1326,20 @@ void cacul_support(chassis_move_t *chassis_move_control_loop)
 void roll_compensate(chassis_move_t *chassis_move_control_loop)
 {
     // BUG 1修复：跳跃阶段不执行Roll补偿，避免覆盖跳跃腿长目标
-    if (chassis_move_control_loop->jump_state.jump_stage >= 1 && 
-        chassis_move_control_loop->jump_state.jump_stage <= 4) {
+    if (chassis_move_control_loop->jump_state.jump_stage >= 1 &&
+        chassis_move_control_loop->jump_state.jump_stage <= 4)
+    {
         return;
     }
-    
+
     static const fp32 grounded_leg_diff_max = 0.006f; // 触地阶段左右腿长差上限(6mm)
 
     // PID补偿横滚角roll
     fp32 roll_err = 0.0f;
     if (chassis_move_control_loop->touchingGroung == true)
-        roll_err = old_PID_Calc(&chassis_move_control_loop->roll_ctrl_l_pid, 
-                               chassis_move_control_loop->chassis_roll, 
-                               chassis_move_control_loop->chassis_roll_set);
+        roll_err = old_PID_Calc(&chassis_move_control_loop->roll_ctrl_l_pid,
+                                chassis_move_control_loop->chassis_roll,
+                                chassis_move_control_loop->chassis_roll_set);
 
     // 计算左右腿目标腿长
     fp32 left_target = chassis_move_control_loop->leg_length_set + roll_err;
@@ -977,7 +1350,7 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
     {
         fp32 diff_target = left_target - right_target;
         fp32 diff_limited = fp32_constrain(diff_target, -grounded_leg_diff_max, grounded_leg_diff_max);
-        
+
         if (diff_limited != diff_target)
         {
             chassis_move_control_loop->roll_ctrl_l_pid.Iout = 0.0f;
@@ -992,16 +1365,11 @@ void roll_compensate(chassis_move_t *chassis_move_control_loop)
         right_target < LEG_LENGTH_MIN || right_target > LEG_LENGTH_MAX)
     {
         // 计算允许的最大roll_err
-        fp32 max_roll_err_left = (left_target < LEG_LENGTH_MIN) ? 
-            (LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : 
-            (LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
-        fp32 max_roll_err_right = (right_target < LEG_LENGTH_MIN) ? 
-            -(LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : 
-            -(LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
+        fp32 max_roll_err_left = (left_target < LEG_LENGTH_MIN) ? (LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : (LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
+        fp32 max_roll_err_right = (right_target < LEG_LENGTH_MIN) ? -(LEG_LENGTH_MIN - chassis_move_control_loop->leg_length_set) : -(LEG_LENGTH_MAX - chassis_move_control_loop->leg_length_set);
 
         // 取较小的限制
-        fp32 max_roll_err = (fabsf(max_roll_err_left) < fabsf(max_roll_err_right)) ? 
-                           max_roll_err_left : max_roll_err_right;
+        fp32 max_roll_err = (fabsf(max_roll_err_left) < fabsf(max_roll_err_right)) ? max_roll_err_left : max_roll_err_right;
 
         // 限制roll_err并清除积分
         roll_err = max_roll_err;
@@ -1025,25 +1393,25 @@ static void Jump_stage_force_comp(chassis_move_t *c, uint8_t stage)
     switch (stage)
     {
     case 2:
-        kp = 280.0f;
-        kd = 18.0f;
-        k_sync = 90.0f;
-        kd_sync = 8.0f;
+        kp = 800.0f;
+        kd = 20.0f;
+        k_sync = 180.0f;
+        kd_sync = 15.0f;
         f_lim = 150.0f;
         break;
     case 3:
-        kp = 240.0f;
+        kp = 440.0f;
         kd = 26.0f;
-        k_sync = 120.0f;
+        k_sync = 240.0f;
         kd_sync = 10.0f;
-        f_lim = 75.0f;
+        f_lim = 120.0f;
         break;
     case 4:
-        kp = 400.0f;  // 降低KP，减少超调
-        kd = 25.0f;   // 增加KD，增强阻尼
+        kp = 400.0f; // 降低KP，减少超调
+        kd = 25.0f;  // 增加KD，增强阻尼
         k_sync = 60.0f;
         kd_sync = 8.0f;
-        f_lim = 180.0f;  // 降低输出限制
+        f_lim = 180.0f; // 降低输出限制
         break;
     default:
         c->jump_state.Fee[0] = 0.0f;
@@ -1064,7 +1432,7 @@ static void Jump_stage_force_comp(chassis_move_t *c, uint8_t stage)
         target_right = 0.15f;
         break;
     case 4:
-        target_left = 0.22f;  // 降低腿长目标，从0.25f降低到0.22f
+        target_left = 0.22f; // 降低腿长目标，从0.25f降低到0.22f
         target_right = 0.22f;
         break;
     default:
@@ -1174,12 +1542,12 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
         chassis_move_control_loop->jump_state.Fee[0] = 0.0f;
         chassis_move_control_loop->jump_state.Fee[1] = 0.0f;
-        
+
         // BUG 2修复：检查双腿都缩到足够短，避免单腿缩到位就进入下一阶段
         const float leg_retract_threshold = 0.125f; // 缩腿完成阈值
         bool left_leg_ready = chassis_move_control_loop->left_leg.leg_length < leg_retract_threshold;
         bool right_leg_ready = chassis_move_control_loop->right_leg.leg_length < leg_retract_threshold;
-        
+
         if (left_leg_ready && right_leg_ready)
         {
             chassis_move_control_loop->jump_state.jump_stage = 2;
@@ -1187,7 +1555,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
             // 记录起跳时的水平初速度
             chassis_move_control_loop->jump_state.takeoff_velocity_x = chassis_move_control_loop->state_ref.x_dot;
-            
+
             chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
             chassis_move_control_loop->right_leg_length_pid.Iout = 0.0f;
         }
@@ -1207,11 +1575,11 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
         chassis_move_control_loop->state_set.x_dot = chassis_move_control_loop->jump_state.takeoff_velocity_x;
 
         Jump_stage_force_comp(chassis_move_control_loop, 2);
-        if (chassis_move_control_loop->right_leg.leg_length > 0.38f && chassis_move_control_loop->left_leg.leg_length > 0.38f)
+        if (chassis_move_control_loop->right_leg.leg_length > 0.37f && chassis_move_control_loop->left_leg.leg_length > 0.37f)
         {
             chassis_move_control_loop->jump_state.jump_stage = 3;
             chassis_move_control_loop->jump_state.takeoff_time = DWT_GetTimeline_ms();
-            
+
             chassis_move_control_loop->left_leg_length_pid.Iout = 0.0f;
             chassis_move_control_loop->right_leg_length_pid.Iout = 0.0f;
         }
@@ -1273,7 +1641,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
 
         Jump_stage_force_comp(chassis_move_control_loop, 3);
 
-        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length < 0.13 && chassis_move_control_loop->right_leg.leg_length < 0.13); // 完成收腿;
+        bool_t compelete_shrink = (chassis_move_control_loop->left_leg.leg_length < 0.14 && chassis_move_control_loop->right_leg.leg_length < 0.14); // 完成收腿;
         bool_t time_out_sky = (time_in_sky > 350);                                                                                                   // 超时保护
         if (compelete_shrink || time_out_sky)
         {
@@ -1289,7 +1657,7 @@ void Jump_control(chassis_move_t *chassis_move_control_loop)
     if (chassis_move_control_loop->jump_state.jump_stage == 4)
     {
         uint32_t time_since_landing = DWT_GetTimeline_ms() - chassis_move_control_loop->jump_state.landing_time;
-        
+
         // BUG 4修复：确保左右腿目标一致，使用明确的常量定义
         const float landing_buffer_length = 0.22f; // 降低腿长目标，从0.25f降低到0.22f
         chassis_move_control_loop->left_leg.leg_length_set = landing_buffer_length;
@@ -1482,11 +1850,11 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
         // 原地起跳参数
         //  k[1][0] = kRes[1] * 1.5f;// pitch角反馈系数（加大）
         //  k[1][1] = kRes[3] * 1.3f; // pitch角速度反馈系数（加大）
-        k[1][0] = kRes[1] * 0.5f; // theata角反馈系数（加大）
-        k[1][1] = kRes[3] * 0.7f; // theata角速度反馈系数（加大）
+        k[1][0] = kRes[1] * 1.5f; // theata角反馈系数（加大）
+        k[1][1] = kRes[3] * 1.7f; // theata角速度反馈系数（加大）
 
-        k[1][4] = kRes[9] * 0.8;  // phi角反馈系数
-        k[1][5] = kRes[11] * 0.8; // phi角速度反馈系数
+        k[1][4] = kRes[9]  * 1.3;  // phi角反馈系数
+        k[1][5] = kRes[11] * 1.3; // phi角速度反馈系数
     }
     // 设置向量
     // 控制率中的u=k(L0)(xd-x)
@@ -1505,10 +1873,65 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     chassis_move_control_loop->leg_tor *= 0.5f;
 
     //  PID计算转向 左右轮力矩差 注意过零保护
-    // 位置环，速度环
-    chassis_move_control_loop->wz_set = old_PID_Calc(&chassis_move_control_loop->chassis_angle_pid, rad_format(chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set), 0);
+    // 位置环，速度环 + 前馈控制
+    fp32 yaw_error = rad_format(chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set);
+
+    // 位置环PID计算期望角速度
+    chassis_move_control_loop->wz_set = old_PID_Calc(&chassis_move_control_loop->chassis_angle_pid, yaw_error, 0);
     // chassis_move_control_loop->wz_set = chassis_move_control_loop->wz_from_ros;
-    yaw_err_force = old_PID_Calc(&chassis_move_control_loop->chassis_yaw_gyro_pid, *(chassis_move_control_loop->chassis_imu_gyro + INS_GYRO_Z_ADDRESS_OFFSET), chassis_move_control_loop->wz_set);
+
+    // 速度环PID计算力矩 + 前馈控制
+    // 前馈控制：根据角度误差直接计算一个基础力矩，提高响应速度
+    // 前馈系数需要根据实际调试确定，这里先设置为一个较小的值
+    static const fp32 feedforward_gain = 0.5f; // 前馈增益，需要根据实际调试调整
+
+    fp32 feedforward_force = feedforward_gain * gimbal_cmd->gimbal_yaw_gyro / 1000.0f;
+    // fp32 feedforward_force = feedforward_gain * yaw_error;
+    // 速度环PID力矩
+    fp32 pid_force = old_PID_Calc(&chassis_move_control_loop->chassis_yaw_gyro_pid,
+                                  *(chassis_move_control_loop->chassis_imu_gyro + INS_GYRO_Z_ADDRESS_OFFSET),
+                                  chassis_move_control_loop->wz_set);
+
+    // 总力矩 = PID力矩 + 前馈力矩
+    // 【小陀螺模式：固定0.45 rad/s角速度 + 方向补偿】
+    // 在小陀螺模式中，yaw_err_force（轮子差速力矩）不由PID控制
+    // 而是直接计算固定角速度对应的力矩 + 方向调整补偿
+    if (chassis_move_control_loop->spining_state)
+    {
+        // 【步骤1】固定角速度对应的轮子差速力矩
+        // 角速度推导：ω = (F_right - F_left) * wheel_radius / motor_distance
+        // 反推：F_diff = ω * motor_distance / wheel_radius = 0.45 * 0.27 / 0.08 ≈ 1.5125 N
+        // 转换为力矩（在电机端）：τ = F_diff * lever_arm，lever_arm取决于机器人质量分布
+        // 经验调试系数：~111（根据实际机器人调整）
+        static const fp32 FIXED_ANGULAR_VEL = 0.45f;  // rad/s
+        static const fp32 ANG_VEL_TO_TORQUE = 111.0f; // 0.45 rad/s 对应的轮子差速力矩系数
+        fp32 fixed_yaw_torque = FIXED_ANGULAR_VEL * ANG_VEL_TO_TORQUE;
+
+        // 【步骤2】方向补偿：使线性运动方向对齐云台方向
+        // 原理：当底盘方向θ与云台目标方向φ有偏差时
+        // 需要增加左/右轮的差速来补偿方向偏差
+        static const fp32 direction_comp_gain = 4.0f;
+
+        // 速度影响因子（速度越大，需要的方向调整力矩越大）
+        fp32 velocity_factor = fabsf(chassis_move_control_loop->state_set.x_dot) /
+                               (fabsf(chassis_move_control_loop->vx_max_speed) + 0.01f);
+        velocity_factor = (velocity_factor > 1.0f) ? 1.0f : velocity_factor;
+
+        // 方向补偿项
+        fp32 direction_compensation = direction_comp_gain *
+                                      sinf(chassis_move_control_loop->spinning_direction_delta) *
+                                      velocity_factor;
+
+        // 【关键】直接覆盖yaw_err_force，不使用PID的输出
+        yaw_err_force = fixed_yaw_torque + direction_compensation;
+    }
+    else
+    {
+        // 非小陀螺模式：正常使用PID输出
+        yaw_err_force = pid_force + feedforward_force;
+    }
+
+    // yaw_err_force = pid_force + feedforward_force;
     float conf_l, conf_r;
     conf_l = get_confidence_left();
     conf_r = get_confidence_right();
@@ -1602,13 +2025,13 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
         //
         // float hip_keep = fp32_constrain(1.0f - 0.08f * fabsf(chassis->leg_tor), 0.45f, 1.0f);
         // float fb_lim = base_lim * hip_keep;
-        float fb_lim = 200.0f;
+        float fb_lim = 300.0f;
         fb_l_raw = fp32_constrain(fb_l_raw, -fb_lim, fb_lim);
         fb_r_raw = fp32_constrain(fb_r_raw, -fb_lim, fb_lim);
 
         // 低通平滑，避免支持力输入阶跃冲击 VMC。
-        f_bias_l_state = 0.72f * f_bias_l_state + 0.28f * fb_l_raw;
-        f_bias_r_state = 0.72f * f_bias_r_state + 0.28f * fb_r_raw;
+        f_bias_l_state = 0.82f * f_bias_l_state + 0.18f * fb_l_raw;
+        f_bias_r_state = 0.82f * f_bias_r_state + 0.18f * fb_r_raw;
 
         f_bias_left = f_bias_l_state;
         f_bias_right = f_bias_r_state;
@@ -1629,7 +2052,7 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[2] = -tor_vector[1];
     chassis->tor_vector[3] = -tor_vector[0];
 
-    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2],  20.0f);
+    chassis->right_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[2], 20.0f);
     chassis->right_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[3], 20.0f);
 
     leg_conv(-(chassis->left_support_force + f_bias_left), chassis->leg_tor + comp_left - err_tor,
@@ -1638,7 +2061,7 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
     chassis->tor_vector[0] = tor_vector[0];
     chassis->tor_vector[1] = tor_vector[1];
 
-    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1],  20.0f);
+    chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1], 20.0f);
     chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 20.0f);
     // chassis->right_leg.front_joint.give_current=Joint_Torque_To_CAN(&joint_ctrl[3], 3,chassis->right_leg.front_joint.joint_motor_measure->speed,&chassis->right_leg.front_joint.current_set);
     // Joint_Torque_To_CAN(&joint_ctrl[3], chassis->right_leg.front_joint.tor_set,chassis->right_leg.front_joint.joint_motor_measure->speed);
@@ -1651,7 +2074,7 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
  */
 void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 {
-    if (chassis_move_control_loop->chassis_mode == CHASSIS_FORCE_RAW)
+    if (chassis_move_control_loop->chassis_mode == CHASSIS_FORCE_RAW || (gimbal_cmd->ctrl_flags & CTRL_MODE_MASK) == 0)
     {
         chassis_move_control_loop->right_leg.front_joint.tor_set = 0;
         chassis_move_control_loop->right_leg.back_joint.tor_set = 0;

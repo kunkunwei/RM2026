@@ -28,7 +28,8 @@ typedef struct {
 
 void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...);
 /* JustFloat协议发送遥控器通道值 */
-
+HAL_StatusTypeDef Vofa_Send_shoot_Info(UART_HandleTypeDef *huart, const gimbal_t *gimbal)
+;
 // HAL_StatusTypeDef Vofa_Send_Chassis(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info,dm8009_motor_measure_t motor_joint[], chassis_move_t* chassis);
 HAL_StatusTypeDef Vofa_Send_INS(UART_HandleTypeDef *huart, INS_Info_Typedef INS_Info,ist8310_real_data_t ist8310_Info);
 HAL_StatusTypeDef Vofa_Send_RC(UART_HandleTypeDef *huart, SBUS_Remote_Info_Typedef* sbus_remote);

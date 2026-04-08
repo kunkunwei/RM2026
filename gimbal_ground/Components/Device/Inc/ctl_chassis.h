@@ -8,7 +8,7 @@
 /* 通信协议定义 */
 #define UART_FRAME_HEADER1     0xAA
 #define UART_FRAME_HEADER2     0x55
-#define FRAME_SIZE             16      // 2帧头 + 12数据 + 2CRC
+#define FRAME_SIZE             20      // 2帧头 + 16数据 + 2CRC
 
 /* 全部使用int16压缩，精度0.001 */
 

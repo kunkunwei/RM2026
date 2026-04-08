@@ -298,103 +298,26 @@ HAL_StatusTypeDef Vofa_Send_New_Chassis_Data(UART_HandleTypeDef *huart, const ch
     Vofa_Frame_t frame={
 
         .data = {
-             // chassis->is_conversely,
-        // chassis->left_leg.touching_ground,
-        // chassis->right_leg.touching_ground,
-       //  chassis->left_leg.front_joint.angle,
-       // chassis->left_leg.back_joint.angle,
-        // chassis->touchingGroung,
-        //力控制变量 (分析失控原因)
-        // chassis->l_force,
-        // chassis->r_force,
-        chassis->left_support_force,  //腿支持力
-        chassis->right_support_force,
-            // chassis->left_leg.leg_angle,
-            // chassis->right_leg.leg_angle,
-        // chassis->leg_tor,
-        // chassis->wheel_tor,
 
-        //腿部状态变量 (分析动作细节)
-        // chassis->right_leg.leg_angle,
-        // chassis->left_leg.leg_angle,
-            // chassis->left_leg_real_support,
-            // chassis->right_leg_real_support,
-            // chassis->left_support_force,  //腿支持力
-     // chassis->right_support_force,
-        // chassis->left_leg.leg_length,
-        // chassis->right_leg.leg_length, //腿长度
-            // chassis->left_leg.touching_ground,
-       // chassis->right_leg.touching_ground,
-        // chassis->left_leg.length_dot,
-        // chassis->right_leg.length_dot,
-        // chassis->left_leg_real_support,
-        // chassis->right_leg_real_support,
-        // chassis->left_leg.leg_angle,
-        // chassis->right_leg.leg_angle,
-       //  chassis->right_leg.back_joint.angle,
-       // chassis->right_leg.front_joint.angle,
-        // chassis->state_ref.x_dot,
-        // chassis->jump_state.jump_stage,
+            chassis->chassis_mode,
 
-        // chassis->leg_length_in_sky,
-        // chassis->chassis_imu_accel[]
-        // chassis->left_leg.front_joint.tor_set,
-        // chassis->left_leg.back_joint.tor_set,
-        // chassis->right_leg.front_joint.tor_set,
-        // chassis->right_leg.back_joint.tor_set,
-
-            // chassis->touchingGroung,
-        // chassis->jump_state.jump_stage,
-        // chassis->jump_state.current_time,
-        // chassis->jump_state.takeoff_start_time,
-        // chassis->jump_state.takeoff_time,
-        // chassis->jump_state.landing_time,
-        // chassis->jump_state.last_jump_finish_time,
-        // chassis->left_leg.leg_length_set ,
-        // chassis->right_leg.leg_length_set,
-
-        // chassis->state_set.phi,
-        // chassis->state_ref.phi,
-        // chassis->state_set.theta,
-        // chassis->state_ref.theta,
-
-        // chassis->state_ref.x_dot,
-            // chassis->slip_detector->left.confidence,
-        // chassis->slip_detector->right.confidence,
-        // chassis->state_set.x,
-        // chassis->state_set.x_dot,
-        // chassis->state_set.theta,
-        // chassis->state_set.phi,
-        // chassis->jump_state.left_target_comp ,
-        // chassis->jump_state.right_target_comp,
-        // chassis->jump_state.jump_height[0],
-        // chassis->jump_state.jump_height[1],
-       //      chassis->left_support_force,  //腿支持力
-       // chassis->right_support_force,
        // chassis->left_leg.front_joint.tor_set,
        // chassis->left_leg.back_joint.tor_set,
-       // chassis->right_leg.front_joint.tor_set,
-       // chassis->right_leg.back_joint.tor_set,
-            // chassis->chassis_imu_accel[2],
-            // chassis->state_set.theta,
+
             // chassis->state_set.x,
-            chassis->jump_state.jump_flag,
             chassis->jump_state.jump_stage,
-            chassis->chassis_roll,
-            // chassis->state_set.x_dot,
+            chassis->jump_state.Fee[0],
+            chassis->jump_state.jump_flag,
+
+            chassis->state_set.x_dot,
             // chassis->state_set.phi,
             chassis->left_leg.leg_length_set,
             chassis->right_leg.leg_length_set,
-            chassis->state_ref.theta,
-            chassis->state_ref.theta_dot,
-            // chassis->state_ref.x,
-            // chassis->state_ref.x_dot,
-            chassis->state_ref.phi,
-            chassis->state_ref.phi_dot,
+
             chassis->left_leg.leg_length,
             chassis->right_leg.leg_length, //腿长度
-            // chassis->left_leg_real_support,
-       // chassis->right_leg_real_support,
+            chassis->left_support_force,
+            chassis->right_support_force,
         }, // 1初始化数据数组
             .tail = VOFA_TAIL // 设置JustFloat协议尾部
         };
@@ -819,6 +742,66 @@ HAL_StatusTypeDef Vofa_Send_Q(UART_HandleTypeDef *huart, INS_Info_Typedef INS_In
     return status;
 }
 
+/**
+  * @brief          发送云台控制指令信息到VOFA
+  * @author         Cline
+  * @param[in]      huart: 串口句柄
+  * @param[in]      ctrl_cmd: 云台控制指令指针
+  * @retval         HAL_StatusTypeDef: HAL_OK表示成功，其他表示失败
+  */
+HAL_StatusTypeDef Vofa_Send_GIMBAL_Ctrl_Info(UART_HandleTypeDef *huart, const gimbal_ctrl_frame_t* ctrl_cmd)
+{
+    if (ctrl_cmd == NULL)
+    {
+        return HAL_ERROR;
+    }
+
+    /* 调试输出：打印接收到的原始数据和转换后的浮点数 */
+    // static uint32_t debug_cnt = 0;
+    // if (debug_cnt++ % 50 == 0) // 降低打印频率
+    // {
+    //     uart_printf(huart, "CMD RAW: Yaw=%d SpdX=%d SpdWz=%d Len=%d Roll=%d\r\n",
+    //         ctrl_cmd->gimbal_yaw,
+    //         ctrl_cmd->target_speed_x,
+    //         ctrl_cmd->target_speed_wz,
+    //         ctrl_cmd->target_length,
+    //         ctrl_cmd->roll_angle);
+    // }
+
+    static Vofa_Frame_t frame;
+    // Clear the frame data
+    memset(&frame, 0, sizeof(Vofa_Frame_t));
+
+    // 1. Fill data explicitly
+    frame.data[0] = (float)(ctrl_cmd->ctrl_flags & CTRL_MODE_MASK);
+    frame.data[1] = (float)((ctrl_cmd->ctrl_flags & CTRL_SPINNING_MASK) ? 1.0f : 0.0f);
+    frame.data[2] = (float)((ctrl_cmd->ctrl_flags & CTRL_JUMP_MASK) ? 1.0f : 0.0f);
+
+    // Scaled values
+    // frame.data[3] = (float)ctrl_cmd->gimbal_yaw / 1000.0f;
+    // frame.data[4] = (float)ctrl_cmd->target_speed_x / 1000.0f;
+    // frame.data[5] = (float)ctrl_cmd->target_speed_wz / 1000.0f;
+    // frame.data[6] = (float)ctrl_cmd->target_length / 1000.0f;
+    // frame.data[7] = (float)ctrl_cmd->roll_angle / 1000.0f;
+
+    // Raw values
+    frame.data[8] = (float)ctrl_cmd->gimbal_relate_yaw;
+    frame.data[9] = (float)ctrl_cmd->target_speed_x;
+    frame.data[10] = (float)ctrl_cmd->target_speed_wz;
+    frame.data[11] = (float)ctrl_cmd->target_length;
+
+    // Test constant to verify channel 12
+    frame.data[12] = 123.456f;
+
+    // 2. Set tail
+    uint8_t tail[4] = VOFA_TAIL;
+    memcpy(frame.tail, tail, 4);
+
+    HAL_StatusTypeDef status;
+    status = HAL_UART_Transmit(huart, (uint8_t *)&frame, sizeof(Vofa_Frame_t), 100);
+    return status;
+}
+
 void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
 {
     char buffer[128]; // 根据需要可增大
@@ -828,4 +811,5 @@ void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
     va_end(args);
     HAL_UART_Transmit(huart, (uint8_t *)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
+
 
