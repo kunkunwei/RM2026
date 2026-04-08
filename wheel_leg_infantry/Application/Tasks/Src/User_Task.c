@@ -69,30 +69,6 @@ void User_Task(void const * argument)
 
         chassis_send_feedback(local_chassis);
 
-
-        // if (switch_is_down(remote_ctrl.rc.s[0]))
-        // {
-        //     buzzer_off();
-        //     // buzzer=1;
-        //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_SET);
-        //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-        //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-        // }
-        // else if (switch_is_up(remote_ctrl.rc.s[0]))
-        // {
-        //     // buzzer_on(84,10);
-        //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-        //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-        //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
-        // }
-        // else if (switch_is_mid(remote_ctrl.rc.s[0]))
-        // {
-        //
-        //     HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
-        //     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-        //     HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_SET);
-        // }
-
         osDelayUntil(&systick, 50); // 50ms周期控制
     }
 }
