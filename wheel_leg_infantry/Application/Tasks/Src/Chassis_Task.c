@@ -1876,53 +1876,16 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     // 前馈系数需要根据实际调试确定，这里先设置为一个较小的值
     static const fp32 feedforward_gain = 0.5f; // 前馈增益，需要根据实际调试调整
 
-    fp32 feedforward_force = feedforward_gain * gimbal_cmd->gimbal_yaw_gyro / 1000.0f;
-    // fp32 feedforward_force = feedforward_gain * yaw_error;
+    // fp32 feedforward_force = feedforward_gain * gimbal_cmd->gimbal_yaw_gyro / 1000.0f;
+
     // 速度环PID力矩
     fp32 pid_force = old_PID_Calc(&chassis_move_control_loop->chassis_yaw_gyro_pid,
                                   *(chassis_move_control_loop->chassis_imu_gyro + INS_GYRO_Z_ADDRESS_OFFSET),
                                   chassis_move_control_loop->wz_set);
+        // 正常使用PID输出来控制底盘YAW，小陀螺前进的前馈量已经删除干净
+        yaw_err_force = pid_force ;
 
-    // 总力矩 = PID力矩 + 前馈力矩
-    // 【小陀螺模式：固定0.45 rad/s角速度 + 方向补偿】
-    // 在小陀螺模式中，yaw_err_force（轮子差速力矩）不由PID控制
-    // 而是直接计算固定角速度对应的力矩 + 方向调整补偿
-    if (chassis_move_control_loop->spining_state)
-    {
-        // 【步骤1】固定角速度对应的轮子差速力矩
-        // 角速度推导：ω = (F_right - F_left) * wheel_radius / motor_distance
-        // 反推：F_diff = ω * motor_distance / wheel_radius = 0.45 * 0.27 / 0.08 ≈ 1.5125 N
-        // 转换为力矩（在电机端）：τ = F_diff * lever_arm，lever_arm取决于机器人质量分布
-        // 经验调试系数：~111（根据实际机器人调整）
-        static const fp32 FIXED_ANGULAR_VEL = 0.45f;  // rad/s
-        static const fp32 ANG_VEL_TO_TORQUE = 111.0f; // 0.45 rad/s 对应的轮子差速力矩系数
-        fp32 fixed_yaw_torque = FIXED_ANGULAR_VEL * ANG_VEL_TO_TORQUE;
-
-        // 【步骤2】方向补偿：使线性运动方向对齐云台方向
-        // 原理：当底盘方向θ与云台目标方向φ有偏差时
-        // 需要增加左/右轮的差速来补偿方向偏差
-        static const fp32 direction_comp_gain = 4.0f;
-
-        // 速度影响因子（速度越大，需要的方向调整力矩越大）
-        fp32 velocity_factor = fabsf(chassis_move_control_loop->state_set.x_dot) /
-                               (fabsf(chassis_move_control_loop->vx_max_speed) + 0.01f);
-        velocity_factor = (velocity_factor > 1.0f) ? 1.0f : velocity_factor;
-
-        // 方向补偿项
-        fp32 direction_compensation = direction_comp_gain *
-                                      sinf(chassis_move_control_loop->spinning_direction_delta) *
-                                      velocity_factor;
-
-        // 【关键】直接覆盖yaw_err_force，不使用PID的输出
-        yaw_err_force = fixed_yaw_torque + direction_compensation;
-    }
-    else
-    {
-        // 非小陀螺模式：正常使用PID输出
-        yaw_err_force = pid_force + feedforward_force;
-    }
-
-    // yaw_err_force = pid_force + feedforward_force;
+    //根据打滑检测结果调整轮子电流限制，打滑严重时限制电流，减轻打滑程度
     float conf_l, conf_r;
     conf_l = get_confidence_left();
     conf_r = get_confidence_right();
@@ -1936,16 +1899,10 @@ void LQR_Balance_Turn(chassis_move_t *chassis_move_control_loop)
     I_cmd_l = limitted_motor_current(I_cmd_l, I_lim_l);
     I_cmd_r = limitted_motor_current(I_cmd_r, I_lim_r);
 
-    // 遥控器么有输入时候，可以用ROS的wz
-    //  if( chassis_move_control_loop->wz_from_ros != 0.0f ){
-    //      //chassis_move_control_loop->wz_from_ros = 0.3f;
-    //      //printf("?");
-    //      yaw_err_force = old_PID_Calc(&chassis_move_control_loop->chassis_ros_wz_pid,*(chassis_move_control_loop->chassis_imu_gyro+INS_GYRO_Z_ADDRESS_OFFSET),chassis_move_control_loop->wz_from_ros);
-    //  }
-
     // 单腿离地之后轮子不能转，给关节加上kd阻尼
     if (chassis_move_control_loop->touchingGroung)
     {
+        //前两个是通过打滑限制输出的足端电流，后两个是没有打滑检测限制输出的轮子电流
         chassis_move_control_loop->right_leg.wheel_motor.give_current = I_cmd_r;
         chassis_move_control_loop->left_leg.wheel_motor.give_current = I_cmd_l;
         // chassis_move_control_loop->right_leg.wheel_motor.give_current = limitted_motor_current(-(chassis_move_control_loop->wheel_tor + yaw_err_force) * LK9025_TOR_TO_CAN_DATA, 2000);
@@ -2007,15 +1964,6 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
         float fb_l_raw = chassis->jump_state.Fee[0];
         float fb_r_raw = chassis->jump_state.Fee[1];
 
-        // 临时关闭“髋关节主导权保护”：按实机经验将支持力补偿限制放宽到固定 300N。
-        // float base_lim = 32.0f;
-        // if (chassis->jump_state.jump_stage == 2)
-        //     base_lim = 40.0f;
-        // else if (chassis->jump_state.jump_stage == 3)
-        //     base_lim = 50.0f;
-        //
-        // float hip_keep = fp32_constrain(1.0f - 0.08f * fabsf(chassis->leg_tor), 0.45f, 1.0f);
-        // float fb_lim = base_lim * hip_keep;
         float fb_lim = 300.0f;
         fb_l_raw = fp32_constrain(fb_l_raw, -fb_lim, fb_lim);
         fb_r_raw = fp32_constrain(fb_r_raw, -fb_lim, fb_lim);
@@ -2054,8 +2002,6 @@ void chassis_joint_tor_cal(chassis_move_t *chassis)
 
     chassis->left_leg.back_joint.tor_set = limitted_motor_current(chassis->tor_vector[1], 20.0f);
     chassis->left_leg.front_joint.tor_set = limitted_motor_current(chassis->tor_vector[0], 20.0f);
-    // chassis->right_leg.front_joint.give_current=Joint_Torque_To_CAN(&joint_ctrl[3], 3,chassis->right_leg.front_joint.joint_motor_measure->speed,&chassis->right_leg.front_joint.current_set);
-    // Joint_Torque_To_CAN(&joint_ctrl[3], chassis->right_leg.front_joint.tor_set,chassis->right_leg.front_joint.joint_motor_measure->speed);
 }
 /**
  * @brief          底盘控制PID计算
@@ -2129,15 +2075,11 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
     fp32 ddlength = (filtered_length_dot - last_length_dot) / CHASSIS_CONTROL_TIME;
     // fp32 ddtheta  = (chassis_move_detect->state_ref.theta_dot - last_theta_dot) / CHASSIS_CONTROL_TIME;
     fp32 ddtheta = (filtered_theta_dot - last_theta_dot) / CHASSIS_CONTROL_TIME;
-    // chassis_move_detect->state_ref.theta_dot=filtered_theta_dot;
-    // chassis_move_detect->state_ref.theta_ddot=ddtheta;
-    // ddlength = 0.0f;// 噪声太大了，需要滤波，于是暂时没有使用
-    // ddtheta = 0.0f;
+
     last_length_dot = filtered_length_dot;
     last_theta_dot = filtered_theta_dot;
-    // last_length_dot = chassis_move_detect->leg_length_dot;
-    // last_theta_dot = chassis_move_detect->state_ref.theta_dot;
-    // 额外：对加速度再做一次滑动平均（可选，噪声极大时启用）
+
+    // 额外：对加速度再做一次滑动平均（噪声极大时启用）
     static fp32 ddlength_buf[3] = {0}; // 3点滑动平均
     static fp32 ddtheta_buf[3] = {0};
     ddlength_buf[2] = ddlength_buf[1];
@@ -2178,9 +2120,7 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
     chassis_move_detect->right_leg_real_support = filtered_right_force;
     chassis_move_detect->left_leg_real_support = filtered_left_force;
     chassis_move_detect->ground_force = filtered_left_force + filtered_right_force;
-    // chassis_move_detect->right_leg_real_support = P_right_real;
-    // chassis_move_detect->left_leg_real_support  = P_left_real;
-    // chassis_move_detect->ground_force           = P_right_real + P_left_real;
+
     // 使用双阈值的方式进行判断，防止机器人在离地与触地之间反复切换
 
     /////////////
@@ -2245,14 +2185,6 @@ static bool_t Robot_Offground_detect(chassis_move_t *chassis_move_detect)
             }
         }
     }
-    // if (chassis_move_detect->touchingGroung == true && chassis_move_detect->ground_force < -20.0f) {
-    //     chassis_move_detect->touchingGroung       = false;
-    //     chassis_move_detect->last_out_ground_tick = xTaskGetTickCount();
-    //
-    // } else if (chassis_move_detect->touchingGroung == false && chassis_move_detect->ground_force > 15.0f) {
-    //     chassis_move_detect->touchingGroung  = true;
-    //     chassis_move_detect->chassis_yaw_set = chassis_move_detect->chassis_yaw; // 落地后保证朝向
-    // }
 
     chassis_move_detect->touchingGroung = current_touching;
     // //倒地
