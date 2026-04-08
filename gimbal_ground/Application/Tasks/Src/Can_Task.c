@@ -64,10 +64,7 @@ void Can_Task(void const *argument)
             Dji_Motor_Shoot_Can_Send(local_gimbal->gimbal_shoot.shoot_motor_right->target_current,
                                      -local_gimbal->gimbal_shoot.shoot_motor_left->target_current,
                                      local_gimbal->gimbal_shoot.pull_motor->target_current);
-            // Dji_Motor_Shoot_Can_Send(0,
-            //                          0,
-            //                          2000);
-            // 发出的tor>0，则枪管向下压，tor<0则枪管向上抬
+
             Damiao_Motor_CAN_Send(2, 0, 0, 0, 1.2f, local_gimbal->gimbal_pos.pitch_motor_measure->target_tor);
             // CAN2
             Dji_Motor_Yaw_Can_Send(local_gimbal->gimbal_pos.yaw_motor_measure->target_current);
